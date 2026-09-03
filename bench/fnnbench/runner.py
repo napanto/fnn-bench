@@ -129,7 +129,9 @@ def numerical_check(cfg: RunConfig, net: be.NetworkAdapter, spec: NetSpec, Ws, b
     ref = ReferenceNetwork(spec, Ws, bs)
     got = net.predict(X[:n_probe]).astype(np.float64)
     exp = ref.predict(X[:n_probe])
-    fwd_err = float(np.max(np.abs(got - exp) / np.maximum(np.abs(exp), 1e-3)))
+    # error relative to the output scale (per-element relative errors explode on
+    # near-zero outputs of deep float32 nets whose absolute error is ~1e-6)
+    fwd_err = float(np.max(np.abs(got - exp)) / max(float(np.max(np.abs(exp))), 1e-6))
     fwd_tol = DOUBLE_FORWARD_TOL if is_double else FLOAT_FORWARD_TOL
     out.update(forward_rel_err=fwd_err, forward_tol=fwd_tol, forward_ok=bool(fwd_err <= fwd_tol))
     # (2) first-epoch loss (stochastic in the summation order for float32)
