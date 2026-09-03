@@ -86,6 +86,11 @@ also with `queue=graph`, `streams=4`, `memory=shared`), ompnn (amdclang++ and
 gcc-14 amdgcn on the GPU; gcc-14, clang-18, clang-22, gcc-14+MKL, amdclang++
 on the host). gcc's offload gives a team 16 wavefronts, not 256 threads, so
 the OpenMP kernel has a strided variant for `omp_get_num_threads() < 256`.
+Code review then found the op(A) tile indexed with the fast thread index as
+the slow dimension (stride-16 local-memory bank conflicts in all three); the
+tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
+(DPC++ opencl:cpu, gcc-14, clang-22), the GPU suites re-run by
+`scripts/ws-amd-pass2.sh` (`results/ws-amd/<date>/tiled-parity.txt`).
 
 ## Facts worth remembering
 
