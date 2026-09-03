@@ -51,15 +51,15 @@ tests() {
         pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl
         python -c \"import syclnn; print(syclnn.devices())\"
-        for o in \"--dtype double\" \"--dtype float\" \"--option memory=shared\" \"--option queue=in_order\" \"--option fine_deps=False\"; do printf \"syclnn cuda:gpu %-28s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
+        for o in \"--dtype double\" \"--dtype float\" \"--option memory=shared\" \"--option queue=in_order\" \"--option fine_deps=False\" \"--blas tiled --dtype double\" \"--blas tiled --dtype float\"; do printf \"syclnn cuda:gpu %-28s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
         pytest -q --device gpu --run-slow -k mnist -p no:cacheprovider 2>&1 | tail -1'"
     ssh "$HOST" "$RUN -w /work/cudann localhost/fnn-cuda:dev bash -c '
         pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-cuda
         python -c \"import cudann; print(cudann.devices())\"
-        for o in \"--dtype double\" \"--dtype float\" \"--option memory=shared\" \"--option memory=host\" \"--option queue=in_order\" \"--option queue=graph\" \"--option streams=8\" \"--option queue=graph --option streams=4\"; do printf \"cudann %-40s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
+        for o in \"--dtype double\" \"--dtype float\" \"--option memory=shared\" \"--option memory=host\" \"--option queue=in_order\" \"--option queue=graph\" \"--option streams=8\" \"--option queue=graph --option streams=4\" \"--option blas=tiled --dtype double\" \"--option blas=tiled --dtype float\" \"--option blas=tiled --option queue=graph\"; do printf \"cudann %-40s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
         cd /work/ompnn
-        for w in clang18nv gcc14nv; do export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w; printf \"ompnn %-10s gpu \" \$w; pytest -q --device gpu -p no:cacheprovider 2>&1 | tail -1; done'"
+        for w in clang18nv gcc14nv; do export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w; for o in \"\" \"--option blas=tiled\" \"--option blas=omp --dtype float\"; do printf \"ompnn %-10s gpu %-24s \" \$w \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done; done'"
 }
 
 matrix() {
