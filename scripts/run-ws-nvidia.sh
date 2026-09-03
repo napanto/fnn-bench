@@ -71,6 +71,7 @@ matrix() {
         fnnbench sweep --plan plans/w4_sweep_gpu.json --out results/ws-nvidia/$DATE/gpu-w4-sycl
         fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=syclnn --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
         fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e7-tiled-gpu
+        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-infer-gpu
         for dt in float double; do fnnbench peak --backend syclnn --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
         nsys profile -o results/ws-nvidia/$DATE/nsys-syclnn-mnist --force-overwrite true fnnbench run --backend syclnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192'"
     ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
@@ -79,12 +80,14 @@ matrix() {
         fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=cudann --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
         fnnbench sweep --plan plans/w4_sweep_gpu.json --backend cudann --out results/ws-nvidia/$DATE/gpu-w4-cuda
         fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e7-tiled-gpu
+        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-infer-gpu
         for dt in float double; do fnnbench peak --backend cudann --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
         nsys profile -o results/ws-nvidia/$DATE/nsys-cudann-mnist --force-overwrite true fnnbench run --backend cudann --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
         for w in clang18nv gcc14nv; do
             export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w
             fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-\$w
             fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-\$w
+            fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-\$w
             fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-\$w
         done
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22

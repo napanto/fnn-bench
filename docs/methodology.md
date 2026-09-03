@@ -125,6 +125,23 @@ Every row carries two per-epoch times:
   the programming-model comparison (E3, E4, E6); the call-level number is
   reported next to it.
 
+### Inference rows (W5)
+
+`mode = infer` rows time `predict(X, batch)` over the whole set (`epochs`
+passes, `repeat` calls, same warm-up/median protocol). Batch 1 on 2048
+samples is the latency regime (one launch chain per sample: the number that
+shows the launch overhead of each programming model); batch 4096 is the
+throughput regime. The FLOP model is the forward GEMM only, 2B*sum(n_l n_{l+1}).
+
+### GPU utilisation and power
+
+Every GPU row carries `gpu_monitor`: mean/max utilisation, mean/max power,
+mean clock and the energy of the timed region, sampled every 200 ms from the
+amdgpu sysfs counters (`gpu_busy_percent`, hwmon `power1_average`,
+`freq1_input`) or from `nvidia-smi --query-gpu ... -lms 200`. The sampling
+thread costs nothing measurable. The CPU package energy (RAPL) needs root on
+ws-amd and is not recorded.
+
 ## Profiler cross-validation 
 
 `scripts/rocprof-crosscheck.sh` trains `mnist-512-256` (8 192 samples, batch

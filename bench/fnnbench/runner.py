@@ -35,6 +35,8 @@ from fnn_testkit import workloads as wl
 from fnn_testkit.plugin import random_params
 from fnn_testkit.reference import NetSpec, ReferenceNetwork
 
+from . import gpumon
+
 from . import flops as fl
 from . import results, sysinfo
 
@@ -186,18 +188,20 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
             net.predict(Xd, batch)
     net.reset_profile()
 
-    # ---- measured repetitions ----
+    # ---- measured repetitions (GPU utilisation / power sampled alongside) ----
     walls = []
     losses = []
-    for _ in range(cfg.repeat):
-        t0 = time.perf_counter()
-        if cfg.mode == "train":
-            l = net.train(Xd, Yd, batch, cfg.epochs)
-            losses.append([float(v) for v in l])
-        else:
-            for _ in range(cfg.epochs):
-                net.predict(Xd, batch)
-        walls.append((time.perf_counter() - t0) / cfg.epochs)
+    with gpumon.GpuSampler(enabled=cfg.device != "cpu" and not net.is_reference) as sampler:
+        for _ in range(cfg.repeat):
+            t0 = time.perf_counter()
+            if cfg.mode == "train":
+                l = net.train(Xd, Yd, batch, cfg.epochs)
+                losses.append([float(v) for v in l])
+            else:
+                for _ in range(cfg.epochs):
+                    net.predict(Xd, batch)
+            walls.append((time.perf_counter() - t0) / cfg.epochs)
+    gpu_samples = sampler.summary()
     finite = bool(np.all(np.isfinite(np.asarray(losses, dtype=np.float64)))) if losses else True
     profiling = bool(cfg.options.get("profile", False)) and not net.is_reference
     prof = (net.profile or {}) if profiling else None
@@ -277,6 +281,7 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
             "losses_finite": finite,
             "profile": prof,
             "profile_per_epoch_ms": per_epoch,
+            "gpu_monitor": gpu_samples,
         },
         "check": check,
         "sysinfo": sys_info,

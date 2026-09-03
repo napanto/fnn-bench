@@ -34,6 +34,7 @@ sycl_cpu() {
         fnnbench sweep --plan plans/e6_sycl_ablations.json --select device=cpu --out results/ws-amd/$DATE/sycl-cpu-ablations
         fnnbench sweep --plan plans/w4_sweep_cpu.json --out results/ws-amd/$DATE/sycl-cpu-w4
         fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=cpu --select backend=syclnn --out results/ws-amd/$DATE/e7-tiled-cpu-dpcpp
+        fnnbench sweep --plan plans/e5_inference.json --select device=cpu --select backend=syclnn --out results/ws-amd/$DATE/e5-infer-cpu-dpcpp
         fnnbench peak --backend syclnn --device cpu --dtype float --size 4096 --option blas=mklcpu --out results/ws-amd/$DATE/peaks
         fnnbench peak --backend syclnn --device cpu --dtype double --size 4096 --option blas=mklcpu --out results/ws-amd/$DATE/peaks
         fnnbench peak --backend syclnn --device cpu --dtype float --size 4096 --option blas=netlib --out results/ws-amd/$DATE/peaks
@@ -64,6 +65,8 @@ rocm_gpu() {
         fnnbench sweep --plan plans/w4_sweep_gpu.json --backend cudann --out results/ws-amd/$DATE/gpu-w4-cuda 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=syclnn --out results/ws-amd/$DATE/e7-tiled-gpu 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=cudann --out results/ws-amd/$DATE/e7-tiled-gpu 2>&1 | grep -v 'AdaptiveCpp Warning'
+        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=syclnn --out results/ws-amd/$DATE/e5-infer-gpu 2>&1 | grep -v 'AdaptiveCpp Warning'
+        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=cudann --out results/ws-amd/$DATE/e5-infer-gpu 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=cpu --select backend=syclnn --out results/ws-amd/$DATE/e7-tiled-cpu-acpp 2>&1 | grep -v 'AdaptiveCpp Warning'
         for be in syclnn cudann; do for dt in float double; do fnnbench peak --backend \$be --device gpu --dtype \$dt --size 8192 --out results/ws-amd/$DATE/peaks 2>&1 | grep -v Warning | tail -1; done; done
         # the AdaptiveCpp wheel on the CPU (SYCL implementation comparison, E7)
@@ -82,6 +85,7 @@ omp_cpu() {
             export PYTHONPATH=/work/fnn-bench/.wheels/omp-\$1 OMP_PROC_BIND=close OMP_PLACES=cores MKL_THREADING_LAYER=GNU
             (cd /work/fnn-bench && fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-amd/$DATE/omp-cpu-\$1 && fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-amd/$DATE/peaks-omp-\$1)
             [ \$1 = gcc14 ] && (cd /work/fnn-bench && fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=cpu --select backend=ompnn --out results/ws-amd/$DATE/e7-tiled-omp-cpu-gcc14) || true
+            [ \$1 = gcc14 ] && (cd /work/fnn-bench && fnnbench sweep --plan plans/e5_inference.json --select device=cpu --select backend=ompnn --out results/ws-amd/$DATE/e5-infer-omp-cpu-gcc14) || true
         done
     "
 }
@@ -94,6 +98,7 @@ omp_gpu() {
             export PATH=\$P/\$v/bin:\$PATH
             fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-amd/$DATE/omp-gpu-\${v#venv-}
             fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-amd/$DATE/e7-tiled-omp-gpu-\${v#venv-}
+            fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-amd/$DATE/e5-infer-omp-gpu-\${v#venv-}
             fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-amd/$DATE/peaks-omp-\${v#venv-}
         done
     "
