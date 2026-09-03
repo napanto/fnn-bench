@@ -142,6 +142,25 @@ amdgpu sysfs counters (`gpu_busy_percent`, hwmon `power1_average`,
 thread costs nothing measurable. The CPU package energy (RAPL) needs root on
 ws-amd and is not recorded.
 
+### Interpretation caveats from code review
+
+- `memory=shared` on the RX 7900 XTX (ROCm 7.2, no XNACK) is host-coherent
+  memory, not page migration: the AMD "shared" rows measure zero-copy PCIe
+  traffic, the NVIDIA ones will measure managed-memory migration (no explicit
+  prefetch in either library; first-touch faults land in the warm-up epoch).
+- The multi-stream default (`out_of_order`, 4 streams) costs up to 1.7x on the
+  launch-bound workloads (monk, cup) under HIP: the event fork/join overhead
+  dominates when kernels are microseconds long. The `queue=in_order` rows are
+  reported next to the default in E3; the ratio is a result, not noise.
+- `memory=host` with `loss_reduction` relies on 64-bit atomics to fine-grained
+  host memory over PCIe (works on ws-amd, may silently fail elsewhere; the
+  parity suite catches it).
+- ompnn's `sumsq` accumulates in double (nrm2 squared in `T` elsewhere) and its
+  host tiled GEMM reassociates the 16-term partial sums: the OpenMP rows are
+  not bit-identical to the SYCL/CUDA ones, only within the check tolerances.
+- CUDA-graph rows have no per-phase profile (the kernels are inside graph
+  launches); their `other_ms` is the graph launch time.
+
 ## Profiler cross-validation 
 
 `scripts/rocprof-crosscheck.sh` trains `mnist-512-256` (8 192 samples, batch
