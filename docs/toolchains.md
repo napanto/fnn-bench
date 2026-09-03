@@ -62,17 +62,25 @@ parallel for simd` on `omp_target_alloc` memory + vendor BLAS interop
 | amdclang++ 22 (`-fopenmp-targets=amdgcn-amd-amdhsa --offload-arch=gfx1100`) | ws-amd RX 7900 XTX | hipBLAS 3.2 interop; `blas=omp` | **OK** double + float, ablations, `blas=omp` | mnist-512-256 b256 float: 310 ms/epoch (466 GFLOP/s GEMM) vs cudann/HIP 269 ms, syclnn/AdaptiveCpp 421 ms |
 | gcc 14.2 (`-foffload=amdgcn-amdhsa -march=gfx1100`, needs `-fcf-protection=none`) | ws-amd RX 7900 XTX | hipBLAS interop | **OK** double + float | 3x slower kernels: mnist-512-256 980 ms/epoch |
 | clang 18.1 (`--offload-arch=gfx1100`) | ws-amd RX 7900 XTX | - | **fails to build**: `/opt/rocm/amdgcn/bitcode/ocml.bc: Unknown attribute kind (Producer LLVM 22, Reader LLVM 18)` | ROCm 7.2's device libs are LLVM-22 bitcode; clang-18 would need older device libs |
-| clang 18.1 (`-fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_61 --offload-arch=sm_80`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | compile check in fnn-cuda (see below); run on ws-nvidia pending | |
-| gcc 14.2 (`-foffload=nvptx-none -misa=sm_53`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | compile check in fnn-cuda; run on ws-nvidia pending | gcc's nvptx back end knows sm_30/35/53/70/75/80 only; sm_53 PTX runs on Pascal |
+| clang 18.1 (`-fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_61 --offload-arch=sm_80 --cuda-path=/usr/local/cuda-12.9`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **build** needs `clang-tools-18` (`clang-offload-packager`), added to fnn-cuda; run on ws-nvidia pending | |
+| gcc 14.2 (`-foffload=nvptx-none -foffload-options=nvptx-none=-misa=sm_53 -fcf-protection=none -fno-stack-protector`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **builds** (fat binary sm_53 PTX); run on ws-nvidia pending | gcc's nvptx back end knows sm_30/35/53/70/75/80 only; sm_53 PTX runs on Pascal through the driver JIT; Ubuntu's `-fstack-protector-strong` default breaks ptxas (`__stack_chk_guard`) |
 | nvc++ 26.5 (`-mp=gpu -gpu=cc61|cc80`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | the department runs / ws-nvidia | V100+ officially |
 
 Findings: gcc compiles every `omp target` region for all installed accelerator
 back ends unless told `-foffload=disable`; Ubuntu's default `-fcf-protection=full`
-breaks gcc's nvptx/amdgcn LTO step; LLVM's `omp_target_*` API lives in
+and `-fstack-protector-strong` break gcc's nvptx/amdgcn offload step; LLVM's `omp_target_*` API lives in
 `libomptarget`, which clang only links when the `-fopenmp` driver flag is on the
 link line (host-only builds compile the calls out instead); the OpenMP runtime
 of amdclang++ lives under `/opt/rocm/lib/llvm/lib` (rpath from
 `-print-file-name=libomp.so`).
+
+## Hand-written BLAS (E7, `blas=tiled`)
+
+All three libraries carry the same 16x16 tiled GEMM (SYCL `nd_range` + local
+memory, CUDA shared memory, OpenMP `target teams` with team-shared tiles), a
+one-work-item-per-row GEMV and reductions for asum/nrm2, selectable with
+`Options.blas = "tiled"`; ompnn also keeps the naive `blas="omp"` loop.
+Validation status is recorded in the results (`blas` column = `tiled`).
 
 ## Facts worth remembering
 

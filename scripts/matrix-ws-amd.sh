@@ -75,7 +75,7 @@ omp_cpu() {
             set -- \$cfg
             export CXX=\$2 OMPNN_TARGET=cpu OMPNN_BLAS=\$3 OMPNN_BLAS_ROOT=\$4 CMAKE_BUILD_PARALLEL_LEVEL=8
             pip install -q --no-deps --target /work/fnn-bench/.wheels/omp-\$1 --config-settings=build-dir=/tmp/ompnn-\$1 . 2>&1 | grep -E 'error:' || true
-            export PYTHONPATH=/work/fnn-bench/.wheels/omp-\$1 OMP_PROC_BIND=close OMP_PLACES=cores
+            export PYTHONPATH=/work/fnn-bench/.wheels/omp-\$1 OMP_PROC_BIND=close OMP_PLACES=cores MKL_THREADING_LAYER=GNU
             (cd /work/fnn-bench && fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-amd/$DATE/omp-cpu-\$1 && fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-amd/$DATE/peaks-omp-\$1)
         done
     "
