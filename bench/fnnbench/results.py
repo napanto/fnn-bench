@@ -57,6 +57,7 @@ def flatten(row: dict[str, Any]) -> dict[str, Any]:
     prof = r.get("profile", {}) or {}
     flat = {
         "id": row.get("id"),
+        "tag": row.get("tag"),
         "timestamp": row.get("timestamp"),
         "host": (row.get("sysinfo") or {}).get("hostname"),
         "backend": row.get("backend"),
