@@ -65,7 +65,7 @@ class GpuSampler:
 
     def _nvidia_loop(self) -> None:
         cmd = ["nvidia-smi", "--query-gpu=utilization.gpu,power.draw,clocks.sm", "--format=csv,noheader,nounits",
-               f"-lms {int(INTERVAL_S * 1000)}"]
+               "-lms", str(int(INTERVAL_S * 1000))]
         if self.ordinal is not None:
             cmd += ["-i", str(self.ordinal)]
         try:

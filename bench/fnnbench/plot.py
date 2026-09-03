@@ -52,6 +52,15 @@ def _epoch_s(row: dict[str, Any]) -> float:
     return float(r["median_epoch_s"])
 
 
+
+def _samples_per_s(row: dict[str, Any]) -> float:
+    return row["n_samples"] / _epoch_s(row)
+
+
+def _gflops_gemm(row: dict[str, Any]) -> float:
+    return row["results"]["flops_per_epoch"]["gemm"] / _epoch_s(row) / 1e9
+
+
 def _label(row: dict[str, Any]) -> str:
     dev = (row.get("device") or {}).get("name", "?")
     short = dev.split("(")[0].strip()
@@ -93,7 +102,7 @@ def plot_throughput(plt, rows, out):
     for r in rows:
         if r.get("mode", "train") != "train" or r.get("threads"):
             continue
-        by_wl[(r["workload"], r["dtype"])][_label(r)].append((r["batch"], r["results"]["samples_per_s"]))
+        by_wl[(r["workload"], r["dtype"])][_label(r)].append((r["batch"], _samples_per_s(r)))
     for (wl, dt), series in by_wl.items():
         if all(len(v) < 2 for v in series.values()):
             continue
@@ -156,7 +165,7 @@ def plot_roofline(plt, rows, peaks, out):
     for r in rows:
         if r.get("mode", "train") != "train" or r.get("threads"):
             continue
-        ax.scatter(r["results"]["intensity_flop_per_byte"], r["results"]["gflops_gemm"], s=14,
+        ax.scatter(r["results"]["intensity_flop_per_byte"], _gflops_gemm(r), s=14,
                    color=BACKEND_COLOR.get(r["backend"]), marker="o" if r["dtype"] == "float" else "s", alpha=0.7)
     for be, c in BACKEND_COLOR.items():
         ax.scatter([], [], color=c, label=be)
@@ -259,7 +268,7 @@ def plot_scaling(plt, rows, out):
     for r in rows:
         if not r.get("threads"):
             continue
-        series[(_label(r), r["workload"], r["dtype"], r["batch"])].append((r["threads"], r["results"]["samples_per_s"]))
+        series[(_label(r), r["workload"], r["dtype"], r["batch"])].append((r["threads"], _samples_per_s(r)))
     if not series:
         return
     fig, ax = plt.subplots(figsize=(6, 3.6))
@@ -275,13 +284,50 @@ def plot_scaling(plt, rows, out):
     _save(plt, fig, out, "scaling-threads")
 
 
+
+def plot_tiled(plt, rows, out):
+    """E7: hand-written tiled GEMM vs the vendor / oneMath BLAS, per backend and device."""
+    pairs = defaultdict(dict)  # (device, workload, dtype, batch) -> {(backend, blas): epoch_s}
+    for r in rows:
+        if r.get("mode", "train") != "train" or r.get("threads"):
+            continue
+        opts = {k: v for k, v in r.get("options", {}).items() if k != "profile"}
+        blas = opts.pop("blas", None)
+        if opts:  # ablation rows are not part of E7
+            continue
+        dev = _label(r).split("@")[1].strip()
+        pairs[(dev, r["workload"], r["dtype"], r["batch"])][(r["backend"], "tiled" if blas in ("tiled", "handwritten") else "library")] = _epoch_s(r)
+    by_dev = defaultdict(list)
+    for key, variants in pairs.items():
+        for be in ("syclnn", "cudann", "ompnn"):
+            if (be, "tiled") in variants and (be, "library") in variants:
+                by_dev[key[0]].append((f"{key[1]} {key[2]} b{key[3]}", be, variants[(be, "tiled")] / variants[(be, "library")]))
+    for dev, items in by_dev.items():
+        labels = sorted({it[0] for it in items})
+        fig, ax = plt.subplots(figsize=(max(6, 0.9 * len(labels) + 2), 3.8))
+        width = 0.27
+        for bi, be in enumerate(("syclnn", "cudann", "ompnn")):
+            vals = {it[0]: it[2] for it in items if it[1] == be}
+            if not vals:
+                continue
+            xs = [i + (bi - 1) * width for i, l in enumerate(labels) if l in vals]
+            ax.bar(xs, [vals[l] for l in labels if l in vals], width, label=be, color=BACKEND_COLOR[be])
+        ax.axhline(1.0, color="k", lw=0.8)
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=7)
+        ax.set_ylabel("epoch time: tiled / library BLAS")
+        ax.set_yscale("log")
+        ax.set_title(f"hand-written 16x16 tiled GEMM vs library on {dev}")
+        ax.legend(fontsize=7)
+        _save(plt, fig, out, f"tiled-{dev.replace(' ', '')}")
+
 def plot_sweep(plt, rows, out):
     series = defaultdict(list)
     for r in rows:
         if not r["workload"].startswith("sweep-") or r.get("mode", "train") != "train":
             continue
         _, w, d, _ = r["workload"].split("-")
-        series[(_label(r), r["dtype"], w, d)].append((r["batch"], r["results"]["gflops_gemm"]))
+        series[(_label(r), r["dtype"], w, d)].append((r["batch"], _gflops_gemm(r)))
     if not series:
         return
     by_dev = defaultdict(dict)
@@ -316,4 +362,5 @@ def plot_all(paths: list[str], out: str) -> int:
     plot_precision(plt, rows, outp)
     plot_scaling(plt, rows, outp)
     plot_sweep(plt, rows, outp)
+    plot_tiled(plt, rows, outp)
     return 0
