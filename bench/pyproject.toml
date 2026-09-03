@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fnnbench"
+version = "1.0.0"
+description = "Benchmark harness for syclnn / cudann / ompnn: run, sweep, collect, replay, peak"
+license = "LGPL-3.0-only"
+requires-python = ">=3.10"
+authors = [{ name = "Antonio Napolitano", email = "anton@polit.no" }]
+dependencies = ["numpy>=1.26", "fnn-testkit"]
+
+[project.optional-dependencies]
+plot = ["matplotlib>=3.8", "pandas>=2"]
+
+[project.scripts]
+fnnbench = "fnnbench.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fnnbench*"]
