@@ -92,6 +92,21 @@ achieved GFLOP/s and a streaming bandwidth from the activation kernel
 The fp64 rate of the RX 7900 XTX is 1/23 of its fp32 rate (RDNA3 has no fast
 FP64), which is the "float vs double" discussion point of the report.
 
+### OpenMP-specific caveats
+
+- gcc's offload model maps one OpenMP thread to a warp/wavefront and uses the
+  lanes only inside `simd` loops; the two ablation kernels that cannot carry
+  `simd` (the `omp atomic` loss of `loss_reduction=false` and the serial
+  `bias_gemv=false` bias gradient) therefore run at one lane per warp on gcc
+  builds. Those two ablation rows from gcc offload builds are reported but not
+  compared with the SYCL/CUDA equivalents, which use one work-item per element.
+- `ompnn` synchronises after every vendor BLAS call (`cudaDeviceSynchronize`
+  / `hipDeviceSynchronize`): the OpenMP runtime's queues and the BLAS stream
+  are not ordered otherwise. This is a genuine cost of the interop model and
+  is part of what E4 measures, not an artefact.
+- One-time costs (BLAS handle creation, lazy module loading, gcc's PTX JIT)
+  land in the first batch; every row discards `--warmup` epochs before timing.
+
 ## Profiler cross-validation 
 
 `scripts/rocprof-crosscheck.sh` trains `mnist-512-256` (8 192 samples, batch
