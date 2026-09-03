@@ -31,7 +31,10 @@ sync() {
 build_all() {
     # syclnn (DPC++, spir64 + sm_61 + sm_80), cudann (nvcc sm_61;sm_80), ompnn (clang-18 nvptx, gcc-14 nvptx, clang-22 host)
     ssh "$HOST" "$RUN -w /work/syclnn localhost/fnn-sycl:dev bash -c '
-        set -e; export CC=clang CXX=clang++ SYCLNN_TARGETS=\"spir64;nvidia_gpu_sm_61;nvidia_gpu_sm_80\" SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=8
+        set -e; export CC=clang CXX=clang++ SYCLNN_TARGETS=\"spir64;nvidia_gpu_sm_61\" SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=8
+        # one CUDA device image only: with nvidia_gpu_sm_61 and nvidia_gpu_sm_80 in the same fat
+        # binary the DPC++ CUDA adapter fails to load the program on the 1080 Ti (2026-09-04);
+        # the A30 gets its own sm_80 build
         pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-sycl --config-settings=build-dir=/tmp/b .
         sycl-ls'"
     ssh "$HOST" "$RUN -w /work/cudann localhost/fnn-cuda:dev bash -c '
@@ -111,6 +114,29 @@ omp_clang18() {
     fetch
 }
 
+sycl_fix() {
+    # syclnn alone: rebuild (sm_61-only image), parity, its matrix block, fetch
+    ssh "$HOST" "$RUN -w /work/syclnn localhost/fnn-sycl:dev bash -c '
+        set -e; export CC=clang CXX=clang++ SYCLNN_TARGETS=\"spir64;nvidia_gpu_sm_61\" SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=8
+        rm -rf /work/fnn-bench/.wheels/ws-nvidia-sycl
+        pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-sycl --config-settings=build-dir=/tmp/b .
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl
+        for o in \"--dtype double\" \"--dtype float\" \"--option memory=shared\" \"--option queue=in_order\" \"--option fine_deps=False\" \"--blas tiled --dtype double\" \"--blas tiled --dtype float\"; do printf \"syclnn cuda:gpu %-28s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
+        pytest -q --device gpu --run-slow -k mnist -p no:cacheprovider 2>&1 | tail -1
+        cd /work/fnn-bench
+        fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --out results/ws-nvidia/$DATE/sycl-gpu
+        fnnbench sweep --plan plans/e6_sycl_ablations.json --select device=gpu --out results/ws-nvidia/$DATE/sycl-gpu-ablations
+        fnnbench sweep --plan plans/w4_sweep_gpu.json --out results/ws-nvidia/$DATE/gpu-w4-sycl
+        fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=syclnn --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
+        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e7-tiled-gpu
+        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-infer-gpu
+        for dt in float double; do fnnbench peak --backend syclnn --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
+        fnnbench peak --backend syclnn --device gpu --dtype float --size 8192 --option blas=tiled --out results/ws-nvidia/$DATE/peaks-tiled
+        nsys profile -o results/ws-nvidia/$DATE/nsys-syclnn-mnist --force-overwrite true fnnbench run --backend syclnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192 || true'"
+    fetch
+}
+
 fetch() {
     rsync -a "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/" "$HERE/results/ws-nvidia/"
 }
@@ -122,6 +148,7 @@ tests) tests ;;
 matrix) matrix ;;
 fetch) fetch ;;
 omp-clang18) omp_clang18 ;;
+sycl-fix) sycl_fix ;;
 all) sync; tests; matrix; fetch ;;
-*) echo "usage: $0 sync|build|tests|matrix|fetch|omp-clang18|all"; exit 1 ;;
+*) echo "usage: $0 sync|build|tests|matrix|fetch|omp-clang18|sycl-fix|all"; exit 1 ;;
 esac

@@ -94,6 +94,13 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 
 ## Facts worth remembering
 
+- **DPC++ fat binaries with two CUDA device images**: a wheel built with
+  `-fsycl-targets=spir64,nvidia_gpu_sm_61,nvidia_gpu_sm_80` fails on the
+  GTX 1080 Ti with "The program was built for 1 devices" and an empty build
+  log (the CUDA adapter of intel/llvm 7.1.0 nightly 2026-09-01 picks the
+  wrong image); `spir64,nvidia_gpu_sm_61` alone works. One CUDA target per
+  wheel, so ws-nvidia and the A30 get separate builds (checked 2026-09-04).
+
 - oneMath v0.9's NETLIB backend redefines `cblas_i?amin` with an `int` return
   type; OpenBLAS's `cblas.h` declares them with `CBLAS_INDEX` → compile error.
   `containers/patches/onemath-netlib-openblas.patch` guards the definitions with
