@@ -70,6 +70,8 @@ def _label(row: dict[str, Any]) -> str:
 def _opt_label(opts_json: str) -> str:
     """'{"memory": "shared", "streams": 4}' -> 'memory=shared, streams=4'"""
     d = json.loads(opts_json)
+    if len(d) >= 6:
+        return "all switches off (0.1 behaviour)"
     return ", ".join(f"{k}={str(v).lower() if isinstance(v, bool) else v}" for k, v in d.items()) or "default"
 
 
