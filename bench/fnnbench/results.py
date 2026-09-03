@@ -85,6 +85,7 @@ def flatten(row: dict[str, Any]) -> dict[str, Any]:
         "median_epoch_s": r.get("median_epoch_s"),
         "iqr_epoch_s": r.get("iqr_epoch_s"),
         "steady_epoch_s": r.get("steady_epoch_s"),
+        "steady_samples_per_s": r.get("steady_samples_per_s"),
         "gpu_util_pct": (r.get("gpu_monitor") or {}).get("util_pct_mean"),
         "gpu_power_w": (r.get("gpu_monitor") or {}).get("power_w_mean"),
         "gpu_energy_j": (r.get("gpu_monitor") or {}).get("energy_j"),

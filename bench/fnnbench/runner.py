@@ -119,7 +119,9 @@ def reference_first_epoch_loss(cfg: RunConfig, spec: NetSpec, Ws, bs, X, Y, batc
         return json.loads(p.read_text())["loss"]
     ref = ReferenceNetwork(spec, Ws, bs, shuffle=shuffle, shuffle_seed=shuffle_seed)
     loss = float(ref.train(X, Y, batch, 1)[0])
-    p.write_text(json.dumps({"loss": loss}))
+    tmp = p.with_suffix(f".{os.getpid()}.tmp")  # the cache is shared between environments: atomic replace
+    tmp.write_text(json.dumps({"loss": loss}))
+    os.replace(tmp, p)
     return loss
 
 

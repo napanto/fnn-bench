@@ -158,6 +158,14 @@ ws-amd and is not recorded.
 - ompnn's `sumsq` accumulates in double (nrm2 squared in `T` elsewhere) and its
   host tiled GEMM reassociates the 16-term partial sums: the OpenMP rows are
   not bit-identical to the SYCL/CUDA ones, only within the check tolerances.
+- E7 (`blas=tiled`): the three kernels share the tile size (16x16), the work
+  decomposition (one work-item/thread per C element, op(A) tile stored
+  transposed in local/shared memory, op(B) tile broadcast) and the sequential
+  k accumulation in a register on the SYCL, CUDA and clang-OpenMP paths;
+  gcc's OpenMP offload gives a team 16 wavefronts, so its variant strides over
+  the tile elements; the CPU paths vectorise across rows. The reductions for
+  asum/nrm2 differ in decomposition (SYCL `sycl::reduction`, one CUDA block,
+  OpenMP `reduction` in double), affecting only the reported penalty term.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
 
