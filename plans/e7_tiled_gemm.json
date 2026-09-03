@@ -1,0 +1,618 @@
+{
+ "note": "E7: hand-written 16x16 tiled GEMM (blas=tiled) vs the vendor/oneMath BLAS, same kernel in SYCL, CUDA/HIP and OpenMP target; the rows without blas are the library defaults measured in the same session",
+ "defaults": {
+  "epochs": 5,
+  "repeat": 5
+ },
+ "runs": [
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true,
+    "blas": "tiled"
+   },
+   "epochs": 2,
+   "repeat": 3
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b256",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   },
+   "epochs": 2,
+   "repeat": 3
+  }
+ ]
+}

@@ -52,6 +52,7 @@ class RunConfig:
     dtype: str = "float"
     batch: int | None = None
     epochs: int = 5
+    check_samples: int = 8192  # the oracle check trains on at most this many samples (timing uses all)
     repeat: int = 5
     warmup: int = 1
     mode: str = "train"  # train | infer
@@ -134,13 +135,26 @@ def numerical_check(cfg: RunConfig, net: be.NetworkAdapter, spec: NetSpec, Ws, b
     fwd_err = float(np.max(np.abs(got - exp)) / max(float(np.max(np.abs(exp))), 1e-6))
     fwd_tol = DOUBLE_FORWARD_TOL if is_double else FLOAT_FORWARD_TOL
     out.update(forward_rel_err=fwd_err, forward_tol=fwd_tol, forward_ok=bool(fwd_err <= fwd_tol))
-    # (2) first-epoch loss (stochastic in the summation order for float32)
+    # (2) first-epoch loss (stochastic in the summation order for float32) on a bounded
+    # subset: the float64 oracle is single-threaded NumPy and its Adam passes over a
+    # 4096x4096 net cost about an hour per epoch on the full W4 dataset, so the
+    # check trains on the first `check_samples` samples (a fresh instance with the
+    # same initial weights when it is a strict subset; the timing runs use all)
     if cfg.mode == "train":
-        loss0 = float(net.train(X, Y, batch, 1)[0])
-        ref0 = reference_first_epoch_loss(cfg, spec, Ws, bs, X, Y, batch)
+        n_check = min(X.shape[0], max(int(cfg.check_samples), batch)) if cfg.check_samples > 0 else X.shape[0]
+        Xc, Yc = X[:n_check], Y[:n_check]
+        if n_check < X.shape[0]:
+            net_c = be.NetworkAdapter(cfg.backend, spec, dtype=cfg.dtype, device=cfg.device, initial_weights=Ws,
+                                      initial_biases=bs, **cfg.options)
+            loss0 = float(net_c.train(np.ascontiguousarray(Xc, dtype=net.np_dtype),
+                                      np.ascontiguousarray(Yc, dtype=net.np_dtype), batch, 1)[0])
+            del net_c
+        else:
+            loss0 = float(net.train(X, Y, batch, 1)[0])
+        ref0 = reference_first_epoch_loss(cfg, spec, Ws, bs, Xc, Yc, batch)
         rel = abs(loss0 - ref0) / max(abs(ref0), 1e-12)
         tol = DOUBLE_EPOCH_TOL if is_double else FLOAT_EPOCH_TOL
-        out.update(loss=loss0, reference_loss=ref0, rel_err=rel, tol=tol, loss_ok=bool(rel <= tol))
+        out.update(samples=int(n_check), loss=loss0, reference_loss=ref0, rel_err=rel, tol=tol, loss_ok=bool(rel <= tol))
     out["ok"] = bool(out["forward_ok"] and out.get("loss_ok", True))
     return out
 
@@ -191,6 +205,14 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
     # ---- derived metrics ----
     median = statistics.median(walls)
     q1, q3 = np.percentile(walls, [25, 75])
+    # steady-state epoch: the library's own per-epoch wall (inside the call, after the
+    # dataset upload) without the first epoch of each call, which carries the H2D
+    # staging, lazy initialisation and (graph mode) the capture. Needs profile=True.
+    steady = None
+    ew = (prof or {}).get("epoch_wall_ns") or []
+    if cfg.mode == "train" and cfg.epochs > 1 and len(ew) == cfg.repeat * cfg.epochs:
+        inner = [ew[i] / 1e9 for i in range(len(ew)) if i % cfg.epochs != 0]
+        steady = float(statistics.median(inner))
     if cfg.mode == "train":
         step = fl.train_epoch(sizes, n, batch)
         intensity = fl.step_intensity(sizes, batch, itemsize)
@@ -241,6 +263,8 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
             "epoch_wall_s": walls,
             "median_epoch_s": median,
             "iqr_epoch_s": float(q3 - q1),
+            "steady_epoch_s": steady,
+            "steady_samples_per_s": (n / steady) if steady else None,
             "samples_per_s": n / median,
             "steps_per_s": ((n + batch - 1) // batch) / median,
             "flops_per_epoch": {"gemm": step.gemm, "total": step.total, "forward_gemm": step.forward_gemm,

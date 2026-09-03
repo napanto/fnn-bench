@@ -82,6 +82,7 @@ def flatten(row: dict[str, Any]) -> dict[str, Any]:
         "git_lib": (row.get("build_info") or {}).get("git_sha"),
         "median_epoch_s": r.get("median_epoch_s"),
         "iqr_epoch_s": r.get("iqr_epoch_s"),
+        "steady_epoch_s": r.get("steady_epoch_s"),
         "samples_per_s": r.get("samples_per_s"),
         "steps_per_s": r.get("steps_per_s"),
         "intensity": r.get("intensity_flop_per_byte"),

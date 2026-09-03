@@ -25,7 +25,7 @@ sycl_cpu() {
     $PODMAN -w /work/syclnn localhost/fnn-sycl:dev bash -c "
         set -e; export CC=clang CXX=clang++ SYCLNN_TARGETS='spir64;nvidia_gpu_sm_61;nvidia_gpu_sm_80' SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=8
         pip install -q --no-deps --target /work/fnn-bench/.wheels/sycl-dpcpp --config-settings=build-dir=/tmp/syclnn-build . 2>&1 | grep -E 'error:' || true
-        pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/sycl-dpcpp OMP_PROC_BIND=close OMP_PLACES=cores
         cd /work/fnn-bench
         fnnbench sweep --plan plans/e1_cpu_blas.json --out results/ws-amd/$DATE/sycl-cpu
@@ -33,6 +33,7 @@ sycl_cpu() {
         fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=cpu --out results/ws-amd/$DATE/sycl-cpu
         fnnbench sweep --plan plans/e6_sycl_ablations.json --select device=cpu --out results/ws-amd/$DATE/sycl-cpu-ablations
         fnnbench sweep --plan plans/w4_sweep_cpu.json --out results/ws-amd/$DATE/sycl-cpu-w4
+        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=cpu --select backend=syclnn --out results/ws-amd/$DATE/e7-tiled-cpu-dpcpp
         fnnbench peak --backend syclnn --device cpu --dtype float --size 4096 --option blas=mklcpu --out results/ws-amd/$DATE/peaks
         fnnbench peak --backend syclnn --device cpu --dtype double --size 4096 --option blas=mklcpu --out results/ws-amd/$DATE/peaks
         fnnbench peak --backend syclnn --device cpu --dtype float --size 4096 --option blas=netlib --out results/ws-amd/$DATE/peaks
@@ -44,7 +45,7 @@ sycl_generic() {
     $PODMAN -w /work/syclnn localhost/fnn-sycl-generic:dev bash -c "
         set -e; export CC=clang CXX=clang++ SYCLNN_TARGETS='spir64' SYCLNN_ONEMATH_ROOT=/opt/onemath-generic CMAKE_BUILD_PARALLEL_LEVEL=8
         pip install -q --no-deps --target /work/fnn-bench/.wheels/sycl-generic --config-settings=build-dir=/tmp/syclnn-build-generic . 2>&1 | grep -E 'error:' || true
-        pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/sycl-generic OMP_PROC_BIND=close OMP_PLACES=cores
         cd /work/fnn-bench
         fnnbench sweep --plan plans/e1_cpu_generic.json --out results/ws-amd/$DATE/sycl-cpu-generic
@@ -55,12 +56,15 @@ sycl_generic() {
 rocm_gpu() {
     log "RX 7900 XTX: syclnn (AdaptiveCpp + rocBLAS) and cudann (HIP + hipBLAS): E2 gpu, E3, E6 gpu, W4 gpu"
     distrobox enter fnn-rocm -- bash -c "
-        P=\$HOME/.local/opt/fnn-rocm; export PATH=\$P/venv/bin:\$PATH; cd $HERE
+        P=\$HOME/.local/opt/fnn-rocm; export PATH=\$P/venv/bin:\$PATH FNN_REF_CACHE=$HERE/.cache/ref; cd $HERE
         fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --out results/ws-amd/$DATE/sycl-gpu-acpp 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --out results/ws-amd/$DATE/gpu-cuda-vs-sycl 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/e6_sycl_ablations.json --select device=gpu --out results/ws-amd/$DATE/sycl-gpu-ablations 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/w4_sweep_gpu.json --out results/ws-amd/$DATE/gpu-w4-sycl 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/w4_sweep_gpu.json --backend cudann --out results/ws-amd/$DATE/gpu-w4-cuda 2>&1 | grep -v 'AdaptiveCpp Warning'
+        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=syclnn --out results/ws-amd/$DATE/e7-tiled-gpu 2>&1 | grep -v 'AdaptiveCpp Warning'
+        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=cudann --out results/ws-amd/$DATE/e7-tiled-gpu 2>&1 | grep -v 'AdaptiveCpp Warning'
+        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=cpu --select backend=syclnn --out results/ws-amd/$DATE/e7-tiled-cpu-acpp 2>&1 | grep -v 'AdaptiveCpp Warning'
         for be in syclnn cudann; do for dt in float double; do fnnbench peak --backend \$be --device gpu --dtype \$dt --size 8192 --out results/ws-amd/$DATE/peaks 2>&1 | grep -v Warning | tail -1; done; done
         # the AdaptiveCpp wheel on the CPU (SYCL implementation comparison, E7)
         fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=cpu --select dtype=float --out results/ws-amd/$DATE/sycl-cpu-acpp 2>&1 | grep -v 'AdaptiveCpp Warning'
@@ -70,13 +74,14 @@ rocm_gpu() {
 omp_cpu() {
     log "ompnn host path: gcc-14, clang-22, clang-18, gcc-14+MKL (fnn-cuda image): E4 cpu"
     $PODMAN -w /work/ompnn localhost/fnn-cuda:dev bash -c "
-        pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         for cfg in 'gcc14 g++-14 openblas /opt/openblas-openmp' 'clang22 clang++-22 openblas /opt/openblas-openmp' 'clang18 clang++-18 openblas /opt/openblas-openmp' 'gcc14mkl g++-14 mkl /opt/venv'; do
             set -- \$cfg
             export CXX=\$2 OMPNN_TARGET=cpu OMPNN_BLAS=\$3 OMPNN_BLAS_ROOT=\$4 CMAKE_BUILD_PARALLEL_LEVEL=8
             pip install -q --no-deps --target /work/fnn-bench/.wheels/omp-\$1 --config-settings=build-dir=/tmp/ompnn-\$1 . 2>&1 | grep -E 'error:' || true
             export PYTHONPATH=/work/fnn-bench/.wheels/omp-\$1 OMP_PROC_BIND=close OMP_PLACES=cores MKL_THREADING_LAYER=GNU
             (cd /work/fnn-bench && fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-amd/$DATE/omp-cpu-\$1 && fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-amd/$DATE/peaks-omp-\$1)
+            [ \$1 = gcc14 ] && (cd /work/fnn-bench && fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=cpu --select backend=ompnn --out results/ws-amd/$DATE/e7-tiled-omp-cpu-gcc14) || true
         done
     "
 }
@@ -84,10 +89,11 @@ omp_cpu() {
 omp_gpu() {
     log "ompnn target path on the RX 7900 XTX: amdclang++, gcc-14-offload-amdgcn: E4 gpu"
     distrobox enter fnn-rocm -- bash -c "
-        P=\$HOME/.local/opt/fnn-rocm; cd $HERE
+        P=\$HOME/.local/opt/fnn-rocm; export FNN_REF_CACHE=$HERE/.cache/ref; cd $HERE
         for v in venv-amdclang venv-gcc14amd; do
             export PATH=\$P/\$v/bin:\$PATH
             fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-amd/$DATE/omp-gpu-\${v#venv-}
+            fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-amd/$DATE/e7-tiled-omp-gpu-\${v#venv-}
             fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-amd/$DATE/peaks-omp-\${v#venv-}
         done
     "

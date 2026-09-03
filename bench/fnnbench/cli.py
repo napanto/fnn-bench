@@ -63,6 +63,8 @@ def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--mode", default="train", choices=["train", "infer"])
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--no-check", action="store_true", help="skip the numerical sanity check")
+    p.add_argument("--check-samples", type=int, default=8192,
+                   help="samples used by the first-epoch oracle check (0 = all; timing always uses all)")
     p.add_argument("--samples", type=int, default=None)
     p.add_argument("--layers", default=None, help="override layer sizes, e.g. 784,1024,10")
     p.add_argument("--tag", default="")
@@ -82,7 +84,7 @@ def _config_from_args(a: argparse.Namespace, **overrides) -> RunConfig:
     kw = dict(backend=a.backend, device=a.device, workload=getattr(a, "workload", "monk"), dtype=a.dtype,
               batch=getattr(a, "batch", None), epochs=a.epochs, repeat=a.repeat, warmup=a.warmup, mode=a.mode,
               options=_parse_options(getattr(a, "option", [])), threads=getattr(a, "threads", None), seed=a.seed,
-              check=not a.no_check, samples=a.samples,
+              check=not a.no_check, samples=a.samples, check_samples=getattr(a, "check_samples", 8192),
               layers=[int(x) for x in a.layers.split(",")] if a.layers else None, tag=a.tag)
     kw.update(overrides)
     return RunConfig(**kw)

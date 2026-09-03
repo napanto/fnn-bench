@@ -42,6 +42,16 @@ def _mpl():
     return plt
 
 
+METRIC = "steady"  # "steady": steady_epoch_s when the row has it, else median_epoch_s; "median": always the call-level number
+
+
+def _epoch_s(row: dict[str, Any]) -> float:
+    r = row["results"]
+    if METRIC == "steady" and r.get("steady_epoch_s"):
+        return float(r["steady_epoch_s"])
+    return float(r["median_epoch_s"])
+
+
 def _label(row: dict[str, Any]) -> str:
     dev = (row.get("device") or {}).get("name", "?")
     short = dev.split("(")[0].strip()
@@ -111,7 +121,7 @@ def plot_breakdown(plt, rows, out):
                 continue
             ax.bar(range(len(rs)), vals, bottom=bottom, label=ph, color=PHASE_COLOR[ph])
             bottom = [b + v for b, v in zip(bottom, vals)]
-        walls = [r["results"]["median_epoch_s"] * 1e3 for r in rs]
+        walls = [_epoch_s(r) * 1e3 for r in rs]
         ax.plot(range(len(rs)), walls, "k_", markersize=14, label="wall / epoch")
         ax.set_xticks(range(len(rs)))
         ax.set_xticklabels(labels, rotation=60, ha="right", fontsize=6)
@@ -161,7 +171,7 @@ def plot_ablation(plt, rows, out):
                 continue
             key = (_label(r), r["workload"], r["dtype"], r["batch"])
             opts = {k: v for k, v in r.get("options", {}).items() if k != "profile"}
-            groups[key][json.dumps(opts, sort_keys=True)] = r["results"]["median_epoch_s"]
+            groups[key][json.dumps(opts, sort_keys=True)] = _epoch_s(r)
         for key, variants in groups.items():
             base = variants.get("{}")
             if not base or len(variants) < 3:
@@ -187,7 +197,7 @@ def plot_compilers(plt, rows, out):
         if opts:
             continue
         col = f"{r['workload']}\n{r['dtype']} b={r['batch']}"
-        grid[_label(r)][col] = r["results"]["median_epoch_s"] * 1e3
+        grid[_label(r)][col] = _epoch_s(r) * 1e3
     if not grid:
         return
     cols = sorted({c for v in grid.values() for c in v})
@@ -219,7 +229,7 @@ def plot_precision(plt, rows, out):
         if r.get("threads") or r.get("mode", "train") != "train":
             continue
         opts = {k: v for k, v in r.get("options", {}).items() if k != "profile"}
-        pairs[(_label(r), r["workload"], r["batch"], json.dumps(opts, sort_keys=True))][r["dtype"]] = r["results"]["median_epoch_s"]
+        pairs[(_label(r), r["workload"], r["batch"], json.dumps(opts, sort_keys=True))][r["dtype"]] = _epoch_s(r)
     items = [(k, v) for k, v in pairs.items() if "float" in v and "double" in v]
     if not items:
         return
