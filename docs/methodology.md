@@ -166,6 +166,13 @@ as seen by the programming model" and uses the rocprof/nsys kernel sums as the
 "pure kernel" reference; the difference is the synchronisation/launch cost of
 each model.
 
+CPU: `scripts/perf-crosscheck.sh` attaches `perf record -e cpu-clock` (user
+space only, no root) to a profiled `fnnbench run` of syclnn (AdaptiveCpp
+host) and ompnn (amdclang++ host) and aggregates the samples by DSO class
+(BLAS library, the libraries' own kernels, OpenMP/SYCL runtime, Python);
+the shares are compared with the profiler's GEMM / element-wise / runtime
+split in `results/ws-amd/perf/`.
+
 ## Rigor checklist
 
 * warm-up + ≥ 3 repetitions, median + IQR, per-row system state;
