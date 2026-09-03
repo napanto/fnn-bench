@@ -107,6 +107,24 @@ FP64), which is the "float vs double" discussion point of the report.
 - One-time costs (BLAS handle creation, lazy module loading, gcc's PTX JIT)
   land in the first batch; every row discards `--warmup` epochs before timing.
 
+### Two per-epoch numbers
+
+Every row carries two per-epoch times:
+
+- `median_epoch_s`: wall time of one `train(X, Y, batch, epochs)` call divided
+  by `epochs`, median over `repeat` calls. It includes the dataset staging and
+  upload, the per-epoch loss read-back and every synchronisation: what a user
+  of the library pays. With few epochs per call the upload is a sizeable share
+  (about a third of the MNIST rows at 3 epochs on PCIe 4).
+- `steady_epoch_s`: median of the library's own per-epoch wall clocks
+  (`Profile.epoch_wall_ns`) over all timed calls, excluding the first epoch of
+  each call. The first epoch carries the asynchronous dataset upload and lazy
+  initialisation (BLAS handles, module loading, JIT); in CUDA-graph mode the
+  graphs are captured once, by the warm-up call, and replayed by every later
+  call of the same shape, so no capture is timed. This is the number used for
+  the programming-model comparison (E3, E4, E6); the call-level number is
+  reported next to it.
+
 ## Profiler cross-validation 
 
 `scripts/rocprof-crosscheck.sh` trains `mnist-512-256` (8 192 samples, batch
