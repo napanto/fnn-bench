@@ -2,11 +2,12 @@
 
     fnnbench run   --backend syclnn --device cpu --workload mnist --batch 256 --dtype float --epochs 5 --repeat 5 --out results/ws-amd/2026-09-03/
     fnnbench sweep --backend syclnn --device gpu --workload sweep-w1024-d4-b256,mnist --batch 64,256,1024 --dtype float,double --option blas=mklcpu,netlib --out ...
+    fnnbench sweep --backend syclnn --device cpu --workload mnist --threads 1,2,4,8,16,32 --out ...     # each thread count in a fresh process
     fnnbench sweep --plan plans/e1_cpu_blas.json --out ...
     fnnbench collect results/ -o results/all.csv
-    fnnbench replay results/ws-amd/2026-09-03/run.jsonl --id 0123abcd
+    fnnbench replay results/ws-amd/2026-09-03/syclnn.jsonl --id 0123abcd
     fnnbench sysinfo
-    fnnbench peak --backend syclnn --device gpu --dtype float
+    fnnbench peak --backend syclnn --device gpu --dtype float --size 8192
     fnnbench workloads
 """
 
@@ -16,6 +17,8 @@ import argparse
 import ast
 import itertools
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -23,14 +26,18 @@ from . import results, sysinfo
 from .runner import RunConfig, run
 
 
+def _literal(v: str):
+    try:
+        return ast.literal_eval(v)
+    except (ValueError, SyntaxError):
+        return v
+
+
 def _parse_options(items: list[str]) -> dict:
     out = {}
     for it in items or []:
         k, _, v = it.partition("=")
-        try:
-            out[k] = ast.literal_eval(v)
-        except (ValueError, SyntaxError):
-            out[k] = v
+        out[k] = _literal(v)
     return out
 
 
@@ -39,13 +46,7 @@ def _parse_option_grid(items: list[str]) -> list[dict]:
     axes = []
     for it in items or []:
         k, _, v = it.partition("=")
-        vals = []
-        for tok in v.split(","):
-            try:
-                vals.append(ast.literal_eval(tok))
-            except (ValueError, SyntaxError):
-                vals.append(tok)
-        axes.append([(k, x) for x in vals])
+        axes.append([(k, _literal(tok)) for tok in v.split(",")])
     if not axes:
         return [{}]
     return [dict(combo) for combo in itertools.product(*axes)]
@@ -59,7 +60,6 @@ def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--repeat", type=int, default=5)
     p.add_argument("--warmup", type=int, default=1)
     p.add_argument("--mode", default="train", choices=["train", "infer"])
-    p.add_argument("--threads", type=int, default=None, help="OMP_NUM_THREADS for CPU runs")
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--no-check", action="store_true", help="skip the numerical sanity check")
     p.add_argument("--samples", type=int, default=None)
@@ -77,53 +77,102 @@ def _out_path(out: str | None, backend: str) -> Path | None:
     return p / f"{backend}.jsonl"
 
 
+def _config_from_args(a: argparse.Namespace, **overrides) -> RunConfig:
+    kw = dict(backend=a.backend, device=a.device, workload=getattr(a, "workload", "monk"), dtype=a.dtype,
+              batch=getattr(a, "batch", None), epochs=a.epochs, repeat=a.repeat, warmup=a.warmup, mode=a.mode,
+              options=_parse_options(getattr(a, "option", [])), threads=getattr(a, "threads", None), seed=a.seed,
+              check=not a.no_check, samples=a.samples,
+              layers=[int(x) for x in a.layers.split(",")] if a.layers else None, tag=a.tag)
+    kw.update(overrides)
+    return RunConfig(**kw)
+
+
+def _thread_env(threads: int | None) -> dict[str, str]:
+    env = dict(os.environ)
+    if threads:
+        for k in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+            env[k] = str(threads)
+        env.setdefault("OMP_PROC_BIND", "close")
+        env.setdefault("OMP_PLACES", "cores")
+    return env
+
+
+def _run_in_subprocess(cfg: RunConfig, out: Path | None) -> int:
+    """Thread counts must be set before the OpenMP/BLAS runtimes initialise, so
+    each thread configuration runs in a fresh interpreter."""
+    payload = json.dumps({"cfg": cfg.__dict__, "out": str(out) if out else None})
+    cmd = [sys.executable, "-m", "fnnbench.cli", "_child", payload]
+    return subprocess.run(cmd, env=_thread_env(cfg.threads)).returncode
+
+
+def cmd_child(a: argparse.Namespace) -> int:
+    payload = json.loads(a.payload)
+    cfg = RunConfig(**payload["cfg"])
+    row = run(cfg, out=payload["out"])
+    return 0 if row["check"].get("ok", True) and row["results"]["losses_finite"] else 1
+
+
 def cmd_run(a: argparse.Namespace) -> int:
-    cfg = RunConfig(backend=a.backend, device=a.device, workload=a.workload, dtype=a.dtype, batch=a.batch,
-                    epochs=a.epochs, repeat=a.repeat, warmup=a.warmup, mode=a.mode, options=_parse_options(a.option),
-                    threads=a.threads, seed=a.seed, check=not a.no_check, samples=a.samples,
-                    layers=[int(x) for x in a.layers.split(",")] if a.layers else None, tag=a.tag)
-    row = run(cfg, out=_out_path(a.out, a.backend))
-    return 0 if row["check"].get("ok", True) else 1
+    cfg = _config_from_args(a)
+    cfg.threads = a.threads
+    out = _out_path(a.out, a.backend)
+    if cfg.threads:
+        return _run_in_subprocess(cfg, out)
+    row = run(cfg, out=out)
+    return 0 if row["check"].get("ok", True) and row["results"]["losses_finite"] else 1
+
+
+def _plan_configs(plan_path: str) -> list[RunConfig]:
+    plan = json.loads(Path(plan_path).read_text())
+    configs = []
+    for entry in plan["runs"]:
+        base = dict(plan.get("defaults", {}))
+        base.update(entry)
+        configs.append(RunConfig(**base))
+    return configs
 
 
 def cmd_sweep(a: argparse.Namespace) -> int:
-    configs: list[RunConfig] = []
     if a.plan:
-        plan = json.loads(Path(a.plan).read_text())
-        for entry in plan["runs"]:
-            base = dict(plan.get("defaults", {}))
-            base.update(entry)
-            configs.append(RunConfig(**base))
+        configs = _plan_configs(a.plan)
     else:
         workloads = a.workload.split(",")
         batches = [int(b) for b in a.batch.split(",")] if a.batch else [None]
         dtypes = a.dtype.split(",")
         threads = [int(t) for t in a.threads.split(",")] if a.threads else [None]
-        for wl_, b, dt, th, opts in itertools.product(workloads, batches, dtypes, threads, _parse_option_grid(a.option)):
-            configs.append(RunConfig(backend=a.backend, device=a.device, workload=wl_, dtype=dt, batch=b,
-                                     epochs=a.epochs, repeat=a.repeat, warmup=a.warmup, mode=a.mode, options=opts,
-                                     threads=th, seed=a.seed, check=not a.no_check, samples=a.samples,
-                                     layers=[int(x) for x in a.layers.split(",")] if a.layers else None, tag=a.tag))
-    out = _out_path(a.out, a.backend)
-    done = set()
-    if out and out.exists() and not a.rerun:
-        done = {r["id"] for r in results.read([out])}
+        configs = [
+            _config_from_args(a, workload=wl_, batch=b, dtype=dt, threads=th, options=opts)
+            for wl_, b, dt, th, opts in itertools.product(workloads, batches, dtypes, threads, _parse_option_grid(a.option))
+        ]
+    done: dict[Path, set[str]] = {}
     failures = 0
-    print(f"{len(configs)} configurations, {len(done)} already in {out}" if out else f"{len(configs)} configurations")
+    print(f"{len(configs)} configurations")
     for i, cfg in enumerate(configs, 1):
-        rid = results.run_id(cfg.key())
-        if rid in done:
-            continue
-        print(f"[{i}/{len(configs)}] ", end="")
+        out = _out_path(a.out, cfg.backend)
+        if out and out not in done:
+            done[out] = {r["id"] for r in results.read([out]) if "results" in r} if out.exists() else set()
         try:
-            row = run(cfg, out=out)
-            failures += 0 if row["check"].get("ok", True) else 1
-        except Exception as exc:  # a failing configuration is a result too
+            rid = results.run_id(cfg.effective())
+        except Exception as exc:
+            print(f"[{i}/{len(configs)}] cannot resolve {cfg.workload}: {exc}")
+            failures += 1
+            continue
+        if out and rid in done[out] and not a.rerun:
+            continue
+        print(f"[{i}/{len(configs)}] ", end="", flush=True)
+        try:
+            if cfg.threads:
+                rc = _run_in_subprocess(cfg, out)
+                failures += 1 if rc else 0
+            else:
+                row = run(cfg, out=out)
+                failures += 0 if (row["check"].get("ok", True) and row["results"]["losses_finite"]) else 1
+        except Exception as exc:  # a failing configuration is a result too (never marked done)
             print(f"{cfg.backend} {cfg.workload} b={cfg.batch} {cfg.dtype} {cfg.options}: ERROR {exc}")
             if out:
                 results.append(out, {"id": rid, "error": str(exc), "backend": cfg.backend, "workload": cfg.workload,
                                      "dtype": cfg.dtype, "batch": cfg.batch, "options": cfg.options,
-                                     "timestamp": sysinfo.collect()["timestamp"]})
+                                     "threads": cfg.threads, "timestamp": sysinfo.collect()["timestamp"]})
             failures += 1
             if a.fail_fast:
                 return 1
@@ -138,16 +187,24 @@ def cmd_collect(a: argparse.Namespace) -> int:
 
 
 def cmd_replay(a: argparse.Namespace) -> int:
+    n = 0
     for row in results.read([a.path]):
         if a.id and row.get("id") != a.id:
             continue
         if "results" not in row:
             continue
-        cfg = RunConfig(backend=row["backend"], device=a.device or row.get("device", {}).get("name"), workload=row["workload"],
+        cfg = RunConfig(backend=row["backend"], device=a.device or row.get("device_selector"), workload=row["workload"],
                         dtype=row["dtype"], batch=row["batch"], epochs=row["epochs"], repeat=row["repeat"],
                         warmup=row.get("warmup", 1), mode=row.get("mode", "train"), options=row.get("options", {}),
-                        threads=row.get("threads"), seed=row.get("seed", 1), layers=row.get("layers"))
-        run(cfg, out=_out_path(a.out, row["backend"]) if a.out else None)
+                        threads=row.get("threads"), seed=row.get("seed", 1), samples=row.get("samples_override"),
+                        layers=None, tag=row.get("tag", ""))
+        out = _out_path(a.out, row["backend"]) if a.out else None
+        if cfg.threads:
+            _run_in_subprocess(cfg, out)
+        else:
+            run(cfg, out=out)
+        n += 1
+    print(f"replayed {n} rows")
     return 0
 
 
@@ -182,6 +239,7 @@ def main(argv: list[str] | None = None) -> int:
     _add_common(r)
     r.add_argument("--workload", default="monk")
     r.add_argument("--batch", type=int, default=None)
+    r.add_argument("--threads", type=int, default=None, help="OMP/MKL/OpenBLAS threads (runs in a fresh process)")
     r.add_argument("--option", action="append", default=[], metavar="KEY=VALUE")
     r.set_defaults(func=cmd_run)
 
@@ -189,6 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     _add_common(s)
     s.add_argument("--workload", default="monk", help="comma-separated")
     s.add_argument("--batch", default=None, help="comma-separated")
+    s.add_argument("--threads", default=None, help="comma-separated thread counts (each in a fresh process)")
     s.add_argument("--option", action="append", default=[], metavar="KEY=V1,V2")
     s.add_argument("--plan", default=None, help="JSON plan {defaults:{...}, runs:[{...}]}")
     s.add_argument("--rerun", action="store_true", help="repeat configurations already present in --out")
@@ -217,10 +276,14 @@ def main(argv: list[str] | None = None) -> int:
     pk.add_argument("--backend", default="syclnn")
     pk.add_argument("--device", default=None)
     pk.add_argument("--dtype", default="float")
-    pk.add_argument("--size", type=int, default=4096)
+    pk.add_argument("--size", type=int, default=4096, help="n of the n x n x n GEMM (use 8192 on GPUs)")
     pk.add_argument("--option", action="append", default=[], metavar="KEY=VALUE")
     pk.add_argument("--out", default=None)
     pk.set_defaults(func=cmd_peak)
+
+    ch = sub.add_parser("_child", help=argparse.SUPPRESS)
+    ch.add_argument("payload")
+    ch.set_defaults(func=cmd_child)
 
     a = p.parse_args(argv)
     return a.func(a)

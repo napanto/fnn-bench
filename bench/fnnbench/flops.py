@@ -99,3 +99,14 @@ def step_intensity(sizes: Sequence[int], batch: int, itemsize: int) -> float:
         flops += 2.0 * n_out * n_in * batch  # weight gradient
         byts += gemm_bytes(n_out, n_in, batch, itemsize)
     return flops / byts
+
+
+def inference_intensity(sizes: Sequence[int], batch: int, itemsize: int) -> float:
+    """Aggregate arithmetic intensity of the forward GEMMs only (inference rows)."""
+    flops = 0.0
+    byts = 0
+    for i in range(len(sizes) - 1):
+        n_in, n_out = sizes[i], sizes[i + 1]
+        flops += 2.0 * n_out * batch * n_in
+        byts += gemm_bytes(n_out, batch, n_in, itemsize)
+    return flops / byts

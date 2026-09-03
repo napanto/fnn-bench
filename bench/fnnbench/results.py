@@ -72,10 +72,19 @@ def flatten(row: dict[str, Any]) -> dict[str, Any]:
         "epochs": row.get("epochs"),
         "mode": row.get("mode"),
         "threads": row.get("threads"),
+        "threads_effective": row.get("threads_effective"),
+        "n_samples": row.get("n_samples"),
+        "seed": row.get("seed"),
         "options": dumps(row.get("options", {})),
+        "driver": (row.get("device") or {}).get("driver"),
+        "git_bench": ((row.get("sysinfo") or {}).get("git", {}).get("fnn-bench") or {}).get("sha"),
+        "git_lib": (row.get("build_info") or {}).get("git_sha"),
         "median_epoch_s": r.get("median_epoch_s"),
         "iqr_epoch_s": r.get("iqr_epoch_s"),
         "samples_per_s": r.get("samples_per_s"),
+        "steps_per_s": r.get("steps_per_s"),
+        "intensity": r.get("intensity_flop_per_byte"),
+        "losses_finite": r.get("losses_finite"),
         "gflops_gemm": r.get("gflops_gemm"),
         "gflops_total": r.get("gflops_total"),
         "check_ok": (row.get("check") or {}).get("ok"),
@@ -85,6 +94,8 @@ def flatten(row: dict[str, Any]) -> dict[str, Any]:
             flat[f"prof_{k[:-3]}_ms"] = v / 1e6 if isinstance(v, (int, float)) else None
         elif k in ("launches", "batches", "epochs", "unprofiled", "bytes_h2d", "bytes_d2h"):
             flat[f"prof_{k}"] = v
+    for k, v in (r.get("profile_per_epoch_ms") or {}).items():
+        flat[f"epoch_{k[:-3]}_ms"] = v
     return flat
 
 
