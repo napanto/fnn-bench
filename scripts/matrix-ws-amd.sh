@@ -23,7 +23,7 @@ log() { printf '\n==== [%s] %s\n' "$(date +%T)" "$*"; }
 sycl_cpu() {
     log "syclnn on opencl:cpu (DPC++, MKLCPU + NETLIB): E1, E2/E6 cpu rows, W4 cpu"
     $PODMAN -w /work/syclnn localhost/fnn-sycl:dev bash -c "
-        set -e; export SYCLNN_TARGETS='spir64;nvidia_gpu_sm_61;nvidia_gpu_sm_80' SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=8
+        set -e; export CC=clang CXX=clang++ SYCLNN_TARGETS='spir64;nvidia_gpu_sm_61;nvidia_gpu_sm_80' SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=8
         pip install -q --no-deps --target /work/fnn-bench/.wheels/sycl-dpcpp --config-settings=build-dir=/tmp/syclnn-build . 2>&1 | grep -E 'error:' || true
         pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/sycl-dpcpp OMP_PROC_BIND=close OMP_PLACES=cores
@@ -42,7 +42,7 @@ sycl_cpu() {
 sycl_generic() {
     log "syclnn on opencl:cpu with the generic SYCL BLAS backend: E1"
     $PODMAN -w /work/syclnn localhost/fnn-sycl-generic:dev bash -c "
-        set -e; export SYCLNN_TARGETS='spir64' SYCLNN_ONEMATH_ROOT=/opt/onemath-generic CMAKE_BUILD_PARALLEL_LEVEL=8
+        set -e; export CC=clang CXX=clang++ SYCLNN_TARGETS='spir64' SYCLNN_ONEMATH_ROOT=/opt/onemath-generic CMAKE_BUILD_PARALLEL_LEVEL=8
         pip install -q --no-deps --target /work/fnn-bench/.wheels/sycl-generic --config-settings=build-dir=/tmp/syclnn-build-generic . 2>&1 | grep -E 'error:' || true
         pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/sycl-generic OMP_PROC_BIND=close OMP_PLACES=cores
