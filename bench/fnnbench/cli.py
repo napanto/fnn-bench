@@ -149,7 +149,15 @@ def _selected(cfg: RunConfig, selects: list[str]) -> bool:
 def cmd_sweep(a: argparse.Namespace) -> int:
     if a.plan:
         configs = [c for c in _plan_configs(a.plan) if _selected(c, a.select)]
+        # explicit --backend / --device override every plan entry (e.g. run the W4 plan,
+        # written for syclnn, with cudann)
+        for c in configs:
+            if a.backend:
+                c.backend = a.backend
+            if a.device:
+                c.device = a.device
     else:
+        a.backend = a.backend or "syclnn"
         workloads = a.workload.split(",")
         batches = [int(b) for b in a.batch.split(",")] if a.batch else [None]
         dtypes = a.dtype.split(",")
@@ -274,7 +282,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="keep only plan entries whose field/option matches (e.g. device=cpu, backend=cudann)")
     s.add_argument("--rerun", action="store_true", help="repeat configurations already present in --out")
     s.add_argument("--fail-fast", action="store_true")
-    s.set_defaults(func=cmd_sweep)
+    s.set_defaults(func=cmd_sweep, backend=None)  # no default backend: plan entries carry their own
 
     c = sub.add_parser("collect", help="merge JSONL files into one CSV")
     c.add_argument("paths", nargs="+")
