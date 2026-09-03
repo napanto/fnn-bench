@@ -32,7 +32,12 @@ distrobox enter fnn-rocm -- bash -lc "
     cd $AC/ompnn; for v in venv-amdclang venv-gcc14amd; do for a in '--option blas=tiled --dtype double' '--option blas=tiled --dtype float'; do printf 'ompnn %-14s gpu %-34s ' \$v \"\$a\" | tee -a \$out; \$P/\$v/bin/python -m pytest -q --device gpu -p no:cacheprovider \$a 2>&1 | grep -E 'passed|failed|rror' | head -1 | tee -a \$out; done; done
 " 2>&1 | grep -v 'AdaptiveCpp Warning'
 
-log "supersede rows measured with the older harness"
+log "supersede rows measured with the older harness, and every E7 row (measured with the pre-fix tiled kernels)"
+for f in "$HERE"/results/ws-amd/"$DATE"/e7-tiled-*/*.jsonl; do
+    [ -f "$f" ] || continue
+    [ "$(basename "$f")" = superseded.jsonl ] && continue
+    cat "$f" >> "$(dirname "$f")/superseded.jsonl" && rm "$f" && echo "  superseded $f"
+done
 python3 "$HERE/scripts/supersede-stale.py" "$HERE/results/ws-amd/$DATE"
 
 log "second matrix pass"
