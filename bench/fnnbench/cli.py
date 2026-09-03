@@ -5,6 +5,7 @@
     fnnbench sweep --backend syclnn --device cpu --workload mnist --threads 1,2,4,8,16,32 --out ...     # each thread count in a fresh process
     fnnbench sweep --plan plans/e1_cpu_blas.json --out ...
     fnnbench collect results/ -o results/all.csv
+    fnnbench plot results/ws-amd/2026-09-03 -o analysis/figures
     fnnbench replay results/ws-amd/2026-09-03/syclnn.jsonl --id 0123abcd
     fnnbench sysinfo
     fnnbench peak --backend syclnn --device gpu --dtype float --size 8192
@@ -219,6 +220,12 @@ def cmd_replay(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_plot(a: argparse.Namespace) -> int:
+    from .plot import plot_all
+
+    return plot_all(a.paths, a.output)
+
+
 def cmd_sysinfo(a: argparse.Namespace) -> int:
     print(json.dumps(sysinfo.collect(), indent=2))
     return 0
@@ -281,6 +288,11 @@ def main(argv: list[str] | None = None) -> int:
 
     si = sub.add_parser("sysinfo")
     si.set_defaults(func=cmd_sysinfo)
+
+    pl = sub.add_parser("plot", help="standard figures from JSONL results (needs matplotlib)")
+    pl.add_argument("paths", nargs="+")
+    pl.add_argument("-o", "--output", default="analysis/figures")
+    pl.set_defaults(func=cmd_plot)
 
     w = sub.add_parser("workloads")
     w.set_defaults(func=cmd_workloads)

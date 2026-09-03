@@ -22,8 +22,8 @@ Every workload runs in `float` and `double`. Definitions: `testkit/fnn_testkit/w
 1. the network is built from fixed initial weights (seeded NumPy RNG, uniform in
    ±0.1) through the same adapter the parity tests use;
 2. **numerical check** before anything is timed: the untrained forward pass on
-   256 samples must match the float64 oracle at the parity tolerance (2e-4
-   relative for float, 1e-9 for double) and the first-epoch loss must match the
+   256 samples must match the float64 oracle at the parity tolerance (2e-4 for
+   float, 1e-9 for double, relative to the largest output) and the first-epoch loss must match the
    oracle's within 5e-2 (float; training is chaotic in the summation order) /
    1e-6 (double). A run that computes the wrong thing is stored with
    `check.ok = false` and never enters a figure;
