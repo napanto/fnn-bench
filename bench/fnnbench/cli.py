@@ -132,9 +132,20 @@ def _plan_configs(plan_path: str) -> list[RunConfig]:
     return configs
 
 
+def _selected(cfg: RunConfig, selects: list[str]) -> bool:
+    """--select key=v1,v2 keeps the configurations whose field matches one value."""
+    for it in selects or []:
+        k, _, v = it.partition("=")
+        wanted = {_literal(tok) for tok in v.split(",")}
+        actual = cfg.options.get(k) if k not in cfg.__dict__ else getattr(cfg, k)
+        if actual not in wanted and str(actual) not in {str(w) for w in wanted}:
+            return False
+    return True
+
+
 def cmd_sweep(a: argparse.Namespace) -> int:
     if a.plan:
-        configs = _plan_configs(a.plan)
+        configs = [c for c in _plan_configs(a.plan) if _selected(c, a.select)]
     else:
         workloads = a.workload.split(",")
         batches = [int(b) for b in a.batch.split(",")] if a.batch else [None]
@@ -250,6 +261,8 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--threads", default=None, help="comma-separated thread counts (each in a fresh process)")
     s.add_argument("--option", action="append", default=[], metavar="KEY=V1,V2")
     s.add_argument("--plan", default=None, help="JSON plan {defaults:{...}, runs:[{...}]}")
+    s.add_argument("--select", action="append", default=[], metavar="KEY=V1,V2",
+                   help="keep only plan entries whose field/option matches (e.g. device=cpu, backend=cudann)")
     s.add_argument("--rerun", action="store_true", help="repeat configurations already present in --out")
     s.add_argument("--fail-fast", action="store_true")
     s.set_defaults(func=cmd_sweep)

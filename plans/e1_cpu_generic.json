@@ -1,0 +1,175 @@
+{
+ "note": "E1: SYCL on the CPU with the generic SYCL BLAS backend (fnn-sycl-generic image)",
+ "defaults": {
+  "backend": "syclnn",
+  "device": "cpu",
+  "epochs": 5,
+  "repeat": 5
+ },
+ "runs": [
+  {
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "generic",
+    "profile": true
+   }
+  }
+ ]
+}

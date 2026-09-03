@@ -22,13 +22,14 @@ def test_remainder_batch(make_net, make_ref, tol, rng):
     assert_close(got, exp, tol)
 
 
-def test_batch_size_larger_than_dataset_is_clamped(make_net, rng):
+def test_batch_size_larger_than_dataset_is_clamped(make_net, dtype, rng):
     spec = mlp([2, 3, 1], learning_rate=0.2)
     Ws, bs = random_params(spec, rng)
     X, T = _data(rng, 5)
     a = make_net(spec, initial_weights=Ws, initial_biases=bs).train(X, T, 5, 2)
     b = make_net(spec, initial_weights=Ws, initial_biases=bs).train(X, T, 1000, 2)
-    assert_close(a, b, Tolerance(0, 0))
+    # multithreaded BLAS is not bitwise reproducible run to run
+    assert_close(a, b, Tolerance(1e-12, 1e-14) if dtype == "double" else Tolerance(1e-6, 1e-7))
 
 
 def test_invalid_arguments_raise(make_net, rng):

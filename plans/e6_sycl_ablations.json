@@ -1,0 +1,1148 @@
+{
+ "note": "E6: syclnn 0.2 optimisations switched back one at a time (last entry = all 0.1 behaviour)",
+ "defaults": {
+  "backend": "syclnn"
+ },
+ "runs": [
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "loss_reduction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "loss_reduction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "loss_reduction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "bias_gemv": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "bias_gemv": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "bias_gemv": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "direct_input": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "direct_input": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "direct_input": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "join_kernels": true,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "join_kernels": true,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "join_kernels": true,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "queue": "in_order",
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "queue": "in_order",
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "queue": "in_order",
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "specialized_kernels": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "specialized_kernels": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "specialized_kernels": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "derivative_from_output": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "derivative_from_output": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "derivative_from_output": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "host_adam_correction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "host_adam_correction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "host_adam_correction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "workgroup_size": 256,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "workgroup_size": 256,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "workgroup_size": 256,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "persistent_workspace": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "persistent_workspace": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "persistent_workspace": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "loss_reduction": false,
+    "bias_gemv": false,
+    "direct_input": false,
+    "fine_deps": false,
+    "join_kernels": true,
+    "specialized_kernels": false,
+    "derivative_from_output": false,
+    "host_adam_correction": false,
+    "persistent_workspace": false,
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "loss_reduction": false,
+    "bias_gemv": false,
+    "direct_input": false,
+    "fine_deps": false,
+    "join_kernels": true,
+    "specialized_kernels": false,
+    "derivative_from_output": false,
+    "host_adam_correction": false,
+    "persistent_workspace": false,
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "loss_reduction": false,
+    "bias_gemv": false,
+    "direct_input": false,
+    "fine_deps": false,
+    "join_kernels": true,
+    "specialized_kernels": false,
+    "derivative_from_output": false,
+    "host_adam_correction": false,
+    "persistent_workspace": false,
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "loss_reduction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "loss_reduction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "loss_reduction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "bias_gemv": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "bias_gemv": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "bias_gemv": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "direct_input": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "direct_input": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "direct_input": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "join_kernels": true,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "join_kernels": true,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "fine_deps": false,
+    "join_kernels": true,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "queue": "in_order",
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "queue": "in_order",
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "queue": "in_order",
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "specialized_kernels": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "specialized_kernels": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "specialized_kernels": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "derivative_from_output": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "derivative_from_output": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "derivative_from_output": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "host_adam_correction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "host_adam_correction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "host_adam_correction": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "workgroup_size": 256,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "workgroup_size": 256,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "workgroup_size": 256,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "persistent_workspace": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "persistent_workspace": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "persistent_workspace": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "loss_reduction": false,
+    "bias_gemv": false,
+    "direct_input": false,
+    "fine_deps": false,
+    "join_kernels": true,
+    "specialized_kernels": false,
+    "derivative_from_output": false,
+    "host_adam_correction": false,
+    "persistent_workspace": false,
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "loss_reduction": false,
+    "bias_gemv": false,
+    "direct_input": false,
+    "fine_deps": false,
+    "join_kernels": true,
+    "specialized_kernels": false,
+    "derivative_from_output": false,
+    "host_adam_correction": false,
+    "persistent_workspace": false,
+    "pinned_host": false,
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "memory": "shared",
+    "loss_reduction": false,
+    "bias_gemv": false,
+    "direct_input": false,
+    "fine_deps": false,
+    "join_kernels": true,
+    "specialized_kernels": false,
+    "derivative_from_output": false,
+    "host_adam_correction": false,
+    "persistent_workspace": false,
+    "pinned_host": false,
+    "profile": true
+   }
+  }
+ ]
+}

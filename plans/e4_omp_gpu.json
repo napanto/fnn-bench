@@ -1,0 +1,208 @@
+{
+ "note": "E4: OpenMP target path per compiler (run once per compiler venv)",
+ "defaults": {
+  "backend": "ompnn"
+ },
+ "runs": [
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "omp",
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "omp",
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "omp",
+    "profile": true
+   }
+  }
+ ]
+}

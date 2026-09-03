@@ -1,0 +1,153 @@
+{
+ "note": "E1: CPU thread scaling of the two BLAS backends",
+ "defaults": {
+  "backend": "syclnn",
+  "device": "cpu"
+ },
+ "runs": [
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 1,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 2,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 4,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 8,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 16,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 32,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 1,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 2,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 4,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 8,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 16,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "threads": 32,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  }
+ ]
+}

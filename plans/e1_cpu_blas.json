@@ -1,0 +1,339 @@
+{
+ "note": "E1: SYCL on the CPU with the MKLCPU and NETLIB/OpenBLAS oneMath backends (DPC++ image)",
+ "defaults": {
+  "backend": "syclnn",
+  "device": "cpu",
+  "epochs": 5,
+  "repeat": 5
+ },
+ "runs": [
+  {
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "mklcpu",
+    "profile": true
+   }
+  },
+  {
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  },
+  {
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas": "netlib",
+    "profile": true
+   }
+  }
+ ]
+}
