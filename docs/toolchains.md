@@ -80,7 +80,12 @@ All three libraries carry the same 16x16 tiled GEMM (SYCL `nd_range` + local
 memory, CUDA shared memory, OpenMP `target teams` with team-shared tiles), a
 one-work-item-per-row GEMV and reductions for asum/nrm2, selectable with
 `Options.blas = "tiled"`; ompnn also keeps the naive `blas="omp"` loop.
-Validation status is recorded in the results (`blas` column = `tiled`).
+Validated on 2026-09-03 with the parity suites: syclnn (AdaptiveCpp on the
+RX 7900 XTX and on the CPU, DPC++ on `opencl:cpu`), cudann (hipcc/gfx1100,
+also with `queue=graph`, `streams=4`, `memory=shared`), ompnn (amdclang++ and
+gcc-14 amdgcn on the GPU; gcc-14, clang-18, clang-22, gcc-14+MKL, amdclang++
+on the host). gcc's offload gives a team 16 wavefronts, not 256 threads, so
+the OpenMP kernel has a strided variant for `omp_get_num_threads() < 256`.
 
 ## Facts worth remembering
 
