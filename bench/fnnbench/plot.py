@@ -67,11 +67,17 @@ def _label(row: dict[str, Any]) -> str:
     return f"{row['backend']}/{comp}/{blas} @ {short}"
 
 
+def _opt_label(opts_json: str) -> str:
+    """'{"memory": "shared", "streams": 4}' -> 'memory=shared, streams=4'"""
+    d = json.loads(opts_json)
+    return ", ".join(f"{k}={str(v).lower() if isinstance(v, bool) else v}" for k, v in d.items()) or "default"
+
+
 def _save(plt, fig, out: Path, name: str) -> None:
     out.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
-    fig.savefig(out / f"{name}.png")
-    fig.savefig(out / f"{name}.pdf")
+    fig.savefig(out / f"{name}.png", bbox_inches="tight")
+    fig.savefig(out / f"{name}.pdf", bbox_inches="tight")
     plt.close(fig)
     print(f"  {out / name}.png")
 
@@ -182,7 +188,7 @@ def plot_ablation(plt, rows, out):
             ax.bar(range(len(names)), rel, color=BACKEND_COLOR[backend])
             ax.axhline(1.0, color="k", lw=0.8)
             ax.set_xticks(range(len(names)))
-            ax.set_xticklabels([n.replace('"', "") for n in names], rotation=60, ha="right", fontsize=6)
+            ax.set_xticklabels([_opt_label(n) for n in names], rotation=45, ha="right", fontsize=7)
             ax.set_ylabel("epoch time / default")
             ax.set_title(f"{backend} ablations - {key[1]} ({key[2]}, b={key[3]}) on {key[0].split('@')[1].strip()}")
             _save(plt, fig, out, f"ablation-{backend}-{key[1]}-{key[2]}-{key[0].split('@')[1].strip().replace(' ', '')}")
