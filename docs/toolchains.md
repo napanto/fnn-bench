@@ -13,7 +13,7 @@ Last update: 2026-09-03.
 |---|---|---|---|
 | `localhost/fnn-cuda:dev` (→ `ghcr.io/napanto/fnn-cuda`) | ubuntu 24.04 | CUDA 12.9 (nvcc 12.9.86, cuBLAS, NVTX, CUPTI, Nsight Systems 2025.1.3), gcc-13 (nvcc host), gcc-14 + `gcc-14-offload-nvptx` + `gcc-14-offload-amdgcn`, clang-22 (apt.llvm.org, host OpenMP only), clang-18 (Ubuntu) with `libomptarget` nvptx/amdgpu device runtimes, OpenBLAS 0.3.26 (openmp + pthread), Intel oneMKL 2026.1 from PyPI (`mkl`, `mkl-devel`, `onemkl-sycl-blas`, `onemkl-sycl-include`, `tbb-devel`), Python 3.12 venv (numpy 2.5.2, pytest 9.1, pybind11 3.1.0, scikit-build-core 1.0.3) | 2026-09-03 on ws-amd, 7.6 GB |
 | `localhost/fnn-sycl:dev` (→ `ghcr.io/napanto/fnn-sycl`) | fnn-cuda | intel/llvm **v7.1.0** `sycl_linux.tar.gz` (clang 22.1, libsycl 9; adapters: opencl, level_zero, **cuda**), Intel OpenCL CPU runtime **oclcpuexp 2026-WW28** (`sycl-ls` → `[opencl:cpu] AMD Ryzen Threadripper 2950X`), oneMath **v0.9** in `/opt/onemath` (MKLCPU + NETLIB/OpenBLAS + cuBLAS); `CC=clang CXX=clang++` | 2026-09-03 |
-| `localhost/fnn-sycl-generic:dev` | fnn-sycl | + oneMath v0.9 with the generic SYCL BLAS backend in `/opt/onemath-generic` (INTEL_CPU tuning = `spir64_x86_64` AOT) | building in the background (hours) |
+| `localhost/fnn-sycl-generic:dev` | fnn-sycl | + oneMath v0.9 with the generic SYCL BLAS backend in `/opt/onemath-generic` (INTEL_CPU tuning = `spir64_x86_64` AOT, ~2 h at -j8) | 2026-09-03 |
 | `fnn-rocm` distrobox (ws-amd) | `localhost/rocm-pytorch-distrobox` = Ubuntu 24.04 + ROCm 7.2.4 | hipcc, amdclang++ 22 (ROCm), rocBLAS 5.2 / hipBLAS 3.2, rocprofv3, gcc-13/14 + `gcc-14-offload-amdgcn`, clang-18 + libomp-18 (`libomptarget-amdgpu-gfx1100.bc`), OpenBLAS; `~/.local/opt/fnn-rocm/`: **AdaptiveCpp 25.10.0** (LLVM 18, SSCP `generic` target, ROCm + OpenMP backends), oneMath v0.9 (rocBLAS + NETLIB), Python venv | 2026-09-03, `scripts/rocm-toolchain.sh` |
 
 Build-safety: every image build runs with `podman build --memory=20g`, every
@@ -27,7 +27,7 @@ compile with `-j8` (`CMAKE_BUILD_PARALLEL_LEVEL=8`).
 | AdaptiveCpp 25.10 (generic/SSCP) | ws-amd RX 7900 XTX (gfx1100, HIP) | rocBLAS 5.2 | **OK** double + float, ablations OK | `memory=host` (zero-copy host USM): 20/118 tests fail with stale reads → not supported on this platform, kept as a result |
 | intel/llvm v7.1.0 (DPC++, `-fsycl-targets=spir64,nvidia_gpu_sm_61,nvidia_gpu_sm_80`) | ws-amd CPU (`opencl:cpu`, oclcpuexp 2026-WW28) | MKLCPU 2026.1 (SYCL API, PyPI) | **OK** double + float (`blas=mklcpu` and `auto`) | MKLCPU works with the open-source DPC++ (libsycl 9 ABI = oneAPI 2026.1) |
 | intel/llvm v7.1.0 (DPC++) | ws-amd CPU (`opencl:cpu`) | NETLIB (OpenBLAS 0.3.26 openmp) | **OK** double + float (`blas=netlib`) | |
-| intel/llvm v7.1.0 (DPC++) | ws-amd CPU (`opencl:cpu`) | generic SYCL BLAS | pending `fnn-sycl-generic` image (CPU AOT build takes hours) | |
+| intel/llvm v7.1.0 (DPC++) | ws-amd CPU (`opencl:cpu`) | generic SYCL BLAS (oneMath `/opt/onemath-generic`, INTEL_CPU tuning) | **OK** double + float (`blas=generic` and `auto`) | separate wheel/venv: the backend is exclusive in oneMath |
 | intel/llvm v7.1.0 (DPC++) | ws-nvidia GTX 1080 Ti (`cuda:gpu`, sm_61, CUDA 12.9) | cuBLAS | pending | |
 | intel/llvm v7.1.0 (DPC++) | dept. A30 (sm_80) | cuBLAS | the department runs | |
 
@@ -42,7 +42,7 @@ sequentially, or give each run its own `ACPP_APPDB_DIR`.
 |---|---|---|---|
 | nvcc 12.9 | ws-nvidia 1080 Ti (sm_61) | Phase 2 | |
 | nvcc 12.9 / 13.x | dept. A30 (sm_80) | the department runs | |
-| hipcc (HIPify) | ws-amd 7900 XTX | Phase 2 (local validation of the CUDA code path) | |
+| hipcc 7.2.4 (`CUDANN_HIP=ON`: hipify-perl + hipBLAS 3.2) | ws-amd 7900 XTX (gfx1100) | **OK** double + float; `memory=device/shared/host`, `queue=in_order/out_of_order/graph`, `streams=1/8`, every kernel ablation | graph mode captures from one stream on HIP (multi-stream fork/join capture segfaults in ROCm 7.2); `memory=host` (mapped zero-copy) works here, unlike SYCL host USM through AdaptiveCpp |
 
 ## ompnn (OpenMP)
 

@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 ENV_KEYS_PREFIXES = ("OMP_", "ONEAPI_", "SYCL_", "ACPP_", "HIP_", "CUDA_", "ROCR_", "HSA_", "MKL_", "OPENBLAS_",
-                     "GOMP_", "KMP_", "LIBOMPTARGET", "FNN_", "NUMA")
+                     "GOMP_", "KMP_", "LIBOMPTARGET", "FNN_", "NVIDIA_", "NVCOMPILER_")
 
 
 def _run(cmd: list[str], timeout: float = 10) -> str | None:
@@ -61,7 +61,7 @@ def cpu_info() -> dict[str, Any]:
 
 def gpu_info() -> dict[str, Any]:
     out: dict[str, Any] = {}
-    nv = _run(["nvidia-smi", "--query-gpu=name,driver_version,memory.total,clocks.max.sm,clocks.max.mem,clocks.sm,clocks.mem,power.limit",
+    nv = _run(["nvidia-smi", "--query-gpu=name,driver_version,memory.total,clocks.max.sm,clocks.max.mem,clocks.sm,clocks.mem,power.limit,pstate,clocks_throttle_reasons.active",
                "--format=csv,noheader"])
     if nv:
         out["nvidia"] = [line.strip() for line in nv.strip().splitlines()]
@@ -79,8 +79,13 @@ def container_info() -> dict[str, Any]:
     for key in ("FNN_IMAGE", "FNN_IMAGE_DIGEST", "container", "HOSTNAME"):
         if key in os.environ:
             info[key] = os.environ[key]
-    if Path("/run/.containerenv").exists():
+    env_file = _read("/run/.containerenv")
+    if env_file is not None:
         info["containerenv"] = True
+        for line in env_file.splitlines():
+            if line.startswith(("image=", "imageid=", "name=")):
+                k, _, v = line.partition("=")
+                info[k] = v.strip('"')
     os_release = _read("/etc/os-release")
     if os_release:
         m = re.search(r'PRETTY_NAME="?([^"\n]+)', os_release)
@@ -105,14 +110,52 @@ def environment() -> dict[str, str]:
 
 
 def packages() -> dict[str, str]:
+    """Installed versions without importing the backends (importing a second
+    SYCL/CUDA/OpenMP runtime into the benchmark process would perturb it)."""
+    from importlib import metadata
+
     out = {}
-    for name in ("numpy", "fnn_testkit", "syclnn", "cudann", "ompnn"):
+    for name in ("numpy", "fnn-testkit", "fnnbench", "syclnn", "cudann", "ompnn"):
         try:
-            mod = __import__(name)
-            out[name] = getattr(mod, "__version__", "?")
-        except Exception:
+            out[name] = metadata.version(name)
+        except metadata.PackageNotFoundError:
             pass
     return out
+
+
+def numa_info() -> dict[str, Any]:
+    info: dict[str, Any] = {}
+    status = _read("/proc/self/status") or ""
+    for key in ("Cpus_allowed_list", "Mems_allowed_list"):
+        m = re.search(key + r":\s*(\S+)", status)
+        if m:
+            info[key.lower()] = m.group(1)
+    show = _run(["numactl", "--show"])
+    if show:
+        info["numactl_show"] = show.strip().splitlines()
+    return info
+
+
+def omp_max_threads() -> int | None:
+    """What the OpenMP runtime of *this* process would use (ctypes, no import of a backend)."""
+    import ctypes.util
+
+    for lib in ("gomp", "omp", "iomp5"):
+        path = ctypes.util.find_library(lib)
+        if not path:
+            continue
+        try:
+            handle = ctypes.CDLL(path)
+            return int(handle.omp_get_max_threads())
+        except Exception:
+            continue
+    v = os.environ.get("OMP_NUM_THREADS")
+    return int(v.split(",")[0]) if v and v.split(",")[0].isdigit() else None
+
+
+def _meminfo_total() -> int | None:
+    m = re.search(r"MemTotal:\s*(\d+)", _read("/proc/meminfo") or "")
+    return int(m.group(1)) if m else None
 
 
 def collect(repos: dict[str, str] | None = None) -> dict[str, Any]:
@@ -125,6 +168,9 @@ def collect(repos: dict[str, str] | None = None) -> dict[str, Any]:
         "gpu": gpu_info(),
         "container": container_info(),
         "env": environment(),
+        "numa": numa_info(),
+        "omp_max_threads": omp_max_threads(),
+        "meminfo_total_kb": _meminfo_total(),
         "packages": packages(),
         "git": {},
     }

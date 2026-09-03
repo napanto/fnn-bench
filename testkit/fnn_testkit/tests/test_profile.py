@@ -13,7 +13,12 @@ PHASES = ("h2d", "d2h", "gemm", "act", "delta", "biasgrad", "update", "loss", "r
 KEYS = tuple(f"{p}_ns" for p in PHASES) + ("wall_ns", "launches", "bytes_h2d", "bytes_d2h", "epochs", "batches")
 
 
-def test_profile_shape_and_counts(make_net):
+@pytest.fixture
+def graph_mode(backend_options):
+    return str(backend_options.get("queue", "")).lower() == "graph"
+
+
+def test_profile_shape_and_counts(make_net, graph_mode):
     X, T = datasets.synthetic(100, 16, 4, seed=1)
     spec = mlp([16, 32, 4], "relu", "sigmoid", learning_rate=0.01)
     net = make_net(spec, seed=1, options={"profile": True})
@@ -25,7 +30,11 @@ def test_profile_shape_and_counts(make_net):
     assert p["epochs"] == 3
     assert p["batches"] == 3 * math.ceil(100 / 32)
     assert p["wall_ns"] > 0
-    assert p["gemm_ns"] > 0 and p["update_ns"] > 0 and p["act_ns"] > 0
+    if graph_mode:
+        # a replayed CUDA Graph is one launch; per-phase events are not recorded inside a capture
+        assert p["other_ns"] > 0
+    else:
+        assert p["gemm_ns"] > 0 and p["update_ns"] > 0 and p["act_ns"] > 0
     assert p["launches"] > 0
     device_total = sum(p[f"{ph}_ns"] for ph in PHASES)
     assert device_total > 0

@@ -18,6 +18,8 @@ from . import sysinfo
 
 def measure(backend: str, device: str | None, dtype: str = "float", n: int = 4096, options: dict | None = None,
             repeat: int = 5) -> dict[str, Any]:
+    if backend == "numpy":
+        raise ValueError("the peak probe needs a compiled backend with a profiler (numpy has none)")
     options = dict(options or {})
     options["profile"] = True
     itemsize = 8 if dtype == "double" else 4
