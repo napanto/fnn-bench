@@ -42,7 +42,7 @@ RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /us
        > /etc/apt/sources.list.d/llvm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
         clang-${LLVM_VER} libomp-${LLVM_VER}-dev libclang-rt-${LLVM_VER}-dev lld-${LLVM_VER} llvm-${LLVM_VER} \
-        clang-18 \
+        clang-18 clang-tools-18 \
     && cd /tmp && apt-get download libomp5-18 libomp-18-dev libclang-rt-18-dev \
     && mkdir -p /tmp/llvm18 && for f in /tmp/*.deb; do dpkg -x "$f" /tmp/llvm18; done \
     && cp -a /tmp/llvm18/usr/lib/llvm-18/. /usr/lib/llvm-18/ && rm -rf /tmp/llvm18 /tmp/*.deb \

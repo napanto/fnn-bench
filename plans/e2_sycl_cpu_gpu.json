@@ -1,0 +1,722 @@
+{
+ "note": "E2: SYCL CPU vs GPU, training and inference",
+ "defaults": {
+  "backend": "syclnn",
+  "epochs": 5,
+  "repeat": 5
+ },
+ "runs": [
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 64,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "batch": 1024,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  }
+ ]
+}

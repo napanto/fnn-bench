@@ -1,0 +1,548 @@
+{
+ "note": "W4 scaling sweep on the GPU (run for syclnn and cudann)",
+ "defaults": {
+  "backend": "syclnn"
+ },
+ "runs": [
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d2-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d2-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d2-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d2-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d2-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d2-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d4-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d8-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d8-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d8-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d8-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d8-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w256-d8-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d2-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d2-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d2-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d2-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d2-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d2-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d4-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d8-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d8-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d8-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d8-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d8-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w1024-d8-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d2-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d2-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d2-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d2-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d2-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d2-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d4-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d8-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d8-b32",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d8-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d8-b256",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d8-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "sweep-w4096-d8-b4096",
+   "dtype": "double",
+   "epochs": 2,
+   "repeat": 3,
+   "options": {
+    "profile": true
+   }
+  }
+ ]
+}

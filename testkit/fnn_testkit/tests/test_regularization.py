@@ -25,9 +25,12 @@ def test_penalty_in_epoch_loss(make_net, tol, rng, reg):
     assert_close(losses, [data_before + penalty], tol, "epoch loss")
 
 
-def test_unused_lambda_is_ignored(make_net, rng):
+def test_unused_lambda_is_ignored(make_net, dtype, rng):
     """Regularization(L2, lambda1=x) must not depend on x (and vice versa), as in
-    the original library where the ML project passes both lambdas with type L2."""
+    the original library where the ML project passes both lambdas with type L2.
+    Multithreaded BLAS libraries are not bitwise reproducible run to run, hence
+    the (tiny) tolerance."""
+    same = Tolerance(1e-12, 1e-14) if dtype == "double" else Tolerance(1e-6, 1e-7)
     X, T = rng.uniform(-1, 1, (6, 3)), rng.uniform(0, 1, (6, 2))
     base = mlp([3, 4, 2], learning_rate=0.1)
     Ws, bs = random_params(base, rng)
@@ -39,7 +42,7 @@ def test_unused_lambda_is_ignored(make_net, rng):
         s2 = mlp([3, 4, 2], learning_rate=0.1, regularization=Regularization(typ, **kw2))
         l1 = make_net(s1, initial_weights=Ws, initial_biases=bs).train(X, T, 3, 2)
         l2 = make_net(s2, initial_weights=Ws, initial_biases=bs).train(X, T, 3, 2)
-        assert_close(l1, l2, Tolerance(0, 0), typ)
+        assert_close(l1, l2, same, typ)
 
 
 def test_biases_are_not_regularised(make_net, make_ref, tol, rng):

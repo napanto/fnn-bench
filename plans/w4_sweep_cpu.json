@@ -1,0 +1,140 @@
+{
+ "note": "W4 scaling sweep on the CPU (16k samples, widths 256/1024)",
+ "defaults": {
+  "backend": "syclnn"
+ },
+ "runs": [
+  {
+   "device": "cpu",
+   "workload": "sweep-w256-d2-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w256-d2-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w256-d2-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w256-d4-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w256-d4-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w256-d4-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w1024-d2-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w1024-d2-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w1024-d2-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w1024-d4-b32",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w1024-d4-b256",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "sweep-w1024-d4-b4096",
+   "dtype": "float",
+   "epochs": 2,
+   "repeat": 3,
+   "samples": 16384,
+   "options": {
+    "profile": true
+   }
+  }
+ ]
+}
