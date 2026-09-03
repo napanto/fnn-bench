@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# NVIDIA runs on ws-nvidia (GTX 1080 Ti, Pascal sm_61, CUDA 12.9 images, podman + CDI).
+#
+# Run from ws-amd with ssh access to ws-nvidia (NVIDIA_HOST, NVIDIA_DIR override the defaults):
+#   fnn-bench/scripts/run-ws-nvidia.sh sync      # rsync the four repos + images to ws-nvidia
+#   fnn-bench/scripts/run-ws-nvidia.sh tests     # parity suites: syclnn cuda:gpu, cudann, ompnn (clang-18, gcc-14, nvc++)
+#   fnn-bench/scripts/run-ws-nvidia.sh matrix    # E2/E3/E4/E6/W4 GPU plans + peaks + nsys traces -> results/ws-nvidia/<date>
+#   fnn-bench/scripts/run-ws-nvidia.sh fetch     # copy results back
+# Images are transferred with `podman save | ssh podman load` (no registry needed yet).
+set -euo pipefail
+HERE=$(cd "$(dirname "$0")/.." && pwd)
+AC=$(cd "$HERE/.." && pwd)
+HOST=${NVIDIA_HOST:-ws-nvidia}
+REMOTE=${NVIDIA_DIR:-$HOME/fnn}
+DATE=${DATE:-$(date +%F)}
+GPU="--device nvidia.com/gpu=all --security-opt=label=disable"
+RUN="podman run --rm --memory=40g $GPU -v $REMOTE/syclnn:/work/syclnn -v $REMOTE/cudann:/work/cudann -v $REMOTE/ompnn:/work/ompnn -v $REMOTE/fnn-bench:/work/fnn-bench"
+
+sync() {
+    ssh "$HOST" mkdir -p "$REMOTE"
+    for r in syclnn cudann ompnn fnn-bench; do
+        rsync -a --delete --exclude build --exclude .venv --exclude .wheels --exclude __pycache__ "$AC/$r/" "$HOST:$REMOTE/$r/"
+    done
+    for img in fnn-cuda fnn-sycl; do
+        if ! ssh "$HOST" podman image exists localhost/$img:dev; then
+            podman save localhost/$img:dev | ssh "$HOST" podman load
+        fi
+    done
+}
+
+build_all() {
+    # syclnn (DPC++, spir64 + sm_61 + sm_80), cudann (nvcc sm_61;sm_80), ompnn (clang-18 nvptx, gcc-14 nvptx, clang-22 host)
+    ssh "$HOST" "$RUN -w /work/syclnn localhost/fnn-sycl:dev bash -c '
+        set -e; export CC=clang CXX=clang++ SYCLNN_TARGETS=\"spir64;nvidia_gpu_sm_61;nvidia_gpu_sm_80\" SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=8
+        pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-sycl --config-settings=build-dir=/tmp/b .
+        sycl-ls'"
+    ssh "$HOST" "$RUN -w /work/cudann localhost/fnn-cuda:dev bash -c '
+        set -e; export CUDANN_CUDA_ARCHS=\"61;80\" CUDAHOSTCXX=g++-13 CMAKE_BUILD_PARALLEL_LEVEL=8
+        pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-cuda --config-settings=build-dir=/tmp/b .
+        cd /work/ompnn
+        for cfg in \"clang18nv clang++-18 nvidia sm_61\" \"gcc14nv g++-14 nvidia sm_61\" \"clang22 clang++-22 cpu -\"; do
+            set -- \$cfg
+            export CXX=\$2 OMPNN_TARGET=\$3 OMPNN_OFFLOAD_ARCH=\$([ \$4 = - ] && echo || echo \$4) OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp
+            pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-\$1 --config-settings=build-dir=/tmp/b-\$1 . || echo \"BUILD FAILED: \$1\"
+        done'"
+}
+
+tests() {
+    build_all
+    ssh "$HOST" "$RUN -w /work/syclnn localhost/fnn-sycl:dev bash -c '
+        pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl
+        python -c \"import syclnn; print(syclnn.devices())\"
+        for o in \"--dtype double\" \"--dtype float\" \"--option memory=shared\" \"--option queue=in_order\" \"--option fine_deps=False\"; do printf \"syclnn cuda:gpu %-28s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
+        pytest -q --device gpu --run-slow -k mnist -p no:cacheprovider 2>&1 | tail -1'"
+    ssh "$HOST" "$RUN -w /work/cudann localhost/fnn-cuda:dev bash -c '
+        pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-cuda
+        python -c \"import cudann; print(cudann.devices())\"
+        for o in \"--dtype double\" \"--dtype float\" \"--option memory=shared\" \"--option memory=host\" \"--option queue=in_order\" \"--option queue=graph\" \"--option streams=8\" \"--option queue=graph --option streams=4\"; do printf \"cudann %-40s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
+        cd /work/ompnn
+        for w in clang18nv gcc14nv; do export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w; printf \"ompnn %-10s gpu \" \$w; pytest -q --device gpu -p no:cacheprovider 2>&1 | tail -1; done'"
+}
+
+matrix() {
+    ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-sycl:dev bash -c '
+        pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl
+        fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --out results/ws-nvidia/$DATE/sycl-gpu
+        fnnbench sweep --plan plans/e6_sycl_ablations.json --select device=gpu --out results/ws-nvidia/$DATE/sycl-gpu-ablations
+        fnnbench sweep --plan plans/w4_sweep_gpu.json --out results/ws-nvidia/$DATE/gpu-w4-sycl
+        fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=syclnn --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
+        for dt in float double; do fnnbench peak --backend syclnn --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
+        nsys profile -o results/ws-nvidia/$DATE/nsys-syclnn-mnist --force-overwrite true fnnbench run --backend syclnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192'"
+    ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
+        pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-cuda
+        fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=cudann --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
+        fnnbench sweep --plan plans/w4_sweep_gpu.json --backend cudann --out results/ws-nvidia/$DATE/gpu-w4-cuda
+        for dt in float double; do fnnbench peak --backend cudann --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
+        nsys profile -o results/ws-nvidia/$DATE/nsys-cudann-mnist --force-overwrite true fnnbench run --backend cudann --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
+        for w in clang18nv gcc14nv; do
+            export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w
+            fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-\$w
+            fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-\$w
+        done
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22
+        fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22'"
+}
+
+fetch() {
+    rsync -a "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/" "$HERE/results/ws-nvidia/"
+}
+
+case ${1:-} in
+sync) sync ;;
+build) build_all ;;
+tests) tests ;;
+matrix) matrix ;;
+fetch) fetch ;;
+all) sync; tests; matrix; fetch ;;
+*) echo "usage: $0 sync|build|tests|matrix|fetch|all"; exit 1 ;;
+esac
