@@ -44,6 +44,8 @@ def read(paths: Iterable[str | Path]) -> Iterator[dict[str, Any]]:
         p = Path(p)
         files = sorted(p.rglob("*.jsonl")) if p.is_dir() else [p]
         for f in files:
+            if p.is_dir() and f.name == "superseded.jsonl":  # rows replaced by a re-measurement
+                continue
             with f.open() as fh:
                 for line in fh:
                     line = line.strip()
