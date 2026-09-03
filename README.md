@@ -11,7 +11,7 @@ results and the analysis.
 testkit/      fnn-testkit: float64 reference implementation + pytest suite run against every backend
 bench/        fnnbench: run / sweep / collect / replay / peak / plot, FLOP model, system capture, JSONL rows
 containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic Containerfiles (+ the oneMath/OpenBLAS patch)
-plans/        the experiment matrix as JSON plans (E1-E6, W4 sweeps)
+plans/        the experiment matrix as JSON plans (E1-E7, W4 sweeps)
 scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh,
               rocprof-crosscheck.sh, run-ws-nvidia.sh
 docs/         toolchains.md (compiler x device matrix and the facts learned), methodology.md
@@ -41,5 +41,6 @@ fnnbench collect results/ws-amd/2026-09-03 -o results/ws-amd/2026-09-03/all.csv
 fnnbench plot results/ws-amd/2026-09-03 results/ws-amd/peaks -o analysis/figures
 ```
 
-See `docs/methodology.md` for what a row means and `docs/toolchains.md` for
-which compiler/device combinations are validated.
+See `docs/methodology.md` for what a row means (two per-epoch numbers, the
+bounded oracle check, the FLOP model) and `docs/toolchains.md` for which
+compiler/device combinations are validated.
