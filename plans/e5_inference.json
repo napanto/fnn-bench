@@ -1,0 +1,1086 @@
+{
+ "note": "W5 inference: forward only, batch 1 (latency, 2048 samples) and batch 4096 (throughput, whole set), every backend/device/dtype; the FLOP model is 2B*sum(n_l n_{l+1})",
+ "defaults": {},
+ "runs": [
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 1,
+   "samples": 2048,
+   "epochs": 3,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  },
+  {
+   "backend": "ompnn",
+   "device": "cpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "profile": true
+   }
+  }
+ ]
+}
