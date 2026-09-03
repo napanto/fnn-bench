@@ -94,6 +94,23 @@ matrix() {
         fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22'"
 }
 
+omp_clang18() {
+    # clang-18 nvptx path alone (needs clang-tools-18 in fnn-cuda:dev; the image on ws-nvidia was
+    # patched in place on 2026-09-04): build, parity, E4/E7/E5 GPU rows, peak, fetch
+    ssh "$HOST" "$RUN -w /work/ompnn localhost/fnn-cuda:dev bash -c '
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export CXX=clang++-18 OMPNN_TARGET=nvidia OMPNN_OFFLOAD_ARCH=sm_61 OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=8
+        pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv --config-settings=build-dir=/tmp/b-clang18nv . || { echo "BUILD FAILED: clang18nv"; exit 1; }
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv
+        for o in "" "--option blas=tiled" "--option blas=omp --dtype float"; do printf "ompnn clang18nv gpu %-24s " "\$o"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
+        cd /work/fnn-bench
+        fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-clang18nv
+        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-clang18nv
+        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-clang18nv
+        fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-clang18nv'"
+    fetch
+}
+
 fetch() {
     rsync -a "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/" "$HERE/results/ws-nvidia/"
 }
@@ -104,6 +121,7 @@ build) build_all ;;
 tests) tests ;;
 matrix) matrix ;;
 fetch) fetch ;;
+omp-clang18) omp_clang18 ;;
 all) sync; tests; matrix; fetch ;;
-*) echo "usage: $0 sync|build|tests|matrix|fetch|all"; exit 1 ;;
+*) echo "usage: $0 sync|build|tests|matrix|fetch|omp-clang18|all"; exit 1 ;;
 esac
