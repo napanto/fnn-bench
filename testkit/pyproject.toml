@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fnn-testkit"
+version = "1.0.0"
+description = "NumPy reference implementation and shared parity test-suite for syclnn / cudann / ompnn"
+readme = "README.md"
+license = "LGPL-3.0-only"
+requires-python = ">=3.10"
+authors = [{ name = "Antonio Napolitano", email = "anton@polit.no" }]
+dependencies = ["numpy>=1.26", "pytest>=8"]
+
+[project.entry-points.pytest11]
+"fnn_testkit.plugin" = "fnn_testkit.plugin"
+
+[tool.setuptools.packages.find]
+include = ["fnn_testkit*"]
+
+[tool.setuptools.package-data]
+fnn_testkit = ["data/monk/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["fnn_testkit/tests"]
+addopts = "-ra"

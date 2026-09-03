@@ -1,0 +1,22 @@
+diff --git a/src/blas/backends/netlib/netlib_level1.cpp b/src/blas/backends/netlib/netlib_level1.cpp
+index aa55ec4..a26ec94 100644
+--- a/src/blas/backends/netlib/netlib_level1.cpp
++++ b/src/blas/backends/netlib/netlib_level1.cpp
+@@ -43,6 +43,9 @@ inline double abs_val(std::complex<double> val) {
+     return std::abs(val.real()) + std::abs(val.imag());
+ }
+ 
++// OpenBLAS already provides the i?amin routines (declared in its cblas.h with a
++// CBLAS_INDEX return type); defining them again fails to compile.
++#ifndef OPENBLAS_VERSION
+ int cblas_isamin(int n, const float* x, int incx) {
+     if (n < 1 || incx < 1) {
+         return 0;
+@@ -130,6 +133,7 @@ int cblas_izamin(int n, const std::complex<double>* x, int incx) {
+     }
+     return min_idx;
+ }
++#endif // OPENBLAS_VERSION
+ 
+ void cblas_csrot(const int n, std::complex<float>* cx, const int incx, std::complex<float>* cy,
+                  const int incy, const float c, const float s) {
