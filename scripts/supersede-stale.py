@@ -25,8 +25,11 @@ def stale(r: dict, backends: set[str]) -> str | None:
     if r.get("mode", "train") == "train" and (r.get("epochs") or 1) > 1 and not res.get("steady_epoch_s"):
         return "no steady_epoch_s"
     dev = (r.get("device") or {}).get("type") or r.get("device_selector")
-    if dev and dev != "cpu" and r.get("backend") != "numpy" and not res.get("gpu_monitor"):
-        return "no gpu_monitor"
+    timed = (res.get("median_epoch_s") or 0) * (r.get("epochs") or 1) * (r.get("repeat") or 1)
+    if dev and dev != "cpu" and r.get("backend") != "numpy" and not res.get("gpu_monitor") and timed > 2.0:
+        return "no gpu_monitor"  # rows shorter than the 200 ms sampling interval legitimately have none
+    if r.get("mode") == "infer" and r.get("batch") == 1 and (r.get("n_samples") or 0) > 2048:
+        return "batch-1 inference on the full set (plans now use 2048 samples)"
     return None
 
 

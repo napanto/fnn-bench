@@ -13,9 +13,10 @@ bench/        fnnbench: run / sweep / collect / replay / peak / plot, FLOP model
 containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic Containerfiles (+ the oneMath/OpenBLAS patch)
 plans/        the experiment matrix as JSON plans (E1-E7, W4 sweeps)
 scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh,
-              rocprof-crosscheck.sh, run-ws-nvidia.sh
+              ws-amd-pass2.sh, run-ws-nvidia.sh (NVIDIA runs over ssh + podman CDI), analyze.sh,
+              supersede-stale.py, rocprof-crosscheck.sh, perf-crosscheck.sh, nsys-crosscheck.py
 docs/         toolchains.md (compiler x device matrix and the facts learned), methodology.md
-results/      raw JSONL per machine/date (+ peaks, rocprof cross-checks)
+results/      raw JSONL per machine/date (+ peaks, rocprof/perf/nsys cross-checks); superseded.jsonl = replaced rows
 analysis/     figures produced by `fnnbench plot`
 report/, slides/   the write-up
 ```
@@ -37,8 +38,8 @@ pytest --pyargs fnn_testkit --backend syclnn --device cpu --blas mklcpu
 fnnbench run --backend cudann --device gpu --workload mnist --batch 256 --dtype float --epochs 5 --repeat 5 --option profile=True --out results/ws-nvidia/$(date +%F)
 fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --out results/ws-nvidia/$(date +%F)/gpu
 scripts/matrix-ws-amd.sh                                        # ws-amd: all environments, sequentially
-fnnbench collect results/ws-amd/2026-09-03 -o results/ws-amd/2026-09-03/all.csv
-fnnbench plot results/ws-amd/2026-09-03 results/ws-amd/peaks -o analysis/figures
+scripts/run-ws-nvidia.sh all                                       # ws-nvidia: sync, build, parity, matrix, fetch
+scripts/analyze.sh                                              # both machines -> analysis/<machine>-<date>.csv, analysis/figures/<machine>-<date>/
 ```
 
 See `docs/methodology.md` for what a row means (two per-epoch numbers, the

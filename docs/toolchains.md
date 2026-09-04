@@ -5,7 +5,7 @@ shared parity suite (`fnn-testkit`, 117 tests × float/double) passes; "build"
 means it compiles but no device to run on; "-" not applicable. Updated as the
 the local runs work progresses (see `the study plan`).
 
-Last update: 2026-09-03.
+Last update: 2026-09-04.
 
 ## Images and environments
 
@@ -54,16 +54,16 @@ parallel for simd` on `omp_target_alloc` memory + vendor BLAS interop
 
 | Compiler | Target | BLAS | Status | Notes |
 |---|---|---|---|---|
-| gcc 14.2 (`-foffload=disable`) | ws-amd CPU | OpenBLAS 0.3.26 openmp | **OK** double + float | one intermittent double failure seen once in the fnn-cuda image (under investigation) |
+| gcc 14.2 (`-foffload=disable`) | ws-amd CPU | OpenBLAS 0.3.26 openmp | **OK** double + float | one intermittent double failure seen once in the fnn-cuda image (explained by the oneMath cuBLAS event race below) |
 | gcc 14.2 | ws-amd CPU | oneMKL 2026.1 (`mkl_rt`) | **OK** double + float | `OMPNN_BLAS=mkl OMPNN_BLAS_ROOT=/opt/venv` |
 | clang 22.1 (apt.llvm.org) | ws-amd CPU | OpenBLAS | **OK** double + float | host-only build (no offload runtime shipped) |
 | clang 18.1 (Ubuntu) | ws-amd CPU | OpenBLAS | **OK** double + float | |
 | amdclang++ 22 (ROCm 7.2.4) | ws-amd CPU (host path of the AMD build) | OpenBLAS | **OK** double + float, all ablations, `blas=omp` | |
-| amdclang++ 22 (`-fopenmp-targets=amdgcn-amd-amdhsa --offload-arch=gfx1100`) | ws-amd RX 7900 XTX | hipBLAS 3.2 interop; `blas=omp` | **OK** double + float, ablations, `blas=omp` | mnist-512-256 b256 float: 310 ms/epoch (466 GFLOP/s GEMM) vs cudann/HIP 269 ms, syclnn/AdaptiveCpp 421 ms |
-| gcc 14.2 (`-foffload=amdgcn-amdhsa -march=gfx1100`, needs `-fcf-protection=none`) | ws-amd RX 7900 XTX | hipBLAS interop | **OK** double + float | 3x slower kernels: mnist-512-256 980 ms/epoch |
+| amdclang++ 22 (`-fopenmp-targets=amdgcn-amd-amdhsa --offload-arch=gfx1100`) | ws-amd RX 7900 XTX | hipBLAS 3.2 interop; `blas=omp` | **OK** double + float, ablations, `blas=omp` | mnist-512-256 b256 float (second pass, steady epoch): ompnn/amdclang++ 186 ms (650-690 GFLOP/s GEMM), cudann/HIP 95 ms, syclnn/AdaptiveCpp 244-294 ms |
+| gcc 14.2 (`-foffload=amdgcn-amdhsa -march=gfx1100`, needs `-fcf-protection=none`) | ws-amd RX 7900 XTX | hipBLAS interop | **OK** double + float | 6.7x slower than amdclang++ at batch 256: mnist-512-256 1.38 s/epoch (steady) |
 | clang 18.1 (`--offload-arch=gfx1100`) | ws-amd RX 7900 XTX | - | **fails to build**: `/opt/rocm/amdgcn/bitcode/ocml.bc: Unknown attribute kind (Producer LLVM 22, Reader LLVM 18)` | ROCm 7.2's device libs are LLVM-22 bitcode; clang-18 would need older device libs |
-| clang 18.1 (`-fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_61 --cuda-path=/usr/local/cuda-12.9`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): E4/E7/E5 measured (795 GFLOP/s GEMM rate at batch 1024) | needs `clang-tools-18` (`clang-offload-packager`) and the host offload runtime `libomptarget.so.18.1` + `libomptarget.rtl.cuda.so`, which Ubuntu's `libomp5-18` does not ship: extracted from apt.llvm.org's `llvm-toolchain-noble-18` `libomp5-18` into `/usr/lib/llvm-18/lib` (both machines' `fnn-cuda:dev` were patched in place on 2026-09-04 and the Containerfile now does the same); ompnn rpaths the compiler's own lib dir |
-| gcc 14.2 (`-foffload=nvptx-none -foffload-options=nvptx-none=-misa=sm_53 -fcf-protection=none -fno-stack-protector`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): parity green incl. tiled, E4/E7/E5 measured; the tiled kernel is ~100x slower than cuBLAS (one thread per warp) | gcc's nvptx back end knows sm_30/35/53/70/75/80 only; sm_53 PTX runs on Pascal through the driver JIT; Ubuntu's `-fstack-protector-strong` default breaks ptxas (`__stack_chk_guard`) |
+| clang 18.1 (`-fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_61 --cuda-path=/usr/local/cuda-12.9`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): E4/E7/E5 measured (mnist-512-256 float: 795 GFLOP/s GEMM rate at batch 1024; the 1024-wide `mnist` reaches 2.1 TFLOP/s) | needs `clang-tools-18` (`clang-offload-packager`) and the host offload runtime `libomptarget.so.18.1` + `libomptarget.rtl.cuda.so`, which Ubuntu's `libomp5-18` does not ship: extracted from apt.llvm.org's `llvm-toolchain-noble-18` `libomp5-18` into `/usr/lib/llvm-18/lib` (both machines' `fnn-cuda:dev` were patched in place on 2026-09-04 and the Containerfile now does the same); ompnn rpaths the compiler's own lib dir |
+| gcc 14.2 (`-foffload=nvptx-none -foffload-options=nvptx-none=-misa=sm_53 -fcf-protection=none -fno-stack-protector`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): parity green incl. tiled, E4/E7/E5 measured; the tiled kernel is 53-513x slower than cuBLAS on the GEMM-bound rows (mnist-512-256 float 131x, double 88x, w256 53x, w1024 513x) and 1.8-2.3x on monk/cup (one thread per warp) | gcc's nvptx back end knows sm_30/35/53/70/75/80 only; sm_53 PTX runs on Pascal through the driver JIT; Ubuntu's `-fstack-protector-strong` default breaks ptxas (`__stack_chk_guard`) |
 | nvc++ 26.5 (`-mp=gpu -gpu=cc61|cc80`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | the department runs / ws-nvidia | V100+ officially |
 
 Findings: gcc compiles every `omp target` region for all installed accelerator
@@ -96,14 +96,16 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 
 - **Intel OpenCL CPU runtime and deep queues**: the per-submission cost of
   `opencl:cpu` (oclcpuexp 2026-WW28 under DPC++) grows with the number of
-  outstanding commands. An MNIST epoch of 938 batches (about 12 commands
+  outstanding commands. A mnist-512-256 epoch of 938 batches (about 12 commands
   each) took 157 s at batch 64 while a 64-batch epoch extrapolated to 20 s,
   and 16384 samples took 26-31 s versus 1.4 s for 4096 (out-of-order and
   in-order queues alike, profiling on or off). syclnn therefore waits for the
   queue every `Options.sync_every` batches, automatically 4 on CPU devices
   (never on GPUs; 2-4 measured best, 8 costs 10 %, 32 three times): the same
   epoch takes 2.3 s. AdaptiveCpp's OpenMP CPU
-  backend does not show the effect (3.7 s unbounded). Found 2026-09-04; the
+  backend does not show the effect (3.7 s unbounded; the 1024-wide `mnist`
+  takes 6.0-6.4 s with DPC++ and 9.9 s with AdaptiveCpp). The 16384-sample and
+  depth-sweep numbers come from ad-hoc runs, not from result rows. Found 2026-09-04; the
   DPC++ CPU rows measured before it were superseded and re-measured.
 - **oneMath cuBLAS + DPC++ out-of-order queues race**: the cuBLAS backend of
   oneMath v0.9 in the fnn-sycl image was compiled with the `host_task`
