@@ -19,38 +19,44 @@ PHASES = ("gemm", "act", "delta", "biasgrad", "update", "loss", "reg", "other")
 
 
 def phase_of(name: str) -> str:
+    """Kernel name -> profiler phase (cudann's kernels and syclnn's mangled lambda names)."""
     n = name.lower()
-    if "gemm" in n or "gemv" in n or "sgemv" in n or "dgemv" in n:
-        return "gemm"
-    if "activ" in n or "act_k" in n or "forward" in n:
-        return "act"
-    if "output_delta" in n or "hidden_delta" in n or "delta" in n:
+    if "output_delta" in n or "ndrangereduction" in n or "reduction" in n or "loss" in n:
+        return "loss"  # the fused output-delta + loss kernel (a sycl::reduction in syclnn)
+    if "hidden_delta" in n or "delta" in n:
         return "delta"
-    if "bias" in n:
-        return "biasgrad"
-    if "update" in n or "step" in n:
+    if "gemv" in n:
+        return "biasgrad"  # the only GEMV is the bias-gradient (ones-vector) call
+    if "gemm" in n:
+        return "gemm"
+    if "activ" in n or "forward_layer" in n:
+        return "act"
+    if "update" in n:
         return "update"
-    if "loss" in n or "reduce" in n or "reduction" in n:
-        return "loss"
     if "penalty" in n or "asum" in n or "nrm2" in n:
         return "reg"
     return "other"
 
 
-def nsys_shares(path: Path) -> tuple[dict[str, float], float, int]:
+def nsys_shares(path: Path) -> tuple[dict[str, float], float, int, int]:
     tot = defaultdict(float)
     total = 0.0
     launches = 0
+    batches = 0
     with path.open() as f:
         for row in csv.DictReader(f):
             t = float(row["Total Time (ns)"])
-            tot[phase_of(row["Name"])] += t
+            ph = phase_of(row["Name"])
+            tot[ph] += t
             total += t
             launches += int(row["Instances"])
-    return {p: tot[p] / total * 100 for p in PHASES}, total, launches
+            if ph == "loss":  # one output-delta/loss kernel per batch
+                batches += int(row["Instances"])
+    return {p: tot[p] / total * 100 for p in PHASES}, total, launches, max(batches, 1)
 
 
-def profiler_shares(root: Path, backend: str, workload: str, batch: int, dtype: str) -> tuple[dict[str, float], float, dict] | None:
+def profiler_shares(root: Path, backend: str, workload: str, batch: int, dtype: str):
+    """Kernel-only shares from the E3 row (profile_per_epoch_ms is in ms; H2D/D2H excluded)."""
     for f in root.glob("gpu-cuda-vs-sycl/*.jsonl"):
         if f.name == "superseded.jsonl":
             continue
@@ -64,10 +70,9 @@ def profiler_shares(root: Path, backend: str, workload: str, batch: int, dtype: 
                 continue
             per = r["results"].get("profile_per_epoch_ms") or {}
             dev = {p: per.get(f"{p}_ns", 0.0) for p in PHASES}
-            if "h2d_ns" in per:
-                dev["other"] += per.get("h2d_ns", 0.0) + per.get("d2h_ns", 0.0)
             total = sum(dev.values())
-            return ({p: (dev[p] / total * 100 if total else 0.0) for p in PHASES}, total, r)
+            batches = (r["n_samples"] + batch - 1) // batch
+            return {p: (dev[p] / total * 100 if total else 0.0) for p in PHASES}, total, batches, per, r
     return None
 
 
@@ -85,15 +90,19 @@ def main() -> None:
         if not csvs:
             out.append(f"\n## {backend}: no nsys kernel summary\n")
             continue
-        ns, ns_total, ns_launches = nsys_shares(csvs[0])
+        ns, ns_total, ns_launches, ns_batches = nsys_shares(csvs[0])
         pr = profiler_shares(root, backend, workload, batch, dtype)
-        out.append(f"\n## {backend}\n")
-        out.append(f"nsys: {ns_total/1e6:.1f} ms of kernel time in the traced run, {ns_launches} kernel instances\n")
+        out.append(f"\n## {backend}\n\n")
+        out.append(f"- nsys: {ns_total/1e6:.1f} ms of kernel time over {ns_batches} batches "
+                   f"({ns_total/1e6/ns_batches:.3f} ms per batch), {ns_launches} kernel instances "
+                   f"({ns_launches/ns_batches:.1f} per batch)\n")
         if pr:
-            shares, total, r = pr
-            per = r["results"]["profile_per_epoch_ms"]
-            out.append(f"profiler: {total/1e6:.1f} ms device time per epoch ({r['results'].get('steady_epoch_s', 0)*1e3:.1f} ms steady epoch), "
-                       f"{(r['results'].get('profile') or {}).get('launches', 0)} launches over the timed calls\n")
+            shares, total, batches, per, r = pr
+            out.append(f"- profiler (E3 row): {total:.1f} ms of kernel phases per epoch over {batches} batches "
+                       f"({total/batches:.3f} ms per batch), plus H2D {per.get('h2d_ns', 0):.1f} ms and D2H {per.get('d2h_ns', 0):.2f} ms "
+                       f"per epoch; steady epoch {r['results'].get('steady_epoch_s', 0)*1e3:.1f} ms\n")
+            out.append(f"- ratio profiler/nsys per batch: {(total/batches)/(ns_total/1e6/ns_batches):.2f}x "
+                       "(event pairs bracket the launch, nsys measures the kernel)\n")
         out.append("\n| phase | profiler % | nsys % |\n|---|---|---|\n")
         for p in PHASES:
             out.append(f"| {p} | {shares[p]:.1f} | {ns[p]:.1f} |\n" if pr else f"| {p} | - | {ns[p]:.1f} |\n")
