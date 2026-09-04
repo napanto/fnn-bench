@@ -21,18 +21,27 @@ run_one() { # name, venv, backend, extra options
     local name=$1 venv=$2 be=$3; shift 3
     local log=$OUT/$name-$WL
     echo "== $name ($be, $WL b=$B)"
-    # the measurement, in the distrobox, with the profiler on; PID exported through a file
+    # the measurement, in the distrobox (shared pid namespace), profiler on, more repeats so
+    # that perf sees a long steady state
     distrobox enter fnn-rocm -- bash -c "
         export PATH=$P/$venv/bin:\$PATH OMP_NUM_THREADS=\${OMP_NUM_THREADS:-24} OMP_PROC_BIND=close OMP_PLACES=cores
-        cd $HERE && echo \$\$ > $log.pid && exec fnnbench run --backend $be --device cpu --workload $WL --batch $B --dtype float \
-            --epochs 3 --repeat 3 --warmup 1 --option profile=True $* --no-check --out $OUT/rows --tag perf-$name" &
+        cd $HERE && exec fnnbench run --backend $be --device cpu --workload $WL --batch $B --dtype float \
+            --epochs 3 --repeat 6 --warmup 1 --option profile=True $* --no-check --out $OUT/rows --tag perf-$name" &
     local job=$!
-    sleep 4
-    local pid
-    pid=$(pgrep -P "$(cat $log.pid)" -f fnnbench || cat $log.pid)
-    # user-space samples of the whole process (all threads), 1 kHz, DWARF-less (frame pointers are absent in MKL/rocBLAS: flat profile is enough)
-    perf record -e cpu-clock -F 1000 -p "$pid" -o "$log.perf.data" -- sleep 20 >/dev/null 2>&1 || \
-        perf record -e cpu-clock -F 1000 -p "$pid" -o "$log.perf.data" -- sleep 20
+    # wait for the python process of this measurement (visible from the host), then attach perf
+    # for the rest of its life (user-space samples of every thread, 1 kHz)
+    local pid=""
+    for _ in $(seq 1 60); do
+        pid=$(pgrep -f "python[0-9.]* .*fnnbench run --backend $be --device cpu --workload $WL --batch $B .*perf-$name" | head -1)
+        [ -n "$pid" ] && break
+        sleep 1
+    done
+    if [ -n "$pid" ]; then
+        sleep 6 # skip the warm-up and the reference check
+        perf record -e cpu-clock -F 1000 -p "$pid" -o "$log.perf.data" >/dev/null 2>&1 || echo "  perf record failed"
+    else
+        echo "  measurement process not found"
+    fi
     wait $job || true
     perf report -i "$log.perf.data" --stdio --sort dso,symbol --percent-limit 0.5 2>/dev/null > "$log.perf.txt" || true
     # aggregate perf shares by DSO class
