@@ -166,6 +166,11 @@ ws-amd and is not recorded.
   the tile elements; the CPU paths vectorise across rows. The reductions for
   asum/nrm2 differ in decomposition (SYCL `sycl::reduction`, one CUDA block,
   OpenMP `reduction` in double), affecting only the reported penalty term.
+- E7 on gcc's OpenMP offload: a team gets 16 wavefronts, so the tiled kernel
+  runs its strided variant with a private accumulator array; it is an order of
+  magnitude slower than the one-thread-per-element kernels and the 4096-wide
+  row is omitted for the gcc build (hours per row). The gcc rows are reported
+  as what gcc's offload model delivers, not as the same kernel.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
 

@@ -98,7 +98,10 @@ omp_gpu() {
         for v in venv-amdclang venv-gcc14amd; do
             export PATH=\$P/\$v/bin:\$PATH
             fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-amd/$DATE/omp-gpu-\${v#venv-}
-            fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-amd/$DATE/e7-tiled-omp-gpu-\${v#venv-}
+            # gcc's offload runs the tiled kernel on 16 wavefronts per team (strided variant): the
+            # 4096-wide row takes hours there and is omitted; the other rows cover the comparison
+            if [ \$v = venv-gcc14amd ]; then e7sel='--select workload=monk,cup,mnist-512-256,sweep-w256-d4-b256,sweep-w1024-d4-b256'; else e7sel=''; fi
+            fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn \$e7sel --out results/ws-amd/$DATE/e7-tiled-omp-gpu-\${v#venv-}
             fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-amd/$DATE/e5-infer-omp-gpu-\${v#venv-}
             fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-amd/$DATE/peaks-omp-\${v#venv-}
             fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --option blas=tiled --out results/ws-amd/$DATE/peaks-tiled-omp-\${v#venv-}
