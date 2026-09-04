@@ -171,6 +171,11 @@ ws-amd and is not recorded.
   magnitude slower than the one-thread-per-element kernels and the 4096-wide
   row is omitted for the gcc build (hours per row). The gcc rows are reported
   as what gcc's offload model delivers, not as the same kernel.
+- `sync_every` (all three libraries accept it; only syclnn and cudann act on
+  it): a queue/stream drain every N batches. syclnn sets it to 4 on CPU
+  devices because the OpenCL CPU runtime's per-submission cost grows with the
+  outstanding commands (see `docs/toolchains.md`); GPUs run unbounded. The
+  effective value is in every row's `effective_options`.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
 
