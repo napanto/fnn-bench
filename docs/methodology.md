@@ -203,12 +203,17 @@ as seen by the programming model" and uses the rocprof/nsys kernel sums as the
 "pure kernel" reference; the difference is the synchronisation/launch cost of
 each model.
 
-CPU: `scripts/perf-crosscheck.sh` attaches `perf record -e cpu-clock` (user
-space only, no root) to a profiled `fnnbench run` of syclnn (AdaptiveCpp
-host) and ompnn (amdclang++ host) and aggregates the samples by DSO class
-(BLAS library, the libraries' own kernels, OpenMP/SYCL runtime, Python);
-the shares are compared with the profiler's GEMM / element-wise / runtime
-split in `results/ws-amd/perf/`.
+CPU (`scripts/perf-crosscheck.sh`, `results/ws-amd/perf/README.md`):
+`perf record -e cpu-clock` (user space, all threads) attached to a profiled
+`fnnbench run` of syclnn (AdaptiveCpp host device) and ompnn (amdclang++
+host), MNIST 512-256 at batch 256 on 24 pinned threads. The profiler
+attributes 61-70 % of the epoch to the GEMM calls and about 30 % to the
+element-wise kernels; perf finds only 11-13 % of the samples inside the
+OpenBLAS kernels and 52-56 % inside the OpenMP runtime (fork/join and
+spin-wait around GEMMs of 512x784x256 and kernels of a few hundred thousand
+elements). Same ordering, different question: the profiler measures the wall
+time of each call, perf where the cores are, and at these sizes the host
+runtime, not the arithmetic, sets the CPU epoch time.
 
 NVIDIA (`scripts/nsys-crosscheck.py`, `results/ws-nvidia/2026-09-04/nsys-crosscheck.md`):
 the MNIST 512-256 float row at batch 256 on the GTX 1080 Ti, traced with

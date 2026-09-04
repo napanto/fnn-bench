@@ -55,8 +55,8 @@ for m in re.finditer(r"^\s+([\d.]+)%\s+(\S+)\s+\[.\]\s+(.*)$", txt, re.M):
     d = dso.lower()
     if any(k in d for k in ("mkl", "openblas", "blas", "onemath", "rocblas")):
         cls["blas"] += pct
-    elif any(k in d for k in ("_syclnn", "_ompnn", "_cudann", "acpp", "hipsycl", "libomp", "libgomp", "libsycl", "libur_", "intelocl", "libtbb", "libamd", "libhsa", "kernel")):
-        cls["library kernels" if ("_syclnn" in d or "_ompnn" in d or "kernel" in d or "acpp-jit" in d) else "runtime"] += pct
+    elif any(k in d for k in ("_syclnn", "_ompnn", "_cudann", "acpp", "hipsycl", "libomp", "libgomp", "libsycl", "libur_", "intelocl", "libtbb", "libamd", "libhsa", "kernel", ".jit.so")):
+        cls["library kernels" if ("_syclnn" in d or "_ompnn" in d or "kernel" in d or ".jit.so" in d) else "runtime"] += pct
     elif any(k in d for k in ("python", "numpy", "libc", "ld-linux")):
         cls["python/numpy"] += pct
     else:
