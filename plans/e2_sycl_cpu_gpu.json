@@ -180,7 +180,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "cpu",
@@ -204,7 +205,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "cpu",
@@ -228,7 +230,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "cpu",
@@ -252,7 +255,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "cpu",
@@ -276,7 +280,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "cpu",
@@ -300,7 +305,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "cpu",
@@ -324,7 +330,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "cpu",
@@ -348,7 +355,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "cpu",
@@ -536,7 +544,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "gpu",
@@ -560,7 +569,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "gpu",
@@ -584,7 +594,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "gpu",
@@ -608,7 +619,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "gpu",
@@ -632,7 +644,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "gpu",
@@ -656,7 +669,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "gpu",
@@ -680,7 +694,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "gpu",
@@ -704,7 +719,8 @@
    "repeat": 3,
    "options": {
     "profile": true
-   }
+   },
+   "samples": 2048
   },
   {
    "device": "gpu",
