@@ -12,7 +12,8 @@ for m in ws-amd ws-nvidia; do
         [ -n "$(find "$d" -name '*.jsonl' -not -name superseded.jsonl | head -1)" ] || continue
         echo "== $m $date"
         fnnbench collect "$d" -o "analysis/$m-$date.csv"
-        fnnbench plot "$d" "results/$m/peaks" "$d"/peaks* -o "analysis/figures/$m-$date" 2>&1 | grep -c png | sed 's/$/ figures/'
+        peaks=(); for pk in "results/$m/peaks" "$d"/peaks*; do [ -d "$pk" ] && peaks+=("$pk"); done
+        fnnbench plot "$d" "${peaks[@]}" -o "analysis/figures/$m-$date" 2>&1 | grep -c png | sed 's/$/ figures/'
     done
 done
 echo "done: analysis/*.csv, analysis/figures/<machine>-<date>/"
