@@ -94,6 +94,17 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 
 ## Facts worth remembering
 
+- **Intel OpenCL CPU runtime and deep queues**: the per-submission cost of
+  `opencl:cpu` (oclcpuexp 2026-WW28 under DPC++) grows with the number of
+  outstanding commands. An MNIST epoch of 938 batches (about 12 commands
+  each) took 157 s at batch 64 while a 64-batch epoch extrapolated to 20 s,
+  and 16384 samples took 26-31 s versus 1.4 s for 4096 (out-of-order and
+  in-order queues alike, profiling on or off). syclnn therefore waits for the
+  queue every `Options.sync_every` batches, automatically 4 on CPU devices
+  (never on GPUs; 2-4 measured best, 8 costs 10 %, 32 three times): the same
+  epoch takes 2.3 s. AdaptiveCpp's OpenMP CPU
+  backend does not show the effect (3.7 s unbounded). Found 2026-09-04; the
+  DPC++ CPU rows measured before it were superseded and re-measured.
 - **oneMath cuBLAS + DPC++ out-of-order queues race**: the cuBLAS backend of
   oneMath v0.9 in the fnn-sycl image was compiled with the `host_task`
   fallback (no native-command enqueue), so the events it returns complete
