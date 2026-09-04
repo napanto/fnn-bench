@@ -32,7 +32,7 @@ run_one() { # name, venv, backend, extra options
     # for the rest of its life (user-space samples of every thread, 1 kHz)
     local pid=""
     for _ in $(seq 1 60); do
-        pid=$(pgrep -f "python[0-9.]* .*fnnbench run --backend $be --device cpu --workload $WL --batch $B .*perf-$name" | head -1)
+        pid=$(pgrep -f "python[0-9.]* .*fnnbench run --backend $be --device cpu --workload $WL --batch $B .*perf-$name" | head -1 || true)
         [ -n "$pid" ] && break
         sleep 1
     done
