@@ -59,8 +59,11 @@ def dedupe(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     re-measurements in different result directories (the newest timestamp wins)."""
     best: dict[tuple, dict[str, Any]] = {}
     for r in rows:
-        key = (r.get("id"), (r.get("build_info") or {}).get("compiler"), (r.get("device") or {}).get("name"), r.get("blas"),
-               r.get("n_samples"))
+        # the configuration as a reader sees it (protocol details such as epochs/repeat,
+        # which differ between plans, are not part of the key)
+        key = (r.get("backend"), (r.get("build_info") or {}).get("compiler"), (r.get("device") or {}).get("name"),
+               r.get("blas"), r.get("workload"), r.get("dtype"), r.get("batch"), r.get("mode", "train"),
+               dumps(r.get("options") or {}), r.get("n_samples"), r.get("threads"))
         if key not in best or (r.get("timestamp") or "") > (best[key].get("timestamp") or ""):
             best[key] = r
     return list(best.values())
