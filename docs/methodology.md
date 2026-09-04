@@ -210,6 +210,21 @@ host) and ompnn (amdclang++ host) and aggregates the samples by DSO class
 the shares are compared with the profiler's GEMM / element-wise / runtime
 split in `results/ws-amd/perf/`.
 
+NVIDIA (`scripts/nsys-crosscheck.py`, `results/ws-nvidia/2026-09-04/nsys-crosscheck.md`):
+the MNIST 512-256 float row at batch 256 on the GTX 1080 Ti, traced with
+`nsys profile` and summarised with `nsys stats --report cuda_gpu_kern_sum`,
+against the E3 row's profiler phases. Per batch the profiler reports 1.8x
+(cudann) and 1.5x (syclnn) the pure kernel time, because an event pair
+brackets the launch and its queueing, not only the kernel; the phase shares
+agree within a few points (GEMM 57 % vs 70 % / 56 % vs 66 %, update 18 vs
+15 / 12 vs 13, loss 1.5 vs 1.3 / 6 vs 7) except the bias-gradient GEMV
+(11 vs 7 / 17 vs 6 %), the smallest kernels, whose launch overhead dominates
+the bracketed interval. Both tools count the same 20 kernels per batch. The
+same conclusion as rocprof on the RX 7900 XTX: the profiler is a faithful
+breakdown of where the *launch stream* spends its time and over-reports
+short kernels; absolute kernel efficiencies come from the peak probes and
+the vendor profilers.
+
 ## Rigor checklist
 
 * warm-up + ≥ 3 repetitions, median + IQR, per-row system state;
