@@ -18,6 +18,7 @@ OMP_NUM_THREADS once.
 
 from __future__ import annotations
 
+import gc
 import hashlib
 import json
 import os
@@ -125,10 +126,14 @@ def reference_first_epoch_loss(cfg: RunConfig, spec: NetSpec, Ws, bs, X, Y, batc
     return loss
 
 
-def numerical_check(cfg: RunConfig, net: be.NetworkAdapter, spec: NetSpec, Ws, bs, X, Y, batch: int) -> dict[str, Any]:
-    """Two-tier check against the oracle, run before anything is timed."""
+def numerical_check(cfg: RunConfig, spec: NetSpec, Ws, bs, X, Y, batch: int) -> dict[str, Any]:
+    """Two-tier check against the oracle, run before anything is timed, on its own
+    instance that is released before the timed instance is built (the widest
+    double configurations do not fit twice in 11 GB)."""
     out: dict[str, Any] = {"enabled": True}
     is_double = cfg.dtype == "double"
+    net = be.NetworkAdapter(cfg.backend, spec, dtype=cfg.dtype, device=cfg.device, initial_weights=Ws,
+                            initial_biases=bs, **cfg.options)
     # (1) deterministic: the untrained forward pass on a slice of the data
     n_probe = min(256, X.shape[0])
     ref = ReferenceNetwork(spec, Ws, bs)
@@ -147,19 +152,15 @@ def numerical_check(cfg: RunConfig, net: be.NetworkAdapter, spec: NetSpec, Ws, b
     if cfg.mode == "train":
         n_check = min(X.shape[0], max(int(cfg.check_samples), batch)) if cfg.check_samples > 0 else X.shape[0]
         Xc, Yc = X[:n_check], Y[:n_check]
-        if n_check < X.shape[0]:
-            net_c = be.NetworkAdapter(cfg.backend, spec, dtype=cfg.dtype, device=cfg.device, initial_weights=Ws,
-                                      initial_biases=bs, **cfg.options)
-            loss0 = float(net_c.train(np.ascontiguousarray(Xc, dtype=net.np_dtype),
-                                      np.ascontiguousarray(Yc, dtype=net.np_dtype), batch, 1)[0])
-            del net_c
-        else:
-            loss0 = float(net.train(X, Y, batch, 1)[0])
+        loss0 = float(net.train(np.ascontiguousarray(Xc, dtype=net.np_dtype),
+                                np.ascontiguousarray(Yc, dtype=net.np_dtype), batch, 1)[0])
         ref0 = reference_first_epoch_loss(cfg, spec, Ws, bs, Xc, Yc, batch)
         rel = abs(loss0 - ref0) / max(abs(ref0), 1e-12)
         tol = DOUBLE_EPOCH_TOL if is_double else FLOAT_EPOCH_TOL
         out.update(samples=int(n_check), loss=loss0, reference_loss=ref0, rel_err=rel, tol=tol, loss_ok=bool(rel <= tol))
     out["ok"] = bool(out["forward_ok"] and out.get("loss_ok", True))
+    del net
+    gc.collect()  # release the device buffers before the timed instance is built
     return out
 
 
@@ -169,18 +170,17 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
     sizes = list(spec.sizes)
     rng = np.random.default_rng(cfg.seed)
     Ws, bs = random_params(spec, rng, scale=0.1)
+    check: dict[str, Any] = {"enabled": False}
+    if cfg.check:
+        check = numerical_check(cfg, spec, Ws, bs, X, Y, batch)
+        if verbose and not check["ok"]:
+            print(f"!! numerical check FAILED: {json.dumps({k: v for k, v in check.items() if k != 'enabled'})}")
     net = be.NetworkAdapter(cfg.backend, spec, dtype=cfg.dtype, device=cfg.device, initial_weights=Ws,
                             initial_biases=bs, **cfg.options)
     itemsize = 8 if cfg.dtype == "double" else 4
     n = X.shape[0]
     Xd = np.ascontiguousarray(X, dtype=net.np_dtype)
     Yd = np.ascontiguousarray(Y, dtype=net.np_dtype)
-
-    check: dict[str, Any] = {"enabled": False}
-    if cfg.check:
-        check = numerical_check(cfg, net, spec, Ws, bs, X, Y, batch)
-        if verbose and not check["ok"]:
-            print(f"!! numerical check FAILED: {json.dumps({k: v for k, v in check.items() if k != 'enabled'})}")
 
     # ---- warm-up ----
     for _ in range(cfg.warmup):
