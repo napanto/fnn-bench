@@ -176,7 +176,7 @@ def plot_roofline(plt, rows, peaks, out):
     ax.set_xlabel("arithmetic intensity of the step's GEMMs [FLOP/byte]")
     ax.set_ylabel("achieved GEMM GFLOP/s (per epoch wall)")
     ax.set_title("roofline placement of every training row")
-    ax.legend(fontsize=6, ncol=2)
+    ax.legend(fontsize=6, loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
     _save(plt, fig, out, "roofline")
 
 
@@ -280,14 +280,14 @@ def plot_scaling(plt, rows, out):
     ax.set_xlabel("threads")
     ax.set_ylabel("samples / s")
     ax.set_title("CPU thread scaling")
-    ax.legend(fontsize=6)
+    ax.legend(fontsize=6, loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
     _save(plt, fig, out, "scaling-threads")
 
 
 
 def plot_tiled(plt, rows, out):
-    """E7: hand-written tiled GEMM vs the vendor / oneMath BLAS, per backend and device."""
-    pairs = defaultdict(dict)  # (device, workload, dtype, batch) -> {(backend, blas): epoch_s}
+    """E7: hand-written tiled GEMM vs the vendor / oneMath BLAS, per backend+compiler and device."""
+    pairs = defaultdict(dict)  # (device, workload, dtype, batch) -> {(series, tiled|library): epoch_s}
     for r in rows:
         if r.get("mode", "train") != "train" or r.get("threads"):
             continue
@@ -295,31 +295,38 @@ def plot_tiled(plt, rows, out):
         blas = opts.pop("blas", None)
         if opts:  # ablation rows are not part of E7
             continue
-        dev = _label(r).split("@")[1].strip()
-        pairs[(dev, r["workload"], r["dtype"], r["batch"])][(r["backend"], "tiled" if blas in ("tiled", "handwritten") else "library")] = _epoch_s(r)
+        lab = _label(r)
+        dev = lab.split("@")[1].strip()
+        series = "/".join(lab.split("@")[0].strip().split("/")[:2])  # backend/compiler
+        pairs[(dev, r["workload"], r["dtype"], r["batch"])][(series, "tiled" if blas in ("tiled", "handwritten") else "library")] = _epoch_s(r)
     by_dev = defaultdict(list)
     for key, variants in pairs.items():
-        for be in ("syclnn", "cudann", "ompnn"):
-            if (be, "tiled") in variants and (be, "library") in variants:
-                by_dev[key[0]].append((f"{key[1]} {key[2]} b{key[3]}", be, variants[(be, "tiled")] / variants[(be, "library")]))
+        for series in sorted({k[0] for k in variants}):
+            if (series, "tiled") in variants and (series, "library") in variants:
+                by_dev[key[0]].append((f"{key[1]} {key[2]} b{key[3]}", series, variants[(series, "tiled")] / variants[(series, "library")]))
+    hatches = ["", "//", "..", "xx"]
     for dev, items in by_dev.items():
         labels = sorted({it[0] for it in items})
-        fig, ax = plt.subplots(figsize=(max(6, 0.9 * len(labels) + 2), 3.8))
-        width = 0.27
-        for bi, be in enumerate(("syclnn", "cudann", "ompnn")):
-            vals = {it[0]: it[2] for it in items if it[1] == be}
-            if not vals:
-                continue
-            xs = [i + (bi - 1) * width for i, l in enumerate(labels) if l in vals]
-            ax.bar(xs, [vals[l] for l in labels if l in vals], width, label=be, color=BACKEND_COLOR[be])
+        series_all = sorted({it[1] for it in items}, key=lambda x: (["syclnn", "cudann", "ompnn"].index(x.split("/")[0]), x))
+        fig, ax = plt.subplots(figsize=(max(6, 1.0 * len(labels) + 3), 4.0))
+        width = 0.8 / max(1, len(series_all))
+        per_backend = defaultdict(int)
+        for si, series in enumerate(series_all):
+            be = series.split("/")[0]
+            vals = {it[0]: it[2] for it in items if it[1] == series}
+            xs = [i + (si - (len(series_all) - 1) / 2) * width for i, l in enumerate(labels) if l in vals]
+            ax.bar(xs, [vals[l] for l in labels if l in vals], width, label=series, color=BACKEND_COLOR[be],
+                   hatch=hatches[per_backend[be] % len(hatches)], edgecolor="white", linewidth=0.5)
+            per_backend[be] += 1
         ax.axhline(1.0, color="k", lw=0.8)
         ax.set_xticks(range(len(labels)))
         ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=7)
         ax.set_ylabel("epoch time: tiled / library BLAS")
         ax.set_yscale("log")
         ax.set_title(f"hand-written 16x16 tiled GEMM vs library on {dev}")
-        ax.legend(fontsize=7)
+        ax.legend(fontsize=7, loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
         _save(plt, fig, out, f"tiled-{dev.replace(' ', '')}")
+
 
 def plot_sweep(plt, rows, out):
     series = defaultdict(list)
