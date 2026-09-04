@@ -114,6 +114,7 @@ omp_clang18() {
     ssh "$HOST" "$RUN -w /work/ompnn localhost/fnn-cuda:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export CXX=clang++-18 OMPNN_TARGET=nvidia OMPNN_OFFLOAD_ARCH=sm_61 OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=8
+        rm -rf /work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv
         pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv --config-settings=build-dir=/tmp/b-clang18nv . || { echo "BUILD FAILED: clang18nv"; exit 1; }
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv
         for o in "" "--option blas=tiled" "--option blas=omp --dtype float"; do printf "ompnn clang18nv gpu %-24s " "\$o"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
