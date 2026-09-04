@@ -119,7 +119,7 @@ omp_clang18() {
         rm -rf /work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv
         pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv --config-settings=build-dir=/tmp/b-clang18nv . || { echo "BUILD FAILED: clang18nv"; exit 1; }
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv
-        for o in "" "--option blas=tiled" "--option blas=omp --dtype float"; do printf "ompnn clang18nv gpu %-24s " "\$o"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
+        for o in \"--dtype double\" \"--dtype float\" \"--option blas=tiled --dtype double\" \"--option blas=tiled --dtype float\" \"--option blas=omp --dtype float\"; do printf \"ompnn clang18nv gpu %-34s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
         cd /work/fnn-bench
         fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-clang18nv
         fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-clang18nv
