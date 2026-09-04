@@ -102,6 +102,8 @@ def plot_throughput(plt, rows, out):
     for r in rows:
         if r.get("mode", "train") != "train" or r.get("threads"):
             continue
+        if {k: v for k, v in r.get("options", {}).items() if k not in ("profile", "blas")}:
+            continue  # ablation rows belong to the ablation figures
         by_wl[(r["workload"], r["dtype"])][_label(r)].append((r["batch"], _samples_per_s(r)))
     for (wl, dt), series in by_wl.items():
         if all(len(v) < 2 for v in series.values()):
