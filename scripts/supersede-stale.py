@@ -38,7 +38,7 @@ def main() -> None:
     a = ap.parse_args()
     total = 0
     for f in sorted(Path(a.root).rglob("*.jsonl")):
-        if f.name == "superseded.jsonl":
+        if f.name in ("superseded.jsonl", "peak.jsonl"):  # peak probes have their own row schema
             continue
         rows = [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
         keep, drop = [], []
