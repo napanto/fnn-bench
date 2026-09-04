@@ -202,7 +202,7 @@ def cmd_sweep(a: argparse.Namespace) -> int:
 
 
 def cmd_collect(a: argparse.Namespace) -> int:
-    rows = [r for r in results.read(a.paths) if "results" in r]
+    rows = results.dedupe(r for r in results.read(a.paths) if "results" in r)
     n = results.to_csv(rows, a.output)
     print(f"{n} rows -> {a.output}")
     return 0

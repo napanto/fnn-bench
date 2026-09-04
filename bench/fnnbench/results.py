@@ -53,6 +53,19 @@ def read(paths: Iterable[str | Path]) -> Iterator[dict[str, Any]]:
                         yield json.loads(line)
 
 
+def dedupe(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One row per configuration and environment: the run id hashes the configuration
+    only, so the same id can appear for several compilers/devices (kept apart) and for
+    re-measurements in different result directories (the newest timestamp wins)."""
+    best: dict[tuple, dict[str, Any]] = {}
+    for r in rows:
+        key = (r.get("id"), (r.get("build_info") or {}).get("compiler"), (r.get("device") or {}).get("name"), r.get("blas"),
+               r.get("n_samples"))
+        if key not in best or (r.get("timestamp") or "") > (best[key].get("timestamp") or ""):
+            best[key] = r
+    return list(best.values())
+
+
 def flatten(row: dict[str, Any]) -> dict[str, Any]:
     """One flat dict per row for tables / pandas."""
     r = row.get("results", {})

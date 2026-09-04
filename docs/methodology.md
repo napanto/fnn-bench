@@ -79,15 +79,35 @@ bias/activation kernel) through each backend and reports the BLAS library's
 achieved GFLOP/s and a streaming bandwidth from the activation kernel
 (3·n²·sizeof(T) bytes). Measured on ws-amd (`results/ws-amd/peaks/`):
 
-| device | backend | GEMM float | GEMM double | streaming |
-|---|---|---|---|---|
-| RX 7900 XTX (8192³) | syclnn / AdaptiveCpp + rocBLAS | 26.2 TFLOP/s | 1.12 TFLOP/s | 808 GB/s |
-| RX 7900 XTX | cudann / HIP + hipBLAS | 26.2 TFLOP/s | 1.11 TFLOP/s | 892 GB/s |
-| RX 7900 XTX | ompnn / amdclang++ + hipBLAS | 23.2 TFLOP/s | – | 600 GB/s |
-| Threadripper 2950X (4096³) | syclnn / DPC++ opencl:cpu + MKLCPU | 369 GFLOP/s | 199 GFLOP/s | 30 GB/s |
-| Threadripper 2950X | syclnn / DPC++ opencl:cpu + NETLIB (OpenBLAS) | 371 GFLOP/s | 201 GFLOP/s | 30 GB/s |
-| Threadripper 2950X | syclnn / AdaptiveCpp OpenMP host + OpenBLAS | 561 GFLOP/s | – | 13 GB/s |
-| Threadripper 2950X | ompnn / amdclang++ + OpenBLAS | 404 GFLOP/s | – | 9 GB/s |
+| device | backend / compiler | BLAS | dtype | GEMM peak (GFLOP/s) | element-wise streaming (GB/s) |
+|---|---|---|---|---|---|
+| RX 7900 XTX | cudann / clang-22 | rocblas | double | 1120 | 323 |
+| RX 7900 XTX | cudann / clang-22 | rocblas | float | 26578 | 932 |
+| RX 7900 XTX | cudann / clang-22 | tiled | float | 3009 | 932 |
+| RX 7900 XTX | ompnn / clang-22 | rocblas | float | 23312 | 606 |
+| RX 7900 XTX | ompnn / gcc-14 | rocblas | float | 23038 | 22 |
+| RX 7900 XTX | ompnn / clang-22 | tiled | float | 1858 | 665 |
+| RX 7900 XTX | syclnn / acpp | auto | double | 1122 | 322 |
+| RX 7900 XTX | syclnn / acpp | auto | float | 26728 | 925 |
+| RX 7900 XTX | syclnn / acpp | tiled | float | 2957 | 930 |
+| Ryzen 2950X 16-Core Processor | syclnn / clang-22 | mklcpu | double | 201 | 36 |
+| Ryzen 2950X 16-Core Processor | syclnn / clang-22 | netlib | double | 201 | 36 |
+| Ryzen 2950X 16-Core Processor | syclnn / clang-22 | generic | float | 12 | 35 |
+| Ryzen 2950X 16-Core Processor | syclnn / clang-22 | mklcpu | float | 369 | 30 |
+| Ryzen 2950X 16-Core Processor | syclnn / clang-22 | netlib | float | 374 | 30 |
+| Ryzen 2950X 16-Core Processor (OpenMP host, 16 threads) | ompnn / gcc-14 | mkl | float | 597 | 29 |
+| Ryzen 2950X 16-Core Processor (OpenMP host, 16 threads) | ompnn / gcc-14 | openblas | float | 514 | 31 |
+| Ryzen 2950X 16-Core Processor (OpenMP host, 16 threads) | ompnn / clang-22 | openblas | float | 352 | 18 |
+| Ryzen 2950X 16-Core Processor (OpenMP host, 16 threads) | ompnn / clang-18 | openblas | float | 340 | 16 |
+| Ryzen 2950X 16-Core Processor (OpenMP host, 32 threads) | ompnn / clang-22 | openblas | float | 404 | 9 |
+| AdaptiveCpp OpenMP host device | syclnn / acpp | auto | float | 561 | 13 |
+| GTX 1080 Ti | cudann / nvcc | cublas | double | 408 | 355 |
+| GTX 1080 Ti | cudann / nvcc | cublas | float | 9817 | 359 |
+| GTX 1080 Ti | ompnn / gcc-14 | cublas | float | 9916 | 159 |
+| GTX 1080 Ti | ompnn / clang-18 | cublas | float | 9585 | 243 |
+| GTX 1080 Ti | syclnn / clang-22 | auto | double | 409 | 355 |
+| GTX 1080 Ti | syclnn / clang-22 | auto | float | 9876 | 359 |
+| GTX 1080 Ti | syclnn / clang-22 | tiled | float | 673 | 358 |
 
 The fp64 rate of the RX 7900 XTX is 1/23 of its fp32 rate (RDNA3 has no fast
 FP64), which is the "float vs double" discussion point of the report.
@@ -109,13 +129,14 @@ FP64), which is the "float vs double" discussion point of the report.
 
 ### Two per-epoch numbers
 
-Every row carries two per-epoch times:
+Every training row carries two per-epoch times (inference rows only the first):
 
 - `median_epoch_s`: wall time of one `train(X, Y, batch, epochs)` call divided
   by `epochs`, median over `repeat` calls. It includes the dataset staging and
   upload, the per-epoch loss read-back and every synchronisation: what a user
   of the library pays. With few epochs per call the upload is a sizeable share
-  (about a third of the MNIST rows at 3 epochs on PCIe 4).
+  (10-15 % of the call at batch 64, 20-35 % at 256 and 45-65 % at 1024 for the
+  MNIST rows at 3 epochs on PCIe 4; smaller in double).
 - `steady_epoch_s`: median of the library's own per-epoch wall clocks
   (`Profile.epoch_wall_ns`) over all timed calls, excluding the first epoch of
   each call. The first epoch carries the asynchronous dataset upload and lazy
@@ -151,19 +172,28 @@ ws-amd and is not recorded.
 - The multi-stream default (`out_of_order`, 4 streams) costs up to 1.7x on the
   launch-bound workloads (monk, cup) under HIP: the event fork/join overhead
   dominates when kernels are microseconds long. The `queue=in_order` rows are
-  reported next to the default in E3; the ratio is a result, not noise.
+  reported next to the default in E3; the ratio is a result, not noise. On the
+  GTX 1080 Ti the sign flips: `in_order` is 2.2-2.8x *slower* than the four
+  streams (monk 1.79 vs 0.81 ms, cup 15.5 vs 5.6 ms, mnist-512-256 107 vs
+  79 ms), the CUDA driver overlapping the small kernels where HIP does not.
 - `memory=host` with `loss_reduction` relies on 64-bit atomics to fine-grained
   host memory over PCIe (works on ws-amd, may silently fail elsewhere; the
   parity suite catches it).
 - ompnn's `sumsq` accumulates in double (nrm2 squared in `T` elsewhere) and its
   host tiled GEMM reassociates the 16-term partial sums: the OpenMP rows are
   not bit-identical to the SYCL/CUDA ones, only within the check tolerances.
+- E7 on the GTX 1080 Ti: the syclnn `blas=tiled` rows run with the out-of-order
+  queue while the oneMath rows are forced in-order (the cuBLAS event race), so
+  the tiled/library ratio there mixes the queue mode with the kernel; on the
+  RX 7900 XTX both use the same queue.
 - E7 (`blas=tiled`): the three kernels share the tile size (16x16), the work
   decomposition (one work-item/thread per C element, op(A) tile stored
   transposed in local/shared memory, op(B) tile broadcast) and the sequential
   k accumulation in a register on the SYCL, CUDA and clang-OpenMP paths;
   gcc's OpenMP offload gives a team 16 wavefronts, so its variant strides over
-  the tile elements; the CPU paths vectorise across rows. The reductions for
+  the tile elements; the CPU paths vectorise across rows. Tiled/library epoch
+  ratios at 4096 wide: syclnn 3.7x, cudann 4.5x, ompnn/amdclang++ 5.4x on the
+  RX 7900 XTX; 8.6x / 7.1x / 7.0x (clang-18) on the GTX 1080 Ti. The reductions for
   asum/nrm2 differ in decomposition (SYCL `sycl::reduction`, one CUDA block,
   OpenMP `reduction` in double), affecting only the reported penalty term.
 - E7 on gcc's OpenMP offload: a team gets 16 wavefronts, so the tiled kernel
@@ -175,7 +205,19 @@ ws-amd and is not recorded.
   it): a queue/stream drain every N batches. syclnn sets it to 4 on CPU
   devices because the OpenCL CPU runtime's per-submission cost grows with the
   outstanding commands (see `docs/toolchains.md`); GPUs run unbounded. The
-  effective value is in every row's `effective_options`.
+  effective value is in the `effective_options` of every row measured with a
+  build that has the option (syclnn >= v0.2.0-5, cudann/ompnn >= the same day);
+  earlier GPU rows behave as `sync_every = 0`.
+- W4 on the CPU (`plans/w4_sweep_cpu.json`) is float only, widths 256 and
+  1024, depths 2 and 4 on 16384 samples: the 4096-wide and 8-deep double
+  configurations take hours per row on the CPU and add nothing to the scaling
+  picture the GPU sweep gives.
+- Provenance: the E4 GPU rows on the RX 7900 XTX carry ompnn v0.1.0-2 and the
+  gcc-14 nvptx rows on the GTX 1080 Ti v0.1.0-4, later ompnn rows v0.1.0-8; the
+  intervening commits changed only the hand-written tiled kernel and added
+  the inert-on-GPU `sync_every` option, so those rows are comparable with the
+  rest. Rows that predate the GPU sampler or run shorter than its 200 ms
+  interval have no `gpu_monitor`.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
 
@@ -187,7 +229,7 @@ the second epoch's kernel time per family with the library's own profile of
 that epoch (`results/ws-amd/rocprof/`). The three profilers measure different
 things, and the difference is itself a result:
 
-* **rocprofv3** counts kernel execution only (≈ 7-9 ms per epoch for all three
+* **rocprofv3** counts kernel execution only (7.6 ms (syclnn), 8.3 ms (cudann) and 10.2 ms (ompnn) per epoch
   backends: the GPU work is the same);
 * **cudann** (`cudaEvent` pairs on the stream) and **syclnn** (SYCL event
   profiling) measure the interval between the event before and the event after
@@ -196,7 +238,7 @@ things, and the difference is itself a result:
   the kernel time — the launch-bound regime made visible;
 * **ompnn** (host timers around synchronous regions) also includes the host
   side of every launch and the synchronisation after each vendor BLAS call
-  (4× the kernel time).
+  (4.4x the kernel time).
 
 Hence the report quotes device time from the library profilers as "phase time
 as seen by the programming model" and uses the rocprof/nsys kernel sums as the

@@ -94,7 +94,9 @@ def _save(plt, fig, out: Path, name: str) -> None:
 
 
 def _good(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [r for r in rows if "results" in r and (r.get("check") or {}).get("ok", True) and r["results"].get("losses_finite", True)]
+    from . import results as _results
+    return _results.dedupe(r for r in rows if "results" in r and (r.get("check") or {}).get("ok", True)
+                           and r["results"].get("losses_finite", True))
 
 
 def plot_throughput(plt, rows, out):
@@ -106,8 +108,8 @@ def plot_throughput(plt, rows, out):
             continue  # ablation rows belong to the ablation figures
         by_wl[(r["workload"], r["dtype"])][_label(r)].append((r["batch"], _samples_per_s(r)))
     for (wl, dt), series in by_wl.items():
-        if all(len(v) < 2 for v in series.values()):
-            continue
+        if all(len({p[0] for p in v}) < 2 for v in series.values()):
+            continue  # one batch size only: nothing to plot against
         fig, ax = plt.subplots(figsize=(7.5, 3.8))
         markers = {"acpp": "o", "clang-22": "s", "clang-18": "^", "gcc-14": "v", "nvcc": "D", "hipcc": "P", "icpx": "X"}
         styles = {"tiled": "--", "omp": ":", "handwritten": "--"}
