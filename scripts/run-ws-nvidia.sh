@@ -35,15 +35,18 @@ build_all() {
         # one CUDA device image only: with nvidia_gpu_sm_61 and nvidia_gpu_sm_80 in the same fat
         # binary the DPC++ CUDA adapter fails to load the program on the 1080 Ti (2026-09-04);
         # the A30 gets its own sm_80 build
+        rm -rf /work/fnn-bench/.wheels/ws-nvidia-sycl
         pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-sycl --config-settings=build-dir=/tmp/b .
         sycl-ls'"
     ssh "$HOST" "$RUN -w /work/cudann localhost/fnn-cuda:dev bash -c '
         set -e; export CUDANN_CUDA_ARCHS=\"61;80\" CUDAHOSTCXX=g++-13 CMAKE_BUILD_PARALLEL_LEVEL=8
+        rm -rf /work/fnn-bench/.wheels/ws-nvidia-cuda
         pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-cuda --config-settings=build-dir=/tmp/b .
         cd /work/ompnn
         for cfg in \"clang18nv clang++-18 nvidia sm_61\" \"gcc14nv g++-14 nvidia sm_61\" \"clang22 clang++-22 cpu -\"; do
             set -- \$cfg
             export CXX=\$2 OMPNN_TARGET=\$3 OMPNN_OFFLOAD_ARCH=\$([ \$4 = - ] && echo || echo \$4) OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp
+            rm -rf /work/fnn-bench/.wheels/ws-nvidia-omp-\$1
             pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-\$1 --config-settings=build-dir=/tmp/b-\$1 . || echo \"BUILD FAILED: \$1\"
         done'"
 }
@@ -113,6 +116,7 @@ omp_clang18() {
     ssh "$HOST" "$RUN -w /work/ompnn localhost/fnn-cuda:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export CXX=clang++-18 OMPNN_TARGET=nvidia OMPNN_OFFLOAD_ARCH=sm_61 OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=8
+        rm -rf /work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv
         pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv --config-settings=build-dir=/tmp/b-clang18nv . || { echo "BUILD FAILED: clang18nv"; exit 1; }
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv
         for o in "" "--option blas=tiled" "--option blas=omp --dtype float"; do printf "ompnn clang18nv gpu %-24s " "\$o"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
@@ -143,6 +147,7 @@ omp_gcc14nv() {
     ssh "$HOST" "$RUN -w /work/ompnn localhost/fnn-cuda:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export CXX=g++-14 OMPNN_TARGET=nvidia OMPNN_OFFLOAD_ARCH=sm_61 OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=8
+        rm -rf /work/fnn-bench/.wheels/ws-nvidia-omp-gcc14nv
         pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-gcc14nv --config-settings=build-dir=/tmp/b-gcc14nv . || { echo \"BUILD FAILED: gcc14nv\"; exit 1; }
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-gcc14nv
         for o in \"--option blas=tiled --dtype double\" \"--option blas=tiled --dtype float\" \"--dtype float\"; do printf \"ompnn gcc14nv gpu %-30s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
