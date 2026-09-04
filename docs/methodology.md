@@ -129,7 +129,7 @@ Every row carries two per-epoch times:
 
 `mode = infer` rows time `predict(X, batch)` over the whole set (`epochs`
 passes, `repeat` calls, same warm-up/median protocol). Batch 1 on 2048
-samples is the latency regime (one launch chain per sample: the number that
+samples (E2 and E5 alike) is the latency regime (one launch chain per sample: the number that
 shows the launch overhead of each programming model); batch 4096 is the
 throughput regime. The FLOP model is the forward GEMM only, 2B*sum(n_l n_{l+1}).
 
