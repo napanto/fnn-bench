@@ -94,6 +94,15 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 
 ## Facts worth remembering
 
+- **oneMath cuBLAS + DPC++ out-of-order queues race**: the cuBLAS backend of
+  oneMath v0.9 in the fnn-sycl image was compiled with the `host_task`
+  fallback (no native-command enqueue), so the events it returns complete
+  when the host callback returns, before the cuBLAS kernels finish. With
+  syclnn's out-of-order queue the MNIST network trained to 16-59 % accuracy
+  on the GTX 1080 Ti while `queue=in_order` and `blas=tiled` were correct.
+  syclnn forces an in-order queue on the CUDA backend whenever oneMath is the
+  BLAS (found 2026-09-04); on NVIDIA the E6 `queue=in_order` row therefore
+  equals the default. AdaptiveCpp + rocBLAS on the RX 7900 XTX is unaffected.
 - **DPC++ fat binaries with two CUDA device images**: a wheel built with
   `-fsycl-targets=spir64,nvidia_gpu_sm_61,nvidia_gpu_sm_80` fails on the
   GTX 1080 Ti with "The program was built for 1 devices" and an empty build
