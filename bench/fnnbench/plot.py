@@ -106,17 +106,22 @@ def plot_throughput(plt, rows, out):
     for (wl, dt), series in by_wl.items():
         if all(len(v) < 2 for v in series.values()):
             continue
-        fig, ax = plt.subplots(figsize=(6, 3.6))
+        fig, ax = plt.subplots(figsize=(7.5, 3.8))
+        markers = {"acpp": "o", "clang-22": "s", "clang-18": "^", "gcc-14": "v", "nvcc": "D", "hipcc": "P", "icpx": "X"}
+        styles = {"tiled": "--", "omp": ":", "handwritten": "--"}
         for label, pts in sorted(series.items()):
             pts.sort()
-            ax.plot([p[0] for p in pts], [p[1] for p in pts], marker="o", label=label,
-                    color=BACKEND_COLOR.get(label.split("/")[0]))
+            parts = label.split("@")[0].strip().split("/")
+            comp = parts[1] if len(parts) > 1 else ""
+            blas = parts[2] if len(parts) > 2 else ""
+            ax.plot([p[0] for p in pts], [p[1] for p in pts], marker=markers.get(comp, "o"), ms=4,
+                    linestyle=styles.get(blas, "-"), label=label, color=BACKEND_COLOR.get(parts[0]))
         ax.set_xscale("log", base=2)
         ax.set_yscale("log")
         ax.set_xlabel("batch size")
         ax.set_ylabel("samples / s")
         ax.set_title(f"training throughput - {wl} ({dt})")
-        ax.legend()
+        ax.legend(fontsize=6, loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
         _save(plt, fig, out, f"throughput-{wl}-{dt}")
 
 
