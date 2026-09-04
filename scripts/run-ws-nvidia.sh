@@ -138,6 +138,19 @@ sycl_fix() {
     fetch
 }
 
+omp_gcc14nv() {
+    # gcc-14 nvptx alone: rebuild (tiled kernel change), tiled parity, E7 rows, fetch
+    ssh "$HOST" "$RUN -w /work/ompnn localhost/fnn-cuda:dev bash -c '
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export CXX=g++-14 OMPNN_TARGET=nvidia OMPNN_OFFLOAD_ARCH=sm_61 OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=8
+        pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-gcc14nv --config-settings=build-dir=/tmp/b-gcc14nv . || { echo \"BUILD FAILED: gcc14nv\"; exit 1; }
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-gcc14nv
+        for o in \"--option blas=tiled --dtype double\" \"--option blas=tiled --dtype float\" \"--dtype float\"; do printf \"ompnn gcc14nv gpu %-30s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
+        cd /work/fnn-bench
+        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --select workload=monk,cup,mnist-512-256,sweep-w256-d4-b256,sweep-w1024-d4-b256 --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-gcc14nv'"
+    fetch
+}
+
 fetch() {
     rsync -a "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/" "$HERE/results/ws-nvidia/"
 }
@@ -152,6 +165,7 @@ matrix-sycl) matrix_sycl ;;
 fetch) fetch ;;
 omp-clang18) omp_clang18 ;;
 sycl-fix) sycl_fix ;;
+omp-gcc14nv) omp_gcc14nv ;;
 all) sync; tests; matrix; fetch ;;
-*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|all"; exit 1 ;;
+*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|all"; exit 1 ;;
 esac
