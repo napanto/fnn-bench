@@ -323,11 +323,12 @@ the OpenMP host rows; `ws-amd-cpu-fixups-2.sh` for the DPC++ CPU blocks;
   on 12 places. Re-measured at 12 (`scripts/ws-nvidia-fixups.sh`; the matrix
   script sets it too now): 1.33 s at mnist-512-256 b256 against 3.73 s
   before (pthread OpenBLAS, 16 bound threads). The thread series on that
-  machine peaks at 16 threads (0.84 s) rather than at the 12 physical cores
-  and collapses at 32 (5.2 s, oversubscribed): unlike the Zen+ desktop part,
-  the Ivy Bridge Xeon gains from hyper-threading on these loops. The default
-  rows keep the physical-core rule for comparability; the series (with the
-  12- and 24-thread points added) is the record of the effect.
+  machine (unbound) peaks at 16 threads (0.84 s) rather than at the 12
+  physical cores (1.33-1.47 s), and collapses at 24 (3.5 s) and 32 (5.2 s):
+  the Ivy Bridge Xeon gains from a few hyper-threads on these loops and loses
+  with all of them, where the Zen+ desktop part loses from 16 on. The default
+  rows keep the physical-core rule for comparability; the series (12 and 24
+  added to the E4 plan's 1-32 series) is the record of the effect.
 
 Run-to-run spread: the same visible configuration is measured in more than
 one sweep of the third pass (E3 default vs E7 `blas=auto` vs the E6 baseline,
