@@ -231,6 +231,22 @@ ws-amd and is not recorded.
   (the breakdown plan never sets it). On the RX 7900 XTX and on the CPU the
   option measures the pure cost of the bracketing, since those backends do
   not need it.
+- **The reference workloads are launch-bound on the GPUs, and the BLAS is not
+  the difference.** rocBLAS reaches the same rate through oneMath/AdaptiveCpp
+  and through hipBLAS/HIP on the RX 7900 XTX (`results/ws-amd/2026-09-05/peaks-sizes`:
+  26.77 vs 26.80 TFLOP/s at 8192, 12.2 vs 12.5 at 2048; at 512 one call costs
+  111 vs 82 us, the per-call runtime cost showing). mnist-512-256 (float)
+  costs the same per batch whatever the batch size, 16x more work per batch
+  from 64 to 1024 notwithstanding: cudann/HIP 251 / 279 / 355 us per batch at
+  b64 / b256 / b1024, syclnn/AdaptiveCpp 873 / 972 / 1077 us (613 us with
+  `queue=in_order`), ompnn/amdclang++ (sync after every op) about 780-930 us.
+  A batch is about 30 operations, so the libraries differ in the per-operation
+  cost of their runtimes (HIP streams ~10 us, AdaptiveCpp's scheduler ~30 us,
+  a synchronous OpenMP target region ~25 us), not in kernel or GEMM speed;
+  the E5 breakdown shows the same (device totals 82 / 173 / 191 ms against
+  walls of 100 / 297 / 192 ms). The W4 sweep (4096 wide) is where the GEMMs
+  are long enough for the compute rates to matter, and the ratios shrink
+  there. Report the two regimes separately.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
 
