@@ -117,8 +117,9 @@ def plot_throughput(plt, rows, out):
             continue
         if {k: v for k, v in r.get("options", {}).items() if k not in ("profile", "blas")}:
             continue  # ablation rows belong to the ablation figures
-        by_wl[(r["workload"], r["dtype"])][_label(r)].append((r["batch"], _samples_per_s(r)))
-    for (wl, dt), series in by_wl.items():
+        dev_type = (r.get("device") or {}).get("type") or ("cpu" if "host" in _label(r).lower() else "gpu")
+        by_wl[(r["workload"], r["dtype"], dev_type)][_label(r)].append((r["batch"], _samples_per_s(r)))
+    for (wl, dt, dev_type), series in by_wl.items():
         if all(len({p[0] for p in v}) < 2 for v in series.values()):
             continue  # one batch size only: nothing to plot against
         fig, ax = plt.subplots(figsize=(7.5, 3.8))
@@ -135,9 +136,9 @@ def plot_throughput(plt, rows, out):
         ax.set_yscale("log")
         ax.set_xlabel("batch size")
         ax.set_ylabel("samples / s")
-        ax.set_title(f"training throughput - {wl} ({dt})")
+        ax.set_title(f"training throughput - {wl} ({dt}, {dev_type})")
         ax.legend(fontsize=6, loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
-        _save(plt, fig, out, f"throughput-{wl}-{dt}")
+        _save(plt, fig, out, f"throughput-{wl}-{dt}-{dev_type}")
 
 
 def plot_breakdown(plt, rows, out):
