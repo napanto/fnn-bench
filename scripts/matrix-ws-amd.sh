@@ -27,7 +27,7 @@ sycl_cpu() {
         rm -rf /work/fnn-bench/.wheels/sycl-dpcpp
         pip install -q --no-deps --target /work/fnn-bench/.wheels/sycl-dpcpp --config-settings=build-dir=/tmp/syclnn-build . 2>&1 | grep -E 'error:' || true
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
-        export PYTHONPATH=/work/fnn-bench/.wheels/sycl-dpcpp OMP_PROC_BIND=close OMP_PLACES=cores
+        export PYTHONPATH=/work/fnn-bench/.wheels/sycl-dpcpp OMP_PROC_BIND=close OMP_PLACES=cores DPCPP_CPU_NUM_CUS=16  # the OpenCL CPU device on the 16 physical cores, like every other CPU runtime here (32 hardware threads: 20 % slower, E1)
         cd /work/fnn-bench
         fnnbench sweep --plan plans/e1_cpu_blas.json --out results/ws-amd/$DATE/sycl-cpu
         fnnbench sweep --plan plans/e1_cpu_threads.json --out results/ws-amd/$DATE/sycl-cpu-threads

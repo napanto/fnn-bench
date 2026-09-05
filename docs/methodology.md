@@ -234,6 +234,53 @@ ws-amd and is not recorded.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
 
+### CPU rows: thread counts, affinity and the OpenBLAS variant (third-pass fix-ups)
+
+Four defects in how the CPU rows were run were found while checking the
+third pass for run-to-run consistency (`scripts/headline.py` lists every
+visible configuration that was measured in more than one sweep); all four are
+fixed and the affected rows re-measured (`scripts/ws-amd-cpu-fixups.sh`, old
+rows in `superseded.jsonl`):
+
+- **Thread-scaling rows ran on one core.** A `--threads N` row runs in a child
+  process (the OpenMP and BLAS runtimes read their thread count at load). The
+  parent had imported the backend, and libgomp under `OMP_PROC_BIND=close`
+  pins the importing thread to its place at load time; the child inherited
+  that single core (`cpus_allowed 0,16`), so every E1/E4 thread count ran on
+  one core (gcc-14 host, mnist-512-256 b256: 3.4-4.1 s per epoch for 1 to
+  32 threads, against 0.75 s for the in-process default row). The harness now
+  resets the child's affinity to the cgroup's effective cpuset. Verified:
+  2 threads 1.90 s, 16 threads 0.84 s.
+- **The DPC++ OpenCL CPU device ignores `OMP_NUM_THREADS`.** Its thread count
+  is `DPCPP_CPU_NUM_CUS` (the harness sets it with the OpenMP variables now);
+  the E1 syclnn series had been flat (0.93-0.98 s at every "thread count").
+  With no variable set the device uses all 32 hardware threads while the
+  OpenMP rows use the 16 physical cores; the re-measured E1 series gives the
+  16-vs-32 difference for syclnn, the E4 series for ompnn.
+- **ompnn loaded the pthread OpenBLAS.** The build pointed at Ubuntu's
+  OpenMP-threaded OpenBLAS, but the soname `libopenblas.so.0` was resolved at
+  run time through the distro alternatives symlink to the *pthread* build; its
+  pool and the pinned OpenMP team contend. Same wheel, mnist-512-256 b256
+  float, 16 threads: pthread 0.89-0.94 s, OpenMP variant 0.61-0.63 s (1.5x).
+  ompnn now carries an rpath to the chosen variant's directory and records the
+  mapped libraries in `sysinfo.libs`. The opposite holds for the SYCL Netlib
+  rows: oneMath's Netlib backend on the OpenCL CPU device runs at 1.02 s with
+  the pthread OpenBLAS and 5.1 s with the OpenMP one (a libgomp team spinning
+  next to the OpenCL runtime's TBB workers), so those keep the pthread build.
+  Each runtime gets the OpenBLAS threading model that matches it; both are
+  stock Ubuntu packages.
+- **AdaptiveCpp's host device took 32 threads.** The generic image has no
+  `OMP_NUM_THREADS` default (the CUDA-based image sets 16), so the AdaptiveCpp
+  CPU sweeps ran the host device on 32 threads: 1.67 s at mnist-512-256 b256
+  against 0.96 s for the same binary at 16 threads (found through the
+  portability run). Re-measured at 16.
+
+Run-to-run spread: after the fix-ups, the same visible configuration measured
+in different sweeps of the third pass (E3 default vs E7 `blas=auto` vs the E6
+baseline, E4 vs E7 vendor rows) agrees within the spread reported at the end
+of `analysis/headline-<machine>-<date>.md`; differences below that spread
+between two configurations are not results.
+
 ### The profiler is not free: timing rows run unprofiled
 
 The per-launch event pairs of the in-library profiler cost, measured on the
