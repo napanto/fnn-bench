@@ -173,7 +173,7 @@ def omp_max_threads() -> int | None:
             return int(handle.omp_get_max_threads())
         except Exception:
             continue
-    v = os.environ.get("OMP_NUM_THREADS")
+    v = os.environ.get("OMP_NUM_THREADS", "DPCPP_CPU_NUM_CUS", "OMP_WAIT_POLICY", "KMP_BLOCKTIME", "LD_LIBRARY_PATH", "LD_PRELOAD", "ACPP_TARGETS", "ACPP_VISIBILITY_MASK")
     return int(v.split(",")[0]) if v and v.split(",")[0].isdigit() else None
 
 
