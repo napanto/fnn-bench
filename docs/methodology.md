@@ -120,10 +120,18 @@ FP64), which is the "float vs double" discussion point of the report.
   `bias_gemv=false` bias gradient) therefore run at one lane per warp on gcc
   builds. Those two ablation rows from gcc offload builds are reported but not
   compared with the SYCL/CUDA equivalents, which use one work-item per element.
-- `ompnn` synchronises after every vendor BLAS call (`cudaDeviceSynchronize`
-  / `hipDeviceSynchronize`): the OpenMP runtime's queues and the BLAS stream
-  are not ordered otherwise. This is a genuine cost of the interop model and
-  is part of what E4 measures, not an artefact.
+- `ompnn` executes every operation synchronously: target regions block the
+  host until they finish and every vendor BLAS call is followed by a device
+  synchronisation (the OpenMP runtime's streams and the BLAS stream are not
+  ordered otherwise). This is the interop model's cost and part of what E4
+  measures; to separate it from the compiler and runtime, cudann and syclnn
+  have the `sync_ops=true` ablation, which waits after every launch, i.e.
+  runs them in ompnn's execution model on the same hardware and library
+  (E3 and E6 rows). Asynchronous OpenMP (`target nowait` with `depend`
+  clauses and cuBLAS on an `omp interop` stream) was verified correct with
+  clang-18 on the GTX 1080 Ti but gained nothing on a sequential chain
+  (`scripts/../omp_async` feasibility test, 2026-09-05), so ompnn keeps the
+  synchronous model and the report quantifies it instead.
 - One-time costs (BLAS handle creation, lazy module loading, gcc's PTX JIT)
   land in the first batch; every row discards `--warmup` epochs before timing.
 
