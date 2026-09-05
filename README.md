@@ -11,7 +11,7 @@ results and the analysis.
 testkit/      fnn-testkit: float64 reference implementation + pytest suite run against every backend
 bench/        fnnbench: run / sweep / collect / replay / peak / plot, FLOP model, system capture, JSONL rows
 containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic Containerfiles (+ the oneMath/OpenBLAS patch)
-plans/        the experiment matrix as JSON plans (E1-E7, W4 sweeps)
+plans/        the experiment matrix as JSON plans (E1-E7, W4 sweeps; e5_breakdown is the only profiled plan)
 scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh,
               ws-amd-pass2.sh, run-ws-nvidia.sh (NVIDIA runs over ssh + podman CDI), analyze.sh,
               supersede-stale.py, rocprof-crosscheck.sh, perf-crosscheck.sh, nsys-crosscheck.py
