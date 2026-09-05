@@ -90,11 +90,43 @@ def _config_from_args(a: argparse.Namespace, **overrides) -> RunConfig:
     return RunConfig(**kw)
 
 
+def _unpinned_cpus() -> set[int]:
+    """The CPUs this process may use before any OpenMP runtime pinned it: libgomp pins the
+    importing (master) thread to its place at load time under OMP_PROC_BIND, and a child
+    spawned afterwards inherits that single core (every thread count then ran on one core in
+    the pass-2/3 E1/E4 thread rows). The cgroup's effective cpuset (containers' --cpuset-cpus)
+    is honoured; a `taskset` on the parent is not."""
+    for f in ("/sys/fs/cgroup/cpuset.cpus.effective", "/sys/fs/cgroup/cpuset/cpuset.effective_cpus"):
+        try:
+            spec = open(f).read().strip()
+        except OSError:
+            continue
+        cpus: set[int] = set()
+        for part in spec.split(","):
+            if "-" in part:
+                lo, hi = part.split("-")
+                cpus.update(range(int(lo), int(hi) + 1))
+            elif part:
+                cpus.add(int(part))
+        if cpus:
+            return cpus
+    return set(range(os.cpu_count() or 1))
+
+
+def _restore_affinity() -> None:
+    try:
+        os.sched_setaffinity(0, _unpinned_cpus())
+    except (OSError, AttributeError):
+        pass
+
+
 def _thread_env(threads: int | None) -> dict[str, str]:
     env = dict(os.environ)
     if threads:
         for k in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
             env[k] = str(threads)
+        # the DPC++ OpenCL CPU device ignores the OpenMP variables: it has its own knob
+        env["DPCPP_CPU_NUM_CUS"] = str(threads)
         env.setdefault("OMP_PROC_BIND", "close")
         env.setdefault("OMP_PLACES", "cores")
     return env
@@ -105,7 +137,7 @@ def _run_in_subprocess(cfg: RunConfig, out: Path | None) -> int:
     each thread configuration runs in a fresh interpreter."""
     payload = json.dumps({"cfg": cfg.__dict__, "out": str(out) if out else None})
     cmd = [sys.executable, "-m", "fnnbench.cli", "_child", payload]
-    return subprocess.run(cmd, env=_thread_env(cfg.threads)).returncode
+    return subprocess.run(cmd, env=_thread_env(cfg.threads), preexec_fn=_restore_affinity).returncode
 
 
 def cmd_child(a: argparse.Namespace) -> int:

@@ -18,6 +18,25 @@ ENV_KEYS_PREFIXES = ("OMP_", "ONEAPI_", "SYCL_", "ACPP_", "HIP_", "CUDA_", "ROCR
                      "GOMP_", "KMP_", "LIBOMPTARGET", "FNN_", "NVIDIA_", "NVCOMPILER_")
 
 
+
+def loaded_libs() -> list[str]:
+    """BLAS / OpenMP / SYCL runtime libraries mapped in this process (provenance: e.g. which
+    OpenBLAS variant the loader actually resolved)."""
+    pats = ("openblas", "libblas", "mkl_rt", "mkl_sycl", "libgomp", "libomp", "libiomp", "libtbb", "libonemath", "libsycl", "libacpp", "hipsycl", "rocblas", "hipblas", "cublas", "libcudart", "libamdhip", "libOpenCL", "intelocl", "libur_")
+    seen: list[str] = []
+    try:
+        for line in open("/proc/self/maps"):
+            parts = line.split()
+            if len(parts) < 6 or not parts[5].startswith("/"):
+                continue
+            path = parts[5]
+            if any(p in path for p in pats) and path not in seen:
+                seen.append(path)
+    except OSError:
+        pass
+    return seen
+
+
 def _run(cmd: list[str], timeout: float = 10) -> str | None:
     if shutil.which(cmd[0]) is None:
         return None
@@ -53,9 +72,14 @@ def cpu_info() -> dict[str, Any]:
     info["governor"] = _read("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
     info["max_khz"] = _read("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
     try:
-        info["affinity"] = len(os.sched_getaffinity(0))
+        info["affinity"] = len(os.sched_getaffinity(0))  # of the calling (master) thread: pinned to one place under OMP_PROC_BIND
     except Exception:
         pass
+    for f in ("/sys/fs/cgroup/cpuset.cpus.effective", "/sys/fs/cgroup/cpuset/cpuset.effective_cpus"):
+        v = _read(f)
+        if v:
+            info["cpuset_effective"] = v  # what the process as a whole may use (the worker threads' places)
+            break
     return info
 
 
@@ -165,6 +189,7 @@ def collect(repos: dict[str, str] | None = None) -> dict[str, Any]:
         "kernel": platform.release(),
         "python": platform.python_version(),
         "cpu": cpu_info(),
+        "libs": loaded_libs(),
         "gpu": gpu_info(),
         "container": container_info(),
         "env": environment(),

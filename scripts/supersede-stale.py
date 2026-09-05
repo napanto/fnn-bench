@@ -38,15 +38,25 @@ def main() -> None:
     ap.add_argument("root")
     ap.add_argument("--backend", action="append", default=[])
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--dupes", action="store_true", help="also supersede older rows of a visible configuration re-measured later in the same file")
+    ap.add_argument("--all", action="store_true", help="supersede every row under root (the sweep is being re-measured)")
     a = ap.parse_args()
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bench"))
+    from fnnbench.results import dedupe
     total = 0
     for f in sorted(Path(a.root).rglob("*.jsonl")):
         if f.name in ("superseded.jsonl", "peak.jsonl"):  # peak probes have their own row schema
             continue
         rows = [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
         keep, drop = [], []
+        newest = {id(r) for r in dedupe(rows)} if a.dupes else None
         for r in rows:
             why = stale(r, set(a.backend))
+            if not why and a.all:
+                why = "sweep re-measured"
+            if not why and newest is not None and id(r) not in newest:
+                why = "older duplicate of a re-measured configuration"
             (drop if why else keep).append((r, why))
         if not drop:
             continue
