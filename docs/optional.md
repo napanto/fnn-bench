@@ -45,13 +45,17 @@ the unmodified NVIDIA wheel on AMD through ZLUDA.
 |---|---|---|---|---|---|---|
 | AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX (HIP) | 215 ms (tiled 102 ms) | 1.9 ms (tiled 1.0) | 17.5 ms (tiled 8.2) | `results/ws-amd/2026-09-05/portable-acpp` |
 | same | | TR 2950X (OpenMP host device, 16 threads) | 956 ms (tiled 2288 ms) | 0.9 ms (tiled 1.6) | 7.0 ms (tiled 8.4) | same |
-| same | | GTX 1080 Ti (CUDA) | see `results/ws-nvidia/2026-09-05/portable-acpp` | | | `scripts/ws-nvidia-portable-acpp.sh` |
+| same | | GTX 1080 Ti (CUDA, ws-nvidia) | 210 ms (tiled 193 ms) | 2.1 ms (tiled 1.5) | 17.6 ms (tiled 11.5) | `results/ws-nvidia/2026-09-05/portable-acpp` (`scripts/ws-nvidia-portable-acpp.sh`; parity suite on the GPU: 111 passed, 7 skipped) |
+| same | | Xeon E5-2643 v2 (OpenMP host device, ws-nvidia; does-it-run row, 16 threads on 12 cores) | 3821 ms (tiled 3180 ms) | 1.6 ms (tiled 1.4) | 11.1 ms (tiled 12.6) | same |
 | DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia, two AOT targets | TR 2950X (OpenCL CPU, 32 compute units; the 16-unit re-measurement of `ws-amd-cpu-fixups-2.sh` replaces these) | 998 ms (tiled 2381 ms) | 1.9 ms (tiled 1.4) | 13.8 ms (tiled 11.4) | `results/ws-amd/2026-09-05/portable-dpcpp` |
 | same | | GTX 1080 Ti | the `sycl-gpu` rows of ws-nvidia (same wheel) | | | `results/ws-nvidia/2026-09-05/sycl-gpu` |
 | same | | RX 7900 XTX | **cannot**: no HIP adapter in the DPC++ release; a fat binary with `amd_gpu_gfx1100` does not build (see 2.) | | | |
 
 What the table shows: the AdaptiveCpp binary carries one generic IR and runs
-on the CPU, on RDNA3 and on Pascal unchanged; the DPC++ binary carries one
+on two CPUs, on RDNA3 and on Pascal unchanged, at the speed of a wheel built
+on the target machine (210 ms against 209-224 ms for the AdaptiveCpp wheel
+built on ws-nvidia itself, `sycl-gpu-acpp`: the IR is JIT-compiled per device
+either way); the DPC++ binary carries one
 SPIR-V and one PTX/SASS image per target listed at build time (a second
 NVIDIA target, `sm_80`, made the wheel fail to load on Pascal: one CUDA
 target per wheel, `docs/toolchains.md`) and reaches exactly those. ompnn's
