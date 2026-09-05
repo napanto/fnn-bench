@@ -19,7 +19,8 @@ RUN="podman run --rm --memory=40g $GPU -v $REMOTE/syclnn:/work/syclnn -v $REMOTE
 sync() {
     ssh "$HOST" mkdir -p "$REMOTE"
     for r in syclnn cudann ompnn fnn-bench; do
-        rsync -a --delete --exclude build --exclude .venv --exclude .wheels --exclude __pycache__ "$AC/$r/" "$HOST:$REMOTE/$r/"
+        # never the results: ws-nvidia's rows are newer than ws-amd's fetched copy
+        rsync -a --delete --exclude build --exclude .venv --exclude .wheels --exclude __pycache__ --exclude results --exclude .cache --exclude analysis "$AC/$r/" "$HOST:$REMOTE/$r/"
     done
     for img in fnn-cuda fnn-sycl; do
         if ! ssh "$HOST" podman image exists localhost/$img:dev; then
@@ -108,8 +109,9 @@ matrix_omp() {
             fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-breakdown-omp-gpu-\$w
             fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-\$w
         done
-        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22
-        fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22'"
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22 OMP_NUM_THREADS=12   # physical cores (2 x 6); the image default 16 is ws-amd's
+        fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22
+        fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-nvidia/$DATE/peaks-omp-clang22'"
 }
 
 matrix_cuda_omp() {
