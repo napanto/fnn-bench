@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # AdaptiveCpp: clang-18 host compiler, CUDA backend, SSCP single-pass compiler (generic target)
 RUN git clone --depth 1 -b ${ACPP_TAG} https://github.com/AdaptiveCpp/AdaptiveCpp.git /tmp/acpp \
+    # v25.10.0 compares an unset ${CMAKE_PROJECT_VERSION_MINOR} with EQUAL (if() rejects it when empty)
+    && sed -i 's/elseif(${CMAKE_PROJECT_VERSION_MINOR} EQUAL 0)/elseif("${CMAKE_PROJECT_VERSION_MINOR}" STREQUAL "0")/' /tmp/acpp/CMakeLists.txt \
     && cmake -S /tmp/acpp -B /tmp/acpp/build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/acpp \
         -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18 -DLLVM_DIR=/usr/lib/llvm-18/cmake \
