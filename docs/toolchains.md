@@ -107,15 +107,24 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
   takes 6.0-6.4 s with DPC++ and 9.9 s with AdaptiveCpp). The 16384-sample and
   depth-sweep numbers come from ad-hoc runs, not from result rows. Found 2026-09-04; the
   DPC++ CPU rows measured before it were superseded and re-measured.
-- **oneMath cuBLAS + DPC++ out-of-order queues race**: the cuBLAS backend of
-  oneMath v0.9 in the fnn-sycl image was compiled with the `host_task`
-  fallback (no native-command enqueue), so the events it returns complete
-  when the host callback returns, before the cuBLAS kernels finish. With
-  syclnn's out-of-order queue the MNIST network trained to 16-59 % accuracy
-  on the GTX 1080 Ti while `queue=in_order` and `blas=tiled` were correct.
-  syclnn forces an in-order queue on the CUDA backend whenever oneMath is the
-  BLAS (found 2026-09-04); on NVIDIA the E6 `queue=in_order` row therefore
-  equals the default. AdaptiveCpp + rocBLAS on the RX 7900 XTX is unaffected.
+- **oneMath on the DPC++ CUDA backend does not compose with out-of-order
+  queues**: with `-fsycl-targets=nvidia_gpu_sm_61` (intel/llvm 7.1.0 nightly
+  2026-09-01, oneMath v0.9 built with the native-command enqueue) the parity
+  suite fails and MNIST trains to 16-59 % accuracy whenever the queue is
+  out-of-order and a oneMath BLAS is used; in-order passes. Ruled out on
+  2026-09-05: the cuBLAS workspace (`CUBLAS_WORKSPACE_CONFIG=:0:0` and
+  `:4096:8` still fail) and the shared handle (a dedicated in-order BLAS
+  queue alone still fails). What fails is the runtime's handling of the
+  native command itself: neither its cross-stream input dependencies nor its
+  completion event are honoured. Bracketing every call with two empty kernels
+  on the dedicated in-order queue (input dependencies carried by a kernel,
+  the event of a kernel returned) is correct, so syclnn offers it as
+  `blas_queue=dedicated`; it is 40-60 % slower than plain in-order on the
+  GTX 1080 Ti (cup 24 vs 15 ms, MNIST 512-256 248 vs 169 ms), so the default
+  on the CUDA backend is the in-order queue. AdaptiveCpp + rocBLAS on the RX
+  7900 XTX is unaffected (out-of-order passes). Same conclusion for the E6
+  rows on NVIDIA: `queue=in_order` equals the default, `blas_queue=dedicated`
+  is the out-of-order variant.
 - **DPC++ fat binaries with two CUDA device images**: a wheel built with
   `-fsycl-targets=spir64,nvidia_gpu_sm_61,nvidia_gpu_sm_80` fails on the
   GTX 1080 Ti with "The program was built for 1 devices" and an empty build

@@ -183,9 +183,9 @@ ws-amd and is not recorded.
   host tiled GEMM reassociates the 16-term partial sums: the OpenMP rows are
   not bit-identical to the SYCL/CUDA ones, only within the check tolerances.
 - E7 on the GTX 1080 Ti: the syclnn `blas=tiled` rows run with the out-of-order
-  queue while the oneMath rows are forced in-order (the cuBLAS event race), so
-  the tiled/library ratio there mixes the queue mode with the kernel; on the
-  RX 7900 XTX both use the same queue.
+  queue while the oneMath rows are in-order (the runtime defect described in
+  `docs/toolchains.md`), so the tiled/library ratio there mixes the queue
+  mode with the kernel; on the RX 7900 XTX both use the same queue.
 - E7 (`blas=tiled`): the three kernels share the tile size (16x16), the work
   decomposition (one work-item/thread per C element, op(A) tile stored
   transposed in local/shared memory, op(B) tile broadcast) and the sequential
@@ -220,6 +220,30 @@ ws-amd and is not recorded.
   interval have no `gpu_monitor`.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
+
+### The profiler is not free: timing rows run unprofiled
+
+The per-launch event pairs of the in-library profiler cost, measured on the
+same configuration with the profiler off and on (median epoch, 10 epochs per
+call, second pass of 2026-09-04):
+
+| device | library | cup b40 | mnist-512-256 b256 |
+|---|---|---|---|
+| RX 7900 XTX | cudann (HIP) | 6.5 -> 9.2 ms (+41 %) | 76 -> 106 ms (+39 %) |
+| RX 7900 XTX | syclnn (AdaptiveCpp) | 18.1 -> 24.1 ms (+33 %) | 238 -> 281 ms (+18 %) |
+| RX 7900 XTX | ompnn (amdclang++) | 14.6 -> 14.7 ms (0 %) | 194 -> 194 ms (0 %) |
+| GTX 1080 Ti | cudann (nvcc) | 4.6 -> 6.0 ms (+29 %) | 76 -> 100 ms (+31 %) |
+| GTX 1080 Ti | syclnn (DPC++) | 14.9 -> 19.5 ms (+31 %) | 167 -> 225 ms (+34 %) |
+
+ompnn pays nothing because it synchronises after every operation anyway;
+the two asynchronous libraries pay 20-40 %, and not equally. The first two
+passes (2026-09-03/04) had the profiler on in every timed row, which biased
+the OpenMP-vs-others ratios by that much. From the third pass on, every
+timing plan runs unprofiled: the libraries always record the per-epoch wall
+clock and the epoch/batch counters (one clock read per epoch), which is all
+the steady-state metric needs, and the per-phase device times come from one
+dedicated profiled plan (`plans/e5_breakdown.json`, the E5 breakdown
+figures) that is never used for a timing comparison.
 
 ## Profiler cross-validation 
 

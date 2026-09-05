@@ -1041,6 +1041,72 @@
     "persistent_workspace": false,
     "pinned_host": false
    }
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "blas_queue": "dedicated"
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "blas_queue": "dedicated"
+   }
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas_queue": "dedicated"
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "blas_queue": "dedicated"
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3,
+   "options": {
+    "blas_queue": "dedicated"
+   }
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3,
+   "options": {
+    "blas_queue": "dedicated"
+   }
   }
  ]
 }
