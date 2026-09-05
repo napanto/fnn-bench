@@ -33,6 +33,48 @@ and toolchain are in `analysis/headline-<machine>-<date>.md` and the
   device (`sycl-cpu-acpp`, 16 threads). See the same table.
 
 <!-- DPCPP-VS-ACPP-TABLE -->
+Steady epoch in ms, float training rows, vendor BLAS / hand-written tiled
+BLAS (`scripts/acpp-vs-dpcpp.py`, regenerated from the rows; the CPU rows use
+16 compute units / 16 threads):
+
+| device | SYCL implementation | units | monk b40 | cup b40 | mnist-512-256 b256 | mnist-512-256 b1024 |
+|---|---|---|---|---|---|---|
+| GTX 1080 Ti | AdaptiveCpp | 28 | 2.1 / 1.4 | 18.0 / 12.1 | 224.9 / 192.5 | 69.0 / - |
+| GTX 1080 Ti | DPC++ | 28 | 2.4 / 1.6 | 16.7 / 11.7 | 145.8 / 243.9 | 40.7 / - |
+| RX 7900 XTX | AdaptiveCpp | 48 | 2.1 / 1.0 | 19.1 / 8.2 | 221.7 / 102.4 | 63.5 / - |
+| TR 2950X, OpenMP host | AdaptiveCpp | 16 threads | 1.0 / 1.4 | 8.6 / 12.6 | 2413.8 / 3180.4 | 738.7 / - |
+
+vendor / tiled cells are steady epochs in ms; ratios above 1 mean AdaptiveCpp is slower:
+
+- GTX 1080 Ti: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.85x; monk b40 tiled: 0.91x; cup b40 vendor: 1.08x; cup b40 tiled: 1.04x; mnist-512-256 b256 vendor: 1.54x; mnist-512-256 b256 tiled: 0.79x; mnist-512-256 b1024 vendor: 1.69x
+
+Same-GPU findings on the GTX 1080 Ti (both wheels built in their own image on
+ws-nvidia, both through oneMath's cuBLAS backend):
+
+- With cuBLAS, DPC++ is 1.4x faster at mnist-512-256 b256 (146 vs 209-240 ms)
+  and 1.7x at b1024; monk/cup are within the run-to-run spread. With the
+  tiled kernels the order flips (DPC++ 244 ms, AdaptiveCpp 192 ms): the
+  DPC++ tiled rows run on the out-of-order queue that the CUDA adapter
+  cannot combine with oneMath (`docs/toolchains.md`), the AdaptiveCpp ones on
+  a working out-of-order queue.
+- AdaptiveCpp's out-of-order queue is *correct* with cuBLAS (parity suites in
+  `results/ws-nvidia/2026-09-05/sycl-gpu-acpp/parity.txt`: 221 passed for
+  `queue=in_order`, `streams=1`, `blas_queue=dedicated`, `memory=shared`; 3
+  failures only for `memory=host`, zero-copy host USM, the same class of
+  failure as on the RX 7900 XTX), but not faster: its E6 rows give 178 ms
+  in-order against 240 ms out-of-order (1.35x, the same sign as on the RX
+  7900 XTX: 144 vs 228), `sync_ops=true` 235 ms (no overlap to lose), and the
+  bracketed `blas_queue=dedicated` 373 ms.
+- Per-operation cost, the launch-bound regime of the methodology: AdaptiveCpp
+  about 0.9-1.0 ms per batch of about 30 operations on both GPUs, DPC++
+  0.6 ms on the 1080 Ti, cudann 0.24-0.28 ms. At width 4096 all three
+  converge (methodology, "the two regimes").
+- On the CPU the two implementations are different devices: DPC++ drives the
+  OpenCL CPU runtime (TBB workers, `DPCPP_CPU_NUM_CUS`), AdaptiveCpp its
+  OpenMP host device (`OMP_NUM_THREADS`); at mnist-512-256 b256 they are
+  within a few percent of each other, with different BLAS paths (MKLCPU /
+  Netlib on DPC++, the generic SYCL BLAS on AdaptiveCpp).
+<!-- /DPCPP-VS-ACPP-TABLE -->
 
 ## 3. Portability: one binary, four devices
 
