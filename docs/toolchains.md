@@ -133,6 +133,19 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
   sequential chain was the same as the synchronous form within the noise of
   the 1080 Ti's clock ramps (0.11-0.22 ms per k1+GEMM+k2 step), so the
   benefit would come only from branch-level overlap.
+- **The intel/llvm release tarball has no AMD target**: `sycl_linux.tar.gz`
+  (v7.1.0) ships libspirv for nvptx64 only (`lib/clang/22/lib/libclc/`) and
+  the CUDA, Level Zero and OpenCL adapters, no `libur_adapter_hip.so`; a
+  syclnn build with `amd_gpu_gfx1100` fails at link time (missing
+  `remangled-l64-signed_char.libspirv-amdgcn-amd-amdhsa.bc`). DPC++ on the
+  RX 7900 XTX would need intel/llvm built from source with `--hip`
+  (`scripts/dpcpp-hip-toolchain.sh` is kept for that; not done). The
+  SYCL implementation comparison is therefore made on the GTX 1080 Ti
+  (DPC++ vs AdaptiveCpp with the CUDA backend, `fnn-acpp-cuda`) and on the
+  CPU (DPC++ `opencl:cpu` vs AdaptiveCpp OpenMP host, E1/E2), and the
+  one-binary portability run uses AdaptiveCpp's generic SSCP binary on the
+  CPU, the RX 7900 XTX and the GTX 1080 Ti, next to the DPC++
+  `spir64 + nvidia_gpu_sm_61` wheel on x86 and Pascal.
 - **DPC++ fat binaries with two CUDA device images**: a wheel built with
   `-fsycl-targets=spir64,nvidia_gpu_sm_61,nvidia_gpu_sm_80` fails on the
   GTX 1080 Ti with "The program was built for 1 devices" and an empty build
