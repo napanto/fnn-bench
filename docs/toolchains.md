@@ -54,7 +54,7 @@ parallel for simd` on `omp_target_alloc` memory + vendor BLAS interop
 
 | Compiler | Target | BLAS | Status | Notes |
 |---|---|---|---|---|
-| gcc 14.2 (`-foffload=disable`) | ws-amd CPU | OpenBLAS 0.3.26 openmp | **OK** double + float | one intermittent double failure seen once in the fnn-cuda image (explained by the oneMath cuBLAS event race below) |
+| gcc 14.2 (`-foffload=disable`) | ws-amd CPU | OpenBLAS 0.3.26, OpenMP build (the pthread build was silently loaded until 2026-09-05, see below) | **OK** double + float | one intermittent double failure seen once in the fnn-cuda image (explained by the oneMath cuBLAS event race below) |
 | gcc 14.2 | ws-amd CPU | oneMKL 2026.1 (`mkl_rt`) | **OK** double + float | `OMPNN_BLAS=mkl OMPNN_BLAS_ROOT=/opt/venv` |
 | clang 22.1 (apt.llvm.org) | ws-amd CPU | OpenBLAS | **OK** double + float | host-only build (no offload runtime shipped) |
 | clang 18.1 (Ubuntu) | ws-amd CPU | OpenBLAS | **OK** double + float | |
@@ -72,7 +72,15 @@ and `-fstack-protector-strong` break gcc's nvptx/amdgcn offload step; LLVM's `om
 `libomptarget`, which clang only links when the `-fopenmp` driver flag is on the
 link line (host-only builds compile the calls out instead); the OpenMP runtime
 of amdclang++ lives under `/opt/rocm/lib/llvm/lib` (rpath from
-`-print-file-name=libomp.so`).
+`-print-file-name=libomp.so`). Ubuntu ships OpenBLAS twice
+(`openblas-pthread/`, `openblas-openmp/`) behind one alternatives symlink for
+`libopenblas.so.0`; linking against the OpenMP build's directory is not
+enough, the loader follows the symlink to the pthread build unless the module
+carries an rpath to the variant's directory (ompnn does since 2026-09-05; the
+mapped libraries are in every row's `sysinfo.libs`). The OpenMP build is 1.5x
+faster under ompnn (one thread pool), the pthread build 5x faster under
+oneMath's Netlib backend on the OpenCL CPU device (no libgomp team next to
+the TBB workers): `docs/methodology.md`, CPU fix-ups.
 
 ## Hand-written BLAS (E7, `blas=tiled`)
 
@@ -93,6 +101,18 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 `scripts/ws-amd-pass2.sh` (`results/ws-amd/<date>/tiled-parity.txt`).
 
 ## Facts worth remembering
+
+- **libgomp pins the importing thread at load time** under `OMP_PROC_BIND`:
+  a process that imported an OpenMP-linked module and then spawns a child
+  hands it a one-core affinity mask (`cpus_allowed 0,16`), and the child's
+  OpenMP runtime builds its places from that mask, so every thread count runs
+  on one core. `fnnbench`'s per-thread-count children reset their affinity to
+  the cgroup's effective cpuset (2026-09-05; the E1/E4 thread rows before that
+  were measured on one core and are superseded).
+- **The DPC++ OpenCL CPU device sizes itself with `DPCPP_CPU_NUM_CUS`**
+  (`OMP_NUM_THREADS` is ignored; `compute_units` in `devices()` shows the
+  effect, a `--cpuset-cpus` limit is honoured too). Unset, it uses all 32
+  hardware threads of the 2950X while the OpenMP rows use the 16 cores.
 
 - **Intel OpenCL CPU runtime and deep queues**: the per-submission cost of
   `opencl:cpu` (oclcpuexp 2026-WW28 under DPC++) grows with the number of
