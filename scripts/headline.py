@@ -69,11 +69,18 @@ def load(dirs):
     return out
 
 
-def dev(r):
-    n = r["device"]["name"].strip()
+def _short(n):
     return n.replace("AMD Ryzen Threadripper 2950X 16-Core Processor", "TR 2950X").replace(
         "Intel(R) Xeon(R) CPU E5-2643 v2 @ 3.50GHz", "Xeon E5-2643v2").replace("NVIDIA GeForce GTX 1080 Ti", "1080 Ti").replace(
-        "AMD Radeon RX 7900 XTX", "7900 XTX").replace("AdaptiveCpp OpenMP host device", "TR 2950X (acpp host)")
+        "AMD Radeon RX 7900 XTX", "7900 XTX").strip()
+
+
+def dev(r):
+    n = r["device"]["name"].strip()
+    if n == "AdaptiveCpp OpenMP host device":  # the host CPU: name it from sysinfo
+        model = ((r.get("sysinfo") or {}).get("cpu") or {}).get("model") or "host CPU"
+        return f"{_short(model)} (acpp host, {r.get('threads_effective') or '?'} threads)"
+    return _short(n)
 
 
 def ms(v):
