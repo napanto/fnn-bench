@@ -45,10 +45,15 @@ for o in "--dtype float" "--dtype double" "--option queue=in_order" "--option st
     printf "%-40s " "$o"; timeout 900 $PY -m pytest -q --device gpu -p no:cacheprovider $o 2>&1 | grep -E "passed|failed|rror" | head -1
 done
 echo
-echo "## anecdotal speed (steady epoch, unprofiled): cudann-on-ZLUDA vs cudann/HIP vs syclnn/AdaptiveCpp"
+echo "## speed rows (steady epoch, unprofiled). ZLUDA's cuBLAS has no gemv (status 15 = NOT_SUPPORTED),"
+echo "## so: blas=tiled (no cuBLAS at all), bias_gemv=False (cuBLAS gemm only), and the default (fails)."
 cd "$HERE"
-for wl in "monk 40" "cup 40" "mnist-512-256 256" "mnist-512-256 1024"; do set -- $wl
-    printf "cudann/ZLUDA %-14s b=%-5s " $1 $2; timeout 1800 $PY -m fnnbench run --backend cudann --device gpu --workload $1 --batch $2 --dtype float --epochs 5 --repeat 3 --warmup 1 --out "$OUT/rows" --tag zluda 2>&1 | grep -oE "train epoch +[0-9.]+ ms.*samples/s" | head -1
+for o in "blas=tiled" "bias_gemv=False" ""; do
+    args=""; for kv in $o; do args="$args --option $kv"; done
+    for wl in "monk 40" "cup 40" "mnist-512-256 256" "mnist-512-256 1024"; do set -- $wl
+        printf "cudann/ZLUDA [%-15s] %-14s b=%-5s " "$o" $1 $2
+        timeout 1800 "$(dirname "$PY")/fnnbench" run --backend cudann --device gpu --workload $1 --batch $2 --dtype float --epochs 5 --repeat 3 --warmup 1 $args --out "$OUT/rows" --tag zluda 2>&1 | grep -E "epoch|Error" | tail -1 | cut -c1-160
+    done
 done
 } | tee "$OUT/README.md"
 log "written $OUT/README.md"
