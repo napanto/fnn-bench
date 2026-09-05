@@ -50,7 +50,7 @@ sycl_generic() {
         rm -rf /work/fnn-bench/.wheels/sycl-generic
         pip install -q --no-deps --target /work/fnn-bench/.wheels/sycl-generic --config-settings=build-dir=/tmp/syclnn-build-generic . 2>&1 | grep -E 'error:' || true
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
-        export PYTHONPATH=/work/fnn-bench/.wheels/sycl-generic OMP_PROC_BIND=close OMP_PLACES=cores OMP_NUM_THREADS=16  # physical cores, like the fnn-cuda image; the generic image has no default and the acpp host device took all 32 (1.75x slower)
+        export PYTHONPATH=/work/fnn-bench/.wheels/sycl-generic OMP_PROC_BIND=close OMP_PLACES=cores DPCPP_CPU_NUM_CUS=16  # the OpenCL CPU device on the 16 physical cores (see sycl_cpu)
         cd /work/fnn-bench
         fnnbench sweep --plan plans/e1_cpu_generic.json --out results/ws-amd/$DATE/sycl-cpu-generic
         fnnbench peak --backend syclnn --device cpu --dtype float --size 4096 --option blas=generic --out results/ws-amd/$DATE/peaks
@@ -60,7 +60,9 @@ sycl_generic() {
 rocm_gpu() {
     log "RX 7900 XTX: syclnn (AdaptiveCpp + rocBLAS) and cudann (HIP + hipBLAS): E2 gpu, E3, E6 gpu, W4 gpu"
     distrobox enter fnn-rocm -- bash -c "
-        P=\$HOME/.local/opt/fnn-rocm; export PATH=\$P/venv/bin:\$PATH FNN_REF_CACHE=$HERE/.cache/ref; cd $HERE
+        # OMP_NUM_THREADS=16: the AdaptiveCpp host device (the CPU rows at the end) on the 16 physical
+        # cores like every other CPU runtime; unset it took the 32 hardware threads (1.75x slower)
+        P=\$HOME/.local/opt/fnn-rocm; export PATH=\$P/venv/bin:\$PATH FNN_REF_CACHE=$HERE/.cache/ref OMP_NUM_THREADS=16; cd $HERE
         fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --out results/ws-amd/$DATE/sycl-gpu-acpp 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --out results/ws-amd/$DATE/gpu-cuda-vs-sycl 2>&1 | grep -v 'AdaptiveCpp Warning'
         fnnbench sweep --plan plans/e6_sycl_ablations.json --select device=gpu --out results/ws-amd/$DATE/sycl-gpu-ablations 2>&1 | grep -v 'AdaptiveCpp Warning'

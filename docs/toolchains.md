@@ -76,8 +76,8 @@ of amdclang++ lives under `/opt/rocm/lib/llvm/lib` (rpath from
 (`openblas-pthread/`, `openblas-openmp/`) behind one alternatives symlink for
 `libopenblas.so.0`; linking against the OpenMP build's directory is not
 enough, the loader follows the symlink to the pthread build unless the module
-carries an rpath to the variant's directory (ompnn does since 2026-09-05; the
-mapped libraries are in every row's `sysinfo.libs`). The OpenMP build is 1.5x
+carries an rpath to the variant's directory (ompnn does since 2026-09-05;
+rows written since then record the mapped libraries in `sysinfo.libs`). The OpenMP build is 1.5x
 faster under ompnn (one thread pool), the pthread build 5x faster under
 oneMath's Netlib backend on the OpenCL CPU device (no libgomp team next to
 the TBB workers): `docs/methodology.md`, CPU fix-ups.
@@ -107,12 +107,14 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
   hands it a one-core affinity mask (`cpus_allowed 0,16`), and the child's
   OpenMP runtime builds its places from that mask, so every thread count runs
   on one core. `fnnbench`'s per-thread-count children reset their affinity to
-  the cgroup's effective cpuset (2026-09-05; the E1/E4 thread rows before that
-  were measured on one core and are superseded).
+  the cgroup's effective cpuset (2026-09-05; the ompnn E4 thread rows before
+  that were measured on one core and are superseded).
 - **The DPC++ OpenCL CPU device sizes itself with `DPCPP_CPU_NUM_CUS`**
-  (`OMP_NUM_THREADS` is ignored; `compute_units` in `devices()` shows the
-  effect, a `--cpuset-cpus` limit is honoured too). Unset, it uses all 32
-  hardware threads of the 2950X while the OpenMP rows use the 16 cores.
+  (`OMP_NUM_THREADS` is ignored). The device keeps reporting 32
+  `compute_units` whatever the variable says, only the times follow it; a
+  `--cpuset-cpus` limit is honoured and is reflected in `compute_units`.
+  Unset, it uses all 32 hardware threads of the 2950X while the OpenMP rows
+  use the 16 cores (20 % faster at mnist-512-256 b256, E1).
 
 - **Intel OpenCL CPU runtime and deep queues**: the per-submission cost of
   `opencl:cpu` (oclcpuexp 2026-WW28 under DPC++) grows with the number of

@@ -33,8 +33,8 @@ if cpu:
 print(f"peaks: kept {len(keep)}, superseded {len(cpu)} syclnn CPU peak rows")
 EOF
 
-log "1. DPC++ CPU block at 16 compute units"
-bash scripts/matrix-ws-amd.sh $DATE sycl-cpu
+log "1. DPC++ CPU blocks at 16 compute units (MKLCPU/Netlib, then the generic SYCL BLAS image)"
+bash scripts/matrix-ws-amd.sh $DATE sycl-cpu sycl-generic
 
 log "2. portability rows, DPC++ wheel built on ws-nvidia, on ws-amd's CPU (16 compute units)"
 podman run --rm --memory=20g --security-opt label=disable -v "$AC/syclnn:/work/syclnn" -v "$HERE:/work/fnn-bench" -w /work/fnn-bench localhost/fnn-sycl:dev bash -c '

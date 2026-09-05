@@ -25,9 +25,9 @@ and toolchain are in `analysis/headline-<machine>-<date>.md` and the
   record of the attempt; `docs/toolchains.md`).
 - **GTX 1080 Ti**: both. The AdaptiveCpp wheel (`containers/fnn-acpp-cuda.Containerfile`:
   AdaptiveCpp v25.10.0 generic SSCP, oneMath cuBLAS + Netlib) runs the same
-  E2/E3/E7 rows as the DPC++ wheel (`scripts/ws-nvidia-acpp.sh`, sweep
-  `sycl-gpu-acpp`). Results: see the "DPC++ vs AdaptiveCpp" table below
-  (filled from `analysis/headline-ws-nvidia-2026-09-05.md`).
+  E2/E3/E7 rows as the DPC++ wheel plus the E5 breakdown and the GEMM peaks
+  (`scripts/ws-nvidia-acpp.sh`, sweeps `sycl-gpu-acpp`, `peaks-acpp`). Results:
+  the "DPC++ vs AdaptiveCpp" table below (`scripts/acpp-vs-dpcpp.py`).
 - **CPU**: both, on ws-amd's Threadripper 2950X: DPC++ through the Intel
   OpenCL CPU runtime (`sycl-cpu*`), AdaptiveCpp through its OpenMP host
   device (`sycl-cpu-acpp`, 16 threads). See the same table.
@@ -46,7 +46,7 @@ the unmodified NVIDIA wheel on AMD through ZLUDA.
 | AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX (HIP) | 215 ms (tiled 102 ms) | 1.9 ms (tiled 1.0) | 17.5 ms (tiled 8.2) | `results/ws-amd/2026-09-05/portable-acpp` |
 | same | | TR 2950X (OpenMP host device, 16 threads) | 956 ms (tiled 2288 ms) | 0.9 ms (tiled 1.6) | 7.0 ms (tiled 8.4) | same |
 | same | | GTX 1080 Ti (CUDA) | see `results/ws-nvidia/2026-09-05/portable-acpp` | | | `scripts/ws-nvidia-portable-acpp.sh` |
-| DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia, two AOT targets | TR 2950X (OpenCL CPU, 16 compute units) | 998 ms (tiled 2381 ms) | 1.9 ms (tiled 1.4) | 13.8 ms (tiled 11.4) | `results/ws-amd/2026-09-05/portable-dpcpp` |
+| DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia, two AOT targets | TR 2950X (OpenCL CPU, 32 compute units; the 16-unit re-measurement of `ws-amd-cpu-fixups-2.sh` replaces these) | 998 ms (tiled 2381 ms) | 1.9 ms (tiled 1.4) | 13.8 ms (tiled 11.4) | `results/ws-amd/2026-09-05/portable-dpcpp` |
 | same | | GTX 1080 Ti | the `sycl-gpu` rows of ws-nvidia (same wheel) | | | `results/ws-nvidia/2026-09-05/sycl-gpu` |
 | same | | RX 7900 XTX | **cannot**: no HIP adapter in the DPC++ release; a fat binary with `amd_gpu_gfx1100` does not build (see 2.) | | | |
 
@@ -81,13 +81,18 @@ Does it run:
 | streams, events, the fork/join default (4 streams, out-of-order) | yes (the tiled rows use the default stream mode) |
 | CUDA graphs, managed/host memory, pinned host | not reachable: the parity suite constructs default-option networks first and stops at the GEMV |
 
-Speed (steady epoch, float; native rows from the same pass on the same GPU):
+Speed (steady epoch, float; the ZLUDA columns are the median of 3 repeats,
+the native columns the median over every third-pass sweep that measured the
+configuration on the same GPU: E3 default + E7 `blas=auto` + the portability
+run for the vendor rows, E7 + the portability run for the tiled ones; the
+monk/cup rows differ by up to 40 % between sweeps, see the methodology's
+run-to-run spread):
 
 | workload | cudann on ZLUDA, `blas=tiled` | cudann/HIP (hipify), `blas=tiled` | cudann on ZLUDA, cuBLAS gemm (`bias_gemv=False`) | cudann/HIP, rocBLAS | syclnn/AdaptiveCpp, `blas=tiled` | syclnn/AdaptiveCpp, rocBLAS |
 |---|---|---|---|---|---|---|
-| monk b40 | 0.69 ms | 0.50 ms | fails (nrm2) | 0.85 ms | 1.01 ms | 2.35 ms |
-| cup b40 | 4.00 ms | 4.86 ms | fails (nrm2) | 4.55 ms | 8.18 ms | 20.7 ms |
-| mnist-512-256 b256 | 79.2 ms | 85.5 ms | 74.5 ms | 65.5 ms | 102 ms | 228 ms |
+| monk b40 | 0.69 ms | 0.50 ms | fails (nrm2) | 0.72 ms | 0.92 ms | 2.26 ms |
+| cup b40 | 4.00 ms | 4.86 ms | fails (nrm2) | 5.42 ms | 9.5 ms | 20.6 ms |
+| mnist-512-256 b256 | 79.2 ms | 85.5 ms | 74.5 ms | 65.5 ms | 103.5 ms | 227 ms |
 | mnist-512-256 b1024 | 49.2 ms | - | 28.6 ms | 21.0 ms | - | 63.5 ms |
 
 Reading: the CUDA binary's own kernels run on RDNA3 through ZLUDA at the
@@ -99,5 +104,7 @@ API: two level-1/level-2 routines the library uses are not implemented in
 this preview, and a real application would hit them at once. Binary-level
 CUDA-on-AMD is therefore a demonstration, not a deployment path, in this
 version; source-level HIPify (one script, everything runs) and write-once
-SYCL (one binary, everything runs, 1.5-3x slower than the CUDA/HIP one with
-the vendor BLAS and on par with the tiled one) are the two working routes.
+SYCL (one binary, everything runs; on these launch-bound workloads 3-4.5x
+slower than the CUDA/HIP build with the vendor BLAS and 1.2-2x with the
+tiled one, 1.0-1.2x at width 4096 where the GEMMs dominate) are the two
+working routes.
