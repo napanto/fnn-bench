@@ -244,9 +244,14 @@ ws-amd and is not recorded.
   cost of their runtimes (HIP streams ~10 us, AdaptiveCpp's scheduler ~30 us,
   a synchronous OpenMP target region ~25 us), not in kernel or GEMM speed;
   the E5 breakdown shows the same (device totals 82 / 173 / 191 ms against
-  walls of 100 / 297 / 192 ms). The W4 sweep (4096 wide) is where the GEMMs
-  are long enough for the compute rates to matter, and the ratios shrink
-  there. Report the two regimes separately.
+  walls of 100 / 297 / 192 ms). The same on the GTX 1080 Ti with DPC++:
+  cudann 181 / 240 / 497 us per batch, syclnn 611 / 620 / 690 (588 in-order).
+  The W4 sweep is where the GEMMs get long enough for the compute rates to
+  matter: the syclnn/cudann epoch ratio at width 4096 is 1.01-1.19x on the
+  RX 7900 XTX and 0.99-1.02x on the GTX 1080 Ti (b256 / b4096, depths 2-8),
+  against 2.3-3.1x at width 256. Report the two regimes separately: the
+  reference workloads measure runtime overhead per operation, the wide sweep
+  measures kernels and BLAS.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
 
