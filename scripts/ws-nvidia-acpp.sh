@@ -9,6 +9,9 @@ HOST=${NVIDIA_HOST:-ws-nvidia}
 REMOTE=${NVIDIA_DIR:-$HOME/fnn}
 DATE=${DATE:-$(date +%F)}
 RUN="podman run --rm --memory=40g --device nvidia.com/gpu=all --security-opt=label=disable -v $REMOTE/syclnn:/work/syclnn -v $REMOTE/fnn-bench:/work/fnn-bench"
+# the image (AdaptiveCpp + oneMath cuBLAS built with acpp): build it here if a previous attempt failed
+rsync -a "$HERE/containers/" "$HOST:$REMOTE/fnn-bench/containers/"
+ssh "$HOST" "podman image exists localhost/fnn-acpp-cuda:dev || (cd $REMOTE/fnn-bench && podman build --memory=40g --build-arg JOBS=16 -f containers/fnn-acpp-cuda.Containerfile -t fnn-acpp-cuda:dev containers/ 2>&1 | tail -4)"
 ssh "$HOST" "$RUN -w /work/syclnn localhost/fnn-acpp-cuda:dev bash -c '
     set -e; export CXX=/opt/acpp/bin/acpp CC=clang-18 SYCLNN_SYCL_IMPL=adaptivecpp SYCLNN_ONEMATH_ROOT=/opt/onemath-acpp CMAKE_PREFIX_PATH=/opt/acpp:/opt/onemath-acpp SYCLNN_CT_BACKENDS=netlib CMAKE_BUILD_PARALLEL_LEVEL=8 ACPP_TARGETS=generic
     rm -rf /work/fnn-bench/.wheels/ws-nvidia-sycl-acpp

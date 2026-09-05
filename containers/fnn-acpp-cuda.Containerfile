@@ -20,6 +20,7 @@ RUN git clone --depth 1 -b ${ACPP_TAG} https://github.com/AdaptiveCpp/AdaptiveCp
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/acpp \
         -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18 -DLLVM_DIR=/usr/lib/llvm-18/cmake \
         -DWITH_CUDA_BACKEND=ON -DCUDA_TOOLKIT_ROOT_DIR=${CUDA_HOME} \
+        -DCLANG_INCLUDE_PATH=/usr/lib/llvm-18/lib/clang/18/include \
         -DWITH_ROCM_BACKEND=OFF -DWITH_OPENCL_BACKEND=OFF -DWITH_LEVEL_ZERO_BACKEND=OFF \
         -DWITH_SSCP_COMPILER=ON -DWITH_ACCELERATED_CPU=ON -DDEFAULT_TARGETS=generic \
     && ninja -C /tmp/acpp/build -j${JOBS} && ninja -C /tmp/acpp/build install && rm -rf /tmp/acpp
