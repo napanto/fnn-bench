@@ -10,7 +10,7 @@ results and the analysis.
 ```
 testkit/      fnn-testkit: float64 reference implementation + pytest suite run against every backend
 bench/        fnnbench: run / sweep / collect / replay / peak / plot, FLOP model, system capture, JSONL rows
-containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic Containerfiles (+ the oneMath/OpenBLAS patch)
+containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic, fnn-acpp-cuda (AdaptiveCpp on CUDA) Containerfiles, fnn-sycl-portable (unused: DPC++ on AMD dropped)
 plans/        the experiment matrix as JSON plans (E1-E7, W4 sweeps; e5_breakdown is the only profiled plan)
 scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh,
               ws-amd-pass3-*.sh / ws-amd-cpu-fixups*.sh (the third pass and its CPU fix-ups),
@@ -45,7 +45,7 @@ fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --out results/ws-nvidia/$(d
 scripts/matrix-ws-amd.sh                                        # ws-amd: all environments, sequentially
 scripts/run-ws-nvidia.sh all                                       # ws-nvidia: sync, build, parity, matrix, fetch
 scripts/analyze.sh                                              # both machines -> analysis/<machine>-<date>.csv, analysis/figures/<machine>-<date>/
-scripts/headline.py results/ws-amd/2026-09-05                   # Markdown: defaults per toolchain, tiled/vendor ratios, run-to-run spread
+PYTHONPATH=bench python scripts/headline.py results/ws-amd/2026-09-05   # Markdown: defaults per toolchain, tiled/vendor ratios, run-to-run spread (needs numpy)
 ```
 
 The rows the report uses are the third pass, `results/*/2026-09-05` (timing

@@ -81,8 +81,8 @@ def ms(v):
 
 
 def main(dirs):
-    rows = load(dirs)
-    rows = [r for r in R.dedupe(rows) if r.get("mode") == "train" and r["dtype"] == "float"]
+    raw = [r for r in load(dirs) if r.get("mode") == "train" and r["dtype"] == "float"]
+    rows = R.dedupe(raw)
     # 1. defaults
     tab = collections.defaultdict(lambda: collections.defaultdict(list))
     for r in rows:
@@ -131,7 +131,7 @@ def main(dirs):
         print("| " + " | ".join(k) + " | " + " | ".join(cells) + " |")
     # 3. spread across sweeps for identical visible configurations
     sp = collections.defaultdict(dict)
-    for r in rows:
+    for r in raw:  # every row, before de-duplication: the spread between sweeps is the point
         if r.get("threads"):
             continue
         o = dict(r.get("options") or {})
@@ -140,6 +140,7 @@ def main(dirs):
         key = (r["_machine"], dev(r), r["backend"], toolchain(r["_sweep"], r), r["workload"], r["batch"], json.dumps(o, sort_keys=True))
         sp[key].setdefault(r["_sweep"], []).append(r["results"]["steady_epoch_s"] * 1e3)
     print("\n### Same visible configuration measured in more than one sweep (run-to-run spread)\n")
+    print("Every configuration with rows in two or more sweeps, worst 25 shown (medians per sweep):\n")
     print("| machine | device | backend | toolchain | workload | options | sweeps | min ms | max ms | spread |")
     print("|---|---|---|---|---|---|---|---|---|---|")
     worst = []
@@ -153,7 +154,13 @@ def main(dirs):
         print(f"| {k[0]} | {k[1]} | {k[2]} | {k[3]} | {k[4]} b{k[5]} | {k[6] if k[6] != '{}' else 'default'} | {', '.join(sorted(d))} | {lo:.1f} | {hi:.1f} | {ratio - 1:+.1%} |")
     if worst:
         spreads = sorted(t[0] - 1 for t in worst)
-        print(f"\n{len(worst)} duplicated configurations; median spread {st.median(spreads):.1%}, 90th percentile {spreads[int(0.9 * (len(spreads) - 1))]:.1%}, max {spreads[-1]:.1%}.")
+        print(f"\n{len(worst)} configurations measured in more than one sweep; median spread {st.median(spreads):.1%}, 90th percentile {spreads[int(0.9 * (len(spreads) - 1))]:.1%}, max {spreads[-1]:.1%}.")
+        big = [t for t in worst if t[1][4] in ("monk", "cup")]
+        small = [t for t in worst if t[1][4] not in ("monk", "cup")]
+        for name, group in (("monk/cup (launch-bound, sub-10 ms epochs)", big), ("other workloads", small)):
+            if group:
+                g = sorted(t[0] - 1 for t in group)
+                print(f"- {name}: {len(g)} configurations, median {st.median(g):.1%}, max {g[-1]:.1%}")
 
 
 if __name__ == "__main__":
