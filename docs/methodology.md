@@ -226,6 +226,11 @@ ws-amd and is not recorded.
   the inert-on-GPU `sync_every` option, so those rows are comparable with the
   rest. Rows that predate the GPU sampler or run shorter than its 200 ms
   interval have no `gpu_monitor`.
+- `blas_queue=dedicated` rows are timing rows only: with the profiler on, the
+  event recorded for a BLAS call is the marker kernel's, not the library's
+  (the breakdown plan never sets it). On the RX 7900 XTX and on the CPU the
+  option measures the pure cost of the bracketing, since those backends do
+  not need it.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
   launches); their `other_ms` is the graph launch time.
 
