@@ -13,6 +13,7 @@ ARG JOBS=8
 ENV CUDA_HOME=/usr/local/cuda-12.9
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libboost-context-dev libboost-fiber-dev libboost-filesystem-dev libboost-test-dev git ninja-build \
+        llvm-18-dev libclang-18-dev \
     && rm -rf /var/lib/apt/lists/*
 # AdaptiveCpp: clang-18 host compiler, CUDA backend, SSCP single-pass compiler (generic target)
 RUN git clone --depth 1 -b ${ACPP_TAG} https://github.com/AdaptiveCpp/AdaptiveCpp.git /tmp/acpp \
@@ -20,7 +21,7 @@ RUN git clone --depth 1 -b ${ACPP_TAG} https://github.com/AdaptiveCpp/AdaptiveCp
     && sed -i 's/elseif(${CMAKE_PROJECT_VERSION_MINOR} EQUAL 0)/elseif("${CMAKE_PROJECT_VERSION_MINOR}" STREQUAL "0")/' /tmp/acpp/CMakeLists.txt \
     && cmake -S /tmp/acpp -B /tmp/acpp/build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/acpp \
-        -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18 -DLLVM_DIR=/usr/lib/llvm-18/cmake \
+        -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18 -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm \
         -DWITH_CUDA_BACKEND=ON -DCUDA_TOOLKIT_ROOT_DIR=${CUDA_HOME} \
         -DCLANG_INCLUDE_PATH=/usr/lib/llvm-18/lib/clang/18/include \
         -DWITH_ROCM_BACKEND=OFF -DWITH_OPENCL_BACKEND=OFF -DWITH_LEVEL_ZERO_BACKEND=OFF \
