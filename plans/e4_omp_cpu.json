@@ -7,34 +7,22 @@
   {
    "device": "cpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "device": "cpu",
    "workload": "monk",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "device": "cpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "device": "cpu",
    "workload": "cup",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "device": "cpu",
@@ -42,10 +30,7 @@
    "dtype": "float",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -53,10 +38,7 @@
    "dtype": "float",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -64,10 +46,7 @@
    "dtype": "float",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -75,10 +54,7 @@
    "dtype": "double",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -86,10 +62,7 @@
    "dtype": "double",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -97,10 +70,7 @@
    "dtype": "double",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -108,10 +78,7 @@
    "dtype": "float",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -119,10 +86,7 @@
    "dtype": "float",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -130,10 +94,7 @@
    "dtype": "float",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -141,10 +102,7 @@
    "dtype": "double",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -152,10 +110,7 @@
    "dtype": "double",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -163,10 +118,7 @@
    "dtype": "double",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -175,10 +127,7 @@
    "batch": 256,
    "epochs": 3,
    "repeat": 3,
-   "threads": 1,
-   "options": {
-    "profile": true
-   }
+   "threads": 1
   },
   {
    "device": "cpu",
@@ -187,10 +136,7 @@
    "batch": 256,
    "epochs": 3,
    "repeat": 3,
-   "threads": 2,
-   "options": {
-    "profile": true
-   }
+   "threads": 2
   },
   {
    "device": "cpu",
@@ -199,10 +145,7 @@
    "batch": 256,
    "epochs": 3,
    "repeat": 3,
-   "threads": 4,
-   "options": {
-    "profile": true
-   }
+   "threads": 4
   },
   {
    "device": "cpu",
@@ -211,10 +154,7 @@
    "batch": 256,
    "epochs": 3,
    "repeat": 3,
-   "threads": 8,
-   "options": {
-    "profile": true
-   }
+   "threads": 8
   },
   {
    "device": "cpu",
@@ -223,10 +163,7 @@
    "batch": 256,
    "epochs": 3,
    "repeat": 3,
-   "threads": 16,
-   "options": {
-    "profile": true
-   }
+   "threads": 16
   },
   {
    "device": "cpu",
@@ -235,10 +172,7 @@
    "batch": 256,
    "epochs": 3,
    "repeat": 3,
-   "threads": 32,
-   "options": {
-    "profile": true
-   }
+   "threads": 32
   },
   {
    "device": "cpu",
@@ -248,8 +182,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "omp",
-    "profile": true
+    "blas": "omp"
    }
   },
   {
@@ -260,8 +193,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "omp",
-    "profile": true
+    "blas": "omp"
    }
   },
   {
@@ -272,8 +204,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "omp",
-    "profile": true
+    "blas": "omp"
    }
   }
  ]

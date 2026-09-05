@@ -10,9 +10,33 @@
    "dtype": "float",
    "batch": null,
    "epochs": 5,
+   "repeat": 3
+  },
+  {
+   "device": "cpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3
+  },
+  {
+   "device": "cpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3
+  },
+  {
+   "device": "cpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
    "repeat": 3,
    "options": {
-    "profile": true
+    "memory": "shared"
    }
   },
   {
@@ -23,7 +47,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "profile": true
+    "memory": "shared"
    }
   },
   {
@@ -34,7 +58,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "profile": true
+    "memory": "shared"
    }
   },
   {
@@ -45,8 +69,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "memory": "shared",
-    "profile": true
+    "loss_reduction": false
    }
   },
   {
@@ -57,8 +80,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "memory": "shared",
-    "profile": true
+    "loss_reduction": false
    }
   },
   {
@@ -69,8 +91,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "memory": "shared",
-    "profile": true
+    "loss_reduction": false
    }
   },
   {
@@ -81,8 +102,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "loss_reduction": false,
-    "profile": true
+    "bias_gemv": false
    }
   },
   {
@@ -93,8 +113,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "loss_reduction": false,
-    "profile": true
+    "bias_gemv": false
    }
   },
   {
@@ -105,8 +124,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "loss_reduction": false,
-    "profile": true
+    "bias_gemv": false
    }
   },
   {
@@ -117,8 +135,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "bias_gemv": false,
-    "profile": true
+    "direct_input": false
    }
   },
   {
@@ -129,8 +146,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "bias_gemv": false,
-    "profile": true
+    "direct_input": false
    }
   },
   {
@@ -141,8 +157,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "bias_gemv": false,
-    "profile": true
+    "direct_input": false
    }
   },
   {
@@ -153,8 +168,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "direct_input": false,
-    "profile": true
+    "fine_deps": false
    }
   },
   {
@@ -165,8 +179,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "direct_input": false,
-    "profile": true
+    "fine_deps": false
    }
   },
   {
@@ -177,44 +190,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "direct_input": false,
-    "profile": true
-   }
-  },
-  {
-   "device": "cpu",
-   "workload": "monk",
-   "dtype": "float",
-   "batch": null,
-   "epochs": 5,
-   "repeat": 3,
-   "options": {
-    "fine_deps": false,
-    "profile": true
-   }
-  },
-  {
-   "device": "cpu",
-   "workload": "cup",
-   "dtype": "float",
-   "batch": null,
-   "epochs": 5,
-   "repeat": 3,
-   "options": {
-    "fine_deps": false,
-    "profile": true
-   }
-  },
-  {
-   "device": "cpu",
-   "workload": "mnist-512-256",
-   "dtype": "float",
-   "batch": 256,
-   "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "fine_deps": false,
-    "profile": true
+    "fine_deps": false
    }
   },
   {
@@ -226,8 +202,7 @@
    "repeat": 3,
    "options": {
     "fine_deps": false,
-    "join_kernels": true,
-    "profile": true
+    "join_kernels": true
    }
   },
   {
@@ -239,8 +214,7 @@
    "repeat": 3,
    "options": {
     "fine_deps": false,
-    "join_kernels": true,
-    "profile": true
+    "join_kernels": true
    }
   },
   {
@@ -252,8 +226,7 @@
    "repeat": 3,
    "options": {
     "fine_deps": false,
-    "join_kernels": true,
-    "profile": true
+    "join_kernels": true
    }
   },
   {
@@ -264,8 +237,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "queue": "in_order",
-    "profile": true
+    "queue": "in_order"
    }
   },
   {
@@ -276,8 +248,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "queue": "in_order",
-    "profile": true
+    "queue": "in_order"
    }
   },
   {
@@ -288,8 +259,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "queue": "in_order",
-    "profile": true
+    "queue": "in_order"
    }
   },
   {
@@ -300,8 +270,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "specialized_kernels": false,
-    "profile": true
+    "specialized_kernels": false
    }
   },
   {
@@ -312,8 +281,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "specialized_kernels": false,
-    "profile": true
+    "specialized_kernels": false
    }
   },
   {
@@ -324,8 +292,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "specialized_kernels": false,
-    "profile": true
+    "specialized_kernels": false
    }
   },
   {
@@ -336,8 +303,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "derivative_from_output": false,
-    "profile": true
+    "derivative_from_output": false
    }
   },
   {
@@ -348,8 +314,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "derivative_from_output": false,
-    "profile": true
+    "derivative_from_output": false
    }
   },
   {
@@ -360,8 +325,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "derivative_from_output": false,
-    "profile": true
+    "derivative_from_output": false
    }
   },
   {
@@ -372,8 +336,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "host_adam_correction": false,
-    "profile": true
+    "host_adam_correction": false
    }
   },
   {
@@ -384,8 +347,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "host_adam_correction": false,
-    "profile": true
+    "host_adam_correction": false
    }
   },
   {
@@ -396,8 +358,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "host_adam_correction": false,
-    "profile": true
+    "host_adam_correction": false
    }
   },
   {
@@ -408,8 +369,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "workgroup_size": 256,
-    "profile": true
+    "workgroup_size": 256
    }
   },
   {
@@ -420,8 +380,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "workgroup_size": 256,
-    "profile": true
+    "workgroup_size": 256
    }
   },
   {
@@ -432,8 +391,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "workgroup_size": 256,
-    "profile": true
+    "workgroup_size": 256
    }
   },
   {
@@ -444,8 +402,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "persistent_workspace": false,
-    "profile": true
+    "persistent_workspace": false
    }
   },
   {
@@ -456,8 +413,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "persistent_workspace": false,
-    "profile": true
+    "persistent_workspace": false
    }
   },
   {
@@ -468,8 +424,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "persistent_workspace": false,
-    "profile": true
+    "persistent_workspace": false
    }
   },
   {
@@ -480,8 +435,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -492,8 +446,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -504,8 +457,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -526,8 +478,7 @@
     "derivative_from_output": false,
     "host_adam_correction": false,
     "persistent_workspace": false,
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -548,8 +499,7 @@
     "derivative_from_output": false,
     "host_adam_correction": false,
     "persistent_workspace": false,
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -570,9 +520,32 @@
     "derivative_from_output": false,
     "host_adam_correction": false,
     "persistent_workspace": false,
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
+  },
+  {
+   "device": "gpu",
+   "workload": "monk",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3
+  },
+  {
+   "device": "gpu",
+   "workload": "cup",
+   "dtype": "float",
+   "batch": null,
+   "epochs": 5,
+   "repeat": 3
+  },
+  {
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "batch": 256,
+   "epochs": 3,
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -582,7 +555,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "profile": true
+    "memory": "shared"
    }
   },
   {
@@ -593,7 +566,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "profile": true
+    "memory": "shared"
    }
   },
   {
@@ -604,7 +577,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "profile": true
+    "memory": "shared"
    }
   },
   {
@@ -615,8 +588,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "memory": "shared",
-    "profile": true
+    "loss_reduction": false
    }
   },
   {
@@ -627,8 +599,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "memory": "shared",
-    "profile": true
+    "loss_reduction": false
    }
   },
   {
@@ -639,8 +610,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "memory": "shared",
-    "profile": true
+    "loss_reduction": false
    }
   },
   {
@@ -651,8 +621,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "loss_reduction": false,
-    "profile": true
+    "bias_gemv": false
    }
   },
   {
@@ -663,8 +632,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "loss_reduction": false,
-    "profile": true
+    "bias_gemv": false
    }
   },
   {
@@ -675,8 +643,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "loss_reduction": false,
-    "profile": true
+    "bias_gemv": false
    }
   },
   {
@@ -687,8 +654,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "bias_gemv": false,
-    "profile": true
+    "direct_input": false
    }
   },
   {
@@ -699,8 +665,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "bias_gemv": false,
-    "profile": true
+    "direct_input": false
    }
   },
   {
@@ -711,8 +676,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "bias_gemv": false,
-    "profile": true
+    "direct_input": false
    }
   },
   {
@@ -723,8 +687,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "direct_input": false,
-    "profile": true
+    "fine_deps": false
    }
   },
   {
@@ -735,8 +698,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "direct_input": false,
-    "profile": true
+    "fine_deps": false
    }
   },
   {
@@ -747,44 +709,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "direct_input": false,
-    "profile": true
-   }
-  },
-  {
-   "device": "gpu",
-   "workload": "monk",
-   "dtype": "float",
-   "batch": null,
-   "epochs": 5,
-   "repeat": 3,
-   "options": {
-    "fine_deps": false,
-    "profile": true
-   }
-  },
-  {
-   "device": "gpu",
-   "workload": "cup",
-   "dtype": "float",
-   "batch": null,
-   "epochs": 5,
-   "repeat": 3,
-   "options": {
-    "fine_deps": false,
-    "profile": true
-   }
-  },
-  {
-   "device": "gpu",
-   "workload": "mnist-512-256",
-   "dtype": "float",
-   "batch": 256,
-   "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "fine_deps": false,
-    "profile": true
+    "fine_deps": false
    }
   },
   {
@@ -796,8 +721,7 @@
    "repeat": 3,
    "options": {
     "fine_deps": false,
-    "join_kernels": true,
-    "profile": true
+    "join_kernels": true
    }
   },
   {
@@ -809,8 +733,7 @@
    "repeat": 3,
    "options": {
     "fine_deps": false,
-    "join_kernels": true,
-    "profile": true
+    "join_kernels": true
    }
   },
   {
@@ -822,8 +745,7 @@
    "repeat": 3,
    "options": {
     "fine_deps": false,
-    "join_kernels": true,
-    "profile": true
+    "join_kernels": true
    }
   },
   {
@@ -834,8 +756,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "queue": "in_order",
-    "profile": true
+    "queue": "in_order"
    }
   },
   {
@@ -846,8 +767,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "queue": "in_order",
-    "profile": true
+    "queue": "in_order"
    }
   },
   {
@@ -858,8 +778,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "queue": "in_order",
-    "profile": true
+    "queue": "in_order"
    }
   },
   {
@@ -870,8 +789,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "specialized_kernels": false,
-    "profile": true
+    "specialized_kernels": false
    }
   },
   {
@@ -882,8 +800,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "specialized_kernels": false,
-    "profile": true
+    "specialized_kernels": false
    }
   },
   {
@@ -894,8 +811,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "specialized_kernels": false,
-    "profile": true
+    "specialized_kernels": false
    }
   },
   {
@@ -906,8 +822,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "derivative_from_output": false,
-    "profile": true
+    "derivative_from_output": false
    }
   },
   {
@@ -918,8 +833,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "derivative_from_output": false,
-    "profile": true
+    "derivative_from_output": false
    }
   },
   {
@@ -930,8 +844,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "derivative_from_output": false,
-    "profile": true
+    "derivative_from_output": false
    }
   },
   {
@@ -942,8 +855,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "host_adam_correction": false,
-    "profile": true
+    "host_adam_correction": false
    }
   },
   {
@@ -954,8 +866,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "host_adam_correction": false,
-    "profile": true
+    "host_adam_correction": false
    }
   },
   {
@@ -966,8 +877,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "host_adam_correction": false,
-    "profile": true
+    "host_adam_correction": false
    }
   },
   {
@@ -978,8 +888,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "workgroup_size": 256,
-    "profile": true
+    "workgroup_size": 256
    }
   },
   {
@@ -990,8 +899,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "workgroup_size": 256,
-    "profile": true
+    "workgroup_size": 256
    }
   },
   {
@@ -1002,8 +910,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "workgroup_size": 256,
-    "profile": true
+    "workgroup_size": 256
    }
   },
   {
@@ -1014,8 +921,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "persistent_workspace": false,
-    "profile": true
+    "persistent_workspace": false
    }
   },
   {
@@ -1026,8 +932,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "persistent_workspace": false,
-    "profile": true
+    "persistent_workspace": false
    }
   },
   {
@@ -1038,8 +943,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "persistent_workspace": false,
-    "profile": true
+    "persistent_workspace": false
    }
   },
   {
@@ -1050,8 +954,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -1062,8 +965,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -1074,8 +976,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -1096,8 +997,7 @@
     "derivative_from_output": false,
     "host_adam_correction": false,
     "persistent_workspace": false,
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -1118,8 +1018,7 @@
     "derivative_from_output": false,
     "host_adam_correction": false,
     "persistent_workspace": false,
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   },
   {
@@ -1140,8 +1039,7 @@
     "derivative_from_output": false,
     "host_adam_correction": false,
     "persistent_workspace": false,
-    "pinned_host": false,
-    "profile": true
+    "pinned_host": false
    }
   }
  ]

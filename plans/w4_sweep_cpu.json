@@ -10,10 +10,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -21,10 +18,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -32,10 +26,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -43,10 +34,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -54,10 +42,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -65,10 +50,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -76,10 +58,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -87,10 +66,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -98,10 +74,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -109,10 +82,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -120,10 +90,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   },
   {
    "device": "cpu",
@@ -131,10 +98,7 @@
    "dtype": "float",
    "epochs": 2,
    "repeat": 3,
-   "samples": 16384,
-   "options": {
-    "profile": true
-   }
+   "samples": 16384
   }
  ]
 }

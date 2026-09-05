@@ -11,32 +11,28 @@
    "workload": "monk",
    "dtype": "float",
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
    "workload": "monk",
    "dtype": "double",
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
    "workload": "cup",
    "dtype": "float",
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
    "workload": "cup",
    "dtype": "double",
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -46,8 +42,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -57,8 +52,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -68,8 +62,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -79,8 +72,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -90,8 +82,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -101,8 +92,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -112,8 +102,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -123,8 +112,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -134,8 +122,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -145,8 +132,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -156,8 +142,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
@@ -167,40 +152,35 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "mklcpu",
-    "profile": true
+    "blas": "mklcpu"
    }
   },
   {
    "workload": "monk",
    "dtype": "float",
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
    "workload": "monk",
    "dtype": "double",
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
    "workload": "cup",
    "dtype": "float",
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
    "workload": "cup",
    "dtype": "double",
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -210,8 +190,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -221,8 +200,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -232,8 +210,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -243,8 +220,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -254,8 +230,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -265,8 +240,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -276,8 +250,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -287,8 +260,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -298,8 +270,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -309,8 +280,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -320,8 +290,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   },
   {
@@ -331,8 +300,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "netlib",
-    "profile": true
+    "blas": "netlib"
    }
   }
  ]

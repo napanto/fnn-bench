@@ -206,7 +206,11 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
     gpu_samples = sampler.summary()
     finite = bool(np.all(np.isfinite(np.asarray(losses, dtype=np.float64)))) if losses else True
     profiling = bool(cfg.options.get("profile", False)) and not net.is_reference
-    prof = (net.profile or {}) if profiling else None
+    # the libraries always record the per-epoch wall clock and the counters; the per-phase
+    # device times (event pairs around every launch, 20-40 % overhead on the GPU rows)
+    # only with profile=True, which the timing plans do not set
+    prof_all = (net.profile or {}) if not net.is_reference else {}
+    prof = prof_all if profiling else None
 
     # ---- derived metrics ----
     median = statistics.median(walls)
@@ -215,7 +219,7 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
     # dataset upload) without the first epoch of each call, which carries the H2D
     # staging, lazy initialisation and (graph mode) the capture. Needs profile=True.
     steady = None
-    ew = (prof or {}).get("epoch_wall_ns") or []
+    ew = prof_all.get("epoch_wall_ns") or []
     if cfg.mode == "train" and cfg.epochs > 1 and len(ew) == cfg.repeat * cfg.epochs:
         inner = [ew[i] / 1e9 for i in range(len(ew)) if i % cfg.epochs != 0]
         steady = float(statistics.median(inner))

@@ -44,12 +44,17 @@ def test_profile_shape_and_counts(make_net, graph_mode):
 
 
 def test_profile_is_zero_when_disabled(make_net):
+    """Device phases and launch counts need the event profiler; the per-epoch wall
+    clock, the epoch/batch counters and the call wall time are always recorded."""
     X, T = datasets.synthetic(50, 8, 2, seed=2)
     spec = mlp([8, 8, 2], learning_rate=0.01)
     net = make_net(spec, seed=1, options={"profile": False})
     net.train(X, T, 25, 2)
     p = net.profile
-    assert all(p[k] == 0 for k in KEYS)
+    always = {"epochs", "batches", "wall_ns", "epoch_wall_ns"}
+    assert all(p[k] == 0 for k in KEYS if k not in always)
+    assert p["epochs"] == 2 and p["batches"] == 4 and p["wall_ns"] > 0
+    assert len(p["epoch_wall_ns"]) == 2 and all(v > 0 for v in p["epoch_wall_ns"])
 
 
 def test_profile_covers_predict(make_net):
