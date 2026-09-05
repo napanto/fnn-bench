@@ -22,8 +22,9 @@ ls "$P/zluda" | head -20
 if [ ! -e "$P/cuda12-libs/libcudart.so.12" ]; then
     log "CUDA 12 runtime libraries from the fnn-cuda image (host podman)"
     # run from the host: distrobox exposes the host's podman through distrobox-host-exec
-    distrobox-host-exec podman run --rm -v "$P/cuda12-libs:/out" localhost/fnn-cuda:dev bash -c \
-        'cp -L /usr/local/cuda-12.9/lib64/libcudart.so.12 /usr/local/cuda-12.9/lib64/libcublas.so.12 /usr/local/cuda-12.9/lib64/libcublasLt.so.12 /out/ 2>/dev/null; ls /out'
+    # only the CUDA runtime: cuBLAS comes from ZLUDA itself (its libcublas.so.12 -> rocBLAS/hipBLASLt)
+    distrobox-host-exec podman run --rm --security-opt label=disable -v "$P/cuda12-libs:/out" localhost/fnn-cuda:dev bash -c \
+        'cp -L /usr/local/cuda-12.9/lib64/libcudart.so.12 /out/; ls -la /out'
 fi
 WHEEL=$HERE/.wheels/ws-nvidia-cuda
 [ -d "$WHEEL" ] || { echo "missing $WHEEL (rsync it from ws-nvidia:$HOME/fnn/fnn-bench/.wheels/ws-nvidia-cuda)"; exit 1; }
