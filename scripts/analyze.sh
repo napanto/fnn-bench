@@ -13,7 +13,7 @@ for m in ws-amd ws-nvidia; do
         echo "== $m $date"
         fnnbench collect "$d" -o "analysis/$m-$date.csv"
         peaks=(); for pk in "results/$m/peaks" "$d"/peaks*; do [ -d "$pk" ] && peaks+=("$pk"); done
-        fnnbench plot "$d" "${peaks[@]}" -o "analysis/figures/$m-$date" 2>&1 | grep -c png | sed 's/$/ figures/'
+        { fnnbench plot "$d" "${peaks[@]}" -o "analysis/figures/$m-$date" 2>&1 | grep -c png | sed 's/$/ figures/'; } || true
     done
 done
 echo "done: analysis/*.csv, analysis/figures/<machine>-<date>/"
