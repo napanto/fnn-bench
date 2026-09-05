@@ -13,7 +13,7 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 WL=${1:-mnist-512-256}
 B=${2:-256}
-OUT=$HERE/results/ws-amd/perf
+OUT=${OUTDIR:-$HERE/results/ws-amd/perf}
 mkdir -p "$OUT"
 P=$HOME/.local/opt/fnn-rocm
 
