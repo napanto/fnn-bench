@@ -305,6 +305,18 @@ the OpenMP host rows; `ws-amd-cpu-fixups-2.sh` for the DPC++ CPU blocks;
   at mnist-512-256 b256 against 0.96 s for the same binary at 16 threads
   (found through the portability run, which had set 16). Re-measured at 16.
 
+- **LLVM's libomp and the OpenMP OpenBLAS do not tolerate thread binding.**
+  The clang-18/22 wheels use LLVM's `libomp`, which also answers the GOMP
+  calls of the OpenMP-threaded OpenBLAS (one runtime, as intended); under
+  `OMP_PROC_BIND=close OMP_PLACES=cores` that combination collapses (clang-22,
+  mnist-512-256 b256 float, 16 threads: 4.04 s; `KMP_BLOCKTIME=0`,
+  `OMP_WAIT_POLICY=passive` and preloading libomp change nothing) while
+  unbound it runs at 0.81 s, faster than the pthread OpenBLAS (0.99-1.01 s
+  bound or not). gcc's libgomp prefers the binding (0.63 s bound, 0.77 s
+  unbound). The host rows therefore run each runtime in the better of the
+  two settings, bound for gcc and MKL (GNU threading layer), unbound for the
+  LLVM compilers, and the setting is in every row's `sysinfo.env`; the
+  gcc/clang gap (about 1.3x) is partly this runtime-level difference.
 - **ws-nvidia's OpenMP host rows ran 16 threads on 12 cores.** The container
   image sets `OMP_NUM_THREADS=16` (ws-amd's core count); ws-nvidia has two
   6-core Xeons (24 hardware threads), so its clang-22 host rows ran 16 threads

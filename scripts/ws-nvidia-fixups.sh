@@ -29,7 +29,8 @@ ssh "$HOST" "$RUN -w /work/ompnn localhost/fnn-cuda:dev bash -c '
     pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-clang22 --config-settings=build-dir=/tmp/b-clang22 . 2>&1 | grep -E \"error:\" || true
     objdump -p /work/fnn-bench/.wheels/ws-nvidia-omp-clang22/ompnn/_ompnn*.so | grep -E \"RPATH|RUNPATH\"
     # OMP_NUM_THREADS: the image default 16 is the ws-amd core count; ws-nvidia has 2 x 6 cores, 24 hardware threads
-    export FNN_REF_CACHE=/work/fnn-bench/.cache/ref OMP_PROC_BIND=close OMP_PLACES=cores OMP_NUM_THREADS=12; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+    # unbound: clang-22 uses LLVM libomp, which also serves the OpenMP OpenBLAS; bound it collapses (ws-amd: 4.0 s vs 0.81 s)
+    export FNN_REF_CACHE=/work/fnn-bench/.cache/ref OMP_PROC_BIND=false OMP_NUM_THREADS=12; unset OMP_PLACES; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
     cd /work/fnn-bench; export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22
     python scripts/supersede-stale.py results/ws-nvidia/$DATE/omp-cpu-clang22 --all
     [ -f results/ws-nvidia/$DATE/peaks-omp-clang22/peak.jsonl ] && cat results/ws-nvidia/$DATE/peaks-omp-clang22/peak.jsonl >> results/ws-nvidia/$DATE/peaks-omp-clang22/superseded.jsonl && rm results/ws-nvidia/$DATE/peaks-omp-clang22/peak.jsonl

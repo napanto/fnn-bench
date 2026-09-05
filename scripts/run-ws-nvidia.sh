@@ -109,7 +109,8 @@ matrix_omp() {
             fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-breakdown-omp-gpu-\$w
             fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-\$w
         done
-        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22 OMP_NUM_THREADS=12   # physical cores (2 x 6); the image default 16 is ws-amd's
+        # 12 = physical cores (2 x 6; the image default 16 is ws-amd's); unbound: libomp + OpenBLAS-openmp collapse when bound
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22 OMP_NUM_THREADS=12 OMP_PROC_BIND=false; unset OMP_PLACES
         fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22
         fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-nvidia/$DATE/peaks-omp-clang22'"
 }
