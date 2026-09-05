@@ -125,6 +125,14 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
   7900 XTX is unaffected (out-of-order passes). Same conclusion for the E6
   rows on NVIDIA: `queue=in_order` equals the default, `blas_queue=dedicated`
   is the out-of-order variant.
+- **clang-18 OpenMP 5.1 `interop` works on nvptx**: `#pragma omp interop
+  init(targetsync: obj) depend(in: x) nowait`, `omp_get_interop_ptr(obj,
+  omp_ipr_targetsync)` as a `cudaStream_t` for cuBLAS, `interop destroy(obj)
+  depend(out: y) nowait` orders consumers correctly (feasibility test
+  2026-09-05, 2000-step chain, results exact). Per-step latency on a purely
+  sequential chain was the same as the synchronous form within the noise of
+  the 1080 Ti's clock ramps (0.11-0.22 ms per k1+GEMM+k2 step), so the
+  benefit would come only from branch-level overlap.
 - **DPC++ fat binaries with two CUDA device images**: a wheel built with
   `-fsycl-targets=spir64,nvidia_gpu_sm_61,nvidia_gpu_sm_80` fails on the
   GTX 1080 Ti with "The program was built for 1 devices" and an empty build
