@@ -28,8 +28,8 @@ distrobox enter fnn-rocm -- bash -lc "
     cd $AC/ompnn; for v in venv-amdclang venv-gcc14amd; do printf 'ompnn %-14s gpu ' \$v; \$P/\$v/bin/python -m pytest -q --device gpu --dtype float -p no:cacheprovider 2>&1 | grep -E 'passed|failed' | head -1; done
 " 2>&1 | grep -v 'AdaptiveCpp Warning'
 
-log "matrix: rocm-gpu omp-gpu omp-cpu"
-bash "$HERE/scripts/matrix-ws-amd.sh" "$DATE" rocm-gpu omp-gpu omp-cpu
+log "matrix: rocm-gpu, then the DPC++ CPU sets the first instance skipped (wheel rebuilt), omp-gpu, omp-cpu"
+bash "$HERE/scripts/matrix-ws-amd.sh" "$DATE" rocm-gpu sycl-cpu omp-gpu omp-cpu
 
 log "perf cross-check (CPU idle)"
 rm -rf "$HERE/results/ws-amd/perf-$DATE"
