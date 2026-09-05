@@ -84,7 +84,7 @@ matrix_sycl() {
         nsys profile -o results/ws-nvidia/$DATE/nsys-syclnn-mnist --force-overwrite true fnnbench run --backend syclnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192'"
 }
 
-matrix_cuda_omp() {
+matrix_cuda() {
     ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-cuda
@@ -94,7 +94,12 @@ matrix_cuda_omp() {
         fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-infer-gpu
         fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-breakdown-gpu
         for dt in float double; do fnnbench peak --backend cudann --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
-        nsys profile -o results/ws-nvidia/$DATE/nsys-cudann-mnist --force-overwrite true fnnbench run --backend cudann --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
+        nsys profile -o results/ws-nvidia/$DATE/nsys-cudann-mnist --force-overwrite true fnnbench run --backend cudann --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192'"
+}
+
+matrix_omp() {
+    ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         for w in clang18nv gcc14nv; do
             export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w
             fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-\$w
@@ -105,6 +110,11 @@ matrix_cuda_omp() {
         done
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22
         fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22'"
+}
+
+matrix_cuda_omp() {
+    matrix_cuda || echo "matrix: cudann block failed"
+    matrix_omp || echo "matrix: ompnn block failed"
 }
 
 matrix() {
@@ -169,11 +179,13 @@ build) build_all ;;
 tests) tests ;;
 matrix) matrix ;;
 matrix-cuda-omp) matrix_cuda_omp ;;
+matrix-cuda) matrix_cuda ;;
+matrix-omp) matrix_omp ;;
 matrix-sycl) matrix_sycl ;;
 fetch) fetch ;;
 omp-clang18) omp_clang18 ;;
 sycl-fix) sycl_fix ;;
 omp-gcc14nv) omp_gcc14nv ;;
 all) sync; tests; matrix; fetch ;;
-*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|all"; exit 1 ;;
+*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda|matrix-omp|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|all"; exit 1 ;;
 esac
