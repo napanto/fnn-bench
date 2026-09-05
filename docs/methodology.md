@@ -305,6 +305,12 @@ the OpenMP host rows; `ws-amd-cpu-fixups-2.sh` for the DPC++ CPU blocks;
   at mnist-512-256 b256 against 0.96 s for the same binary at 16 threads
   (found through the portability run, which had set 16). Re-measured at 16.
 
+- **ws-nvidia's OpenMP host rows ran 16 threads on 12 cores.** The container
+  image sets `OMP_NUM_THREADS=16` (ws-amd's core count); ws-nvidia has two
+  6-core Xeons (24 hardware threads), so its clang-22 host rows ran 16 threads
+  on 12 places. Re-measured at 12 (`scripts/ws-nvidia-fixups.sh`; the matrix
+  script sets it too now).
+
 Run-to-run spread: the same visible configuration is measured in more than
 one sweep of the third pass (E3 default vs E7 `blas=auto` vs the E6 baseline,
 E4 vs E7 vendor rows). `scripts/headline.py` tabulates every such pair from

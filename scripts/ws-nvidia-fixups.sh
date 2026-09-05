@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# ws-nvidia CPU fix-ups (2026-09-05), the same two defects found on ws-amd (docs/methodology.md,
+# ws-nvidia CPU fix-ups (2026-09-05), the two defects found on ws-amd (docs/methodology.md,
 # "CPU rows: thread counts, affinity and the OpenBLAS variant"): the E4 thread rows ran on one
-# inherited core, and the ompnn wheel loaded the pthread OpenBLAS. Re-syncs the harness (child
+# inherited core, and the ompnn wheel loaded the pthread OpenBLAS; plus a ws-nvidia-only one: the
+# image's OMP_NUM_THREADS=16 (ws-amd's core count) on a 12-core machine. Re-syncs the harness (child
 # affinity fix) and ompnn (rpath fix), rebuilds the clang-22 host wheel, re-measures
 # omp-cpu-clang22 (+ a CPU peak), fetches the rows back and re-runs the ws-nvidia analysis.
 # Run from ws-amd once every other ws-nvidia step is done.
@@ -27,7 +28,8 @@ ssh "$HOST" "$RUN -w /work/ompnn localhost/fnn-cuda:dev bash -c '
     rm -rf /work/fnn-bench/.wheels/ws-nvidia-omp-clang22
     pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-clang22 --config-settings=build-dir=/tmp/b-clang22 . 2>&1 | grep -E \"error:\" || true
     objdump -p /work/fnn-bench/.wheels/ws-nvidia-omp-clang22/ompnn/_ompnn*.so | grep -E \"RPATH|RUNPATH\"
-    export FNN_REF_CACHE=/work/fnn-bench/.cache/ref OMP_PROC_BIND=close OMP_PLACES=cores; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+    # OMP_NUM_THREADS: the image default (16) is ws-amd's core count; ws-nvidia has 2 x 6 cores (24 hardware threads)
+    export FNN_REF_CACHE=/work/fnn-bench/.cache/ref OMP_PROC_BIND=close OMP_PLACES=cores OMP_NUM_THREADS=12; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
     cd /work/fnn-bench; export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22
     python scripts/supersede-stale.py results/ws-nvidia/$DATE/omp-cpu-clang22 --all
     [ -f results/ws-nvidia/$DATE/peaks-omp-clang22/peak.jsonl ] && cat results/ws-nvidia/$DATE/peaks-omp-clang22/peak.jsonl >> results/ws-nvidia/$DATE/peaks-omp-clang22/superseded.jsonl && rm results/ws-nvidia/$DATE/peaks-omp-clang22/peak.jsonl
