@@ -61,6 +61,17 @@ def _gflops_gemm(row: dict[str, Any]) -> float:
     return row["results"]["flops_per_epoch"]["gemm"] / _epoch_s(row) / 1e9
 
 
+
+def _timing(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rows measured without the per-launch event profiler (its cost is 20-40 % on the GPU
+    libraries and nil on ompnn, so profiled rows are not comparable across backends)."""
+    return [r for r in rows if not (r.get("options") or {}).get("profile")]
+
+
+def _profiled(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [r for r in rows if (r.get("options") or {}).get("profile")]
+
+
 def _label(row: dict[str, Any]) -> str:
     dev = (row.get("device") or {}).get("name", "?")
     short = dev.split("(")[0].strip()
@@ -364,14 +375,16 @@ def plot_sweep(plt, rows, out):
 
 def plot_all(paths: list[str], out: str) -> int:
     plt = _mpl()
-    rows = _good(results.read(paths))
+    all_rows = _good(results.read(paths))
+    rows = _timing(all_rows)  # unprofiled rows for every timing figure
+    prof_rows = _profiled(all_rows)
     peaks = [r for r in results.read(paths) if r.get("kind") == "peak"]
     outp = Path(out)
     print(f"{len(rows)} usable rows, {len(peaks)} peak rows")
     if not rows:
         return 1
     plot_throughput(plt, rows, outp)
-    plot_breakdown(plt, rows, outp)
+    plot_breakdown(plt, prof_rows, outp)
     plot_roofline(plt, rows, peaks, outp)
     plot_ablation(plt, rows, outp)
     plot_compilers(plt, rows, outp)

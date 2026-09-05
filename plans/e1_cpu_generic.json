@@ -11,32 +11,28 @@
    "workload": "monk",
    "dtype": "float",
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
    "workload": "monk",
    "dtype": "double",
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
    "workload": "cup",
    "dtype": "float",
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
    "workload": "cup",
    "dtype": "double",
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -46,8 +42,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -57,8 +52,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -68,8 +62,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -79,8 +72,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -90,8 +82,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -101,8 +92,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -112,8 +102,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -123,8 +112,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -134,8 +122,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -145,8 +132,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -156,8 +142,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   },
   {
@@ -167,8 +152,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "generic",
-    "profile": true
+    "blas": "generic"
    }
   }
  ]

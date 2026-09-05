@@ -11,10 +11,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -24,10 +21,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -38,10 +32,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -51,10 +42,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -65,10 +53,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -78,10 +63,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -92,10 +74,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -105,10 +84,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -119,10 +95,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -132,10 +105,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -146,10 +116,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -159,10 +126,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -173,10 +137,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -186,10 +147,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -200,10 +158,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -213,10 +168,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -227,10 +179,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -240,10 +189,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -254,10 +200,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -267,10 +210,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -281,10 +221,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -294,10 +231,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -308,10 +242,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -321,10 +252,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -335,10 +263,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -348,10 +273,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -362,10 +284,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -375,10 +294,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -389,10 +305,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -402,10 +315,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -416,10 +326,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "cudann",
@@ -429,10 +336,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -443,10 +347,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -456,10 +357,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -470,10 +368,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -483,10 +378,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -497,10 +389,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -510,10 +399,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -524,10 +410,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -537,10 +420,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -551,10 +431,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -564,10 +441,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -578,10 +452,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -591,10 +462,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -605,10 +473,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -618,10 +483,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -632,10 +494,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -645,10 +504,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -659,10 +515,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -672,10 +525,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -686,10 +536,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -699,10 +546,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -713,10 +557,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -726,10 +567,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -740,10 +578,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -753,10 +588,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -767,10 +599,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -780,10 +609,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -794,10 +620,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -807,10 +630,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -821,10 +641,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -834,10 +651,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -848,10 +662,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "syclnn",
@@ -861,10 +672,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -875,10 +683,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -888,10 +693,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -902,10 +704,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -915,10 +714,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -929,10 +725,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -942,10 +735,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -956,10 +746,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -969,10 +756,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -983,10 +767,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -996,10 +777,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -1010,10 +788,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -1023,10 +798,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -1037,10 +809,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -1050,10 +819,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -1064,10 +830,7 @@
    "batch": 1,
    "samples": 2048,
    "epochs": 3,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   },
   {
    "backend": "ompnn",
@@ -1077,10 +840,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 5,
-   "repeat": 5,
-   "options": {
-    "profile": true
-   }
+   "repeat": 5
   }
  ]
 }

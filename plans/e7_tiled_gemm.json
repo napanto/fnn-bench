@@ -11,7 +11,6 @@
    "workload": "monk",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -19,10 +18,7 @@
    "backend": "syclnn",
    "device": "gpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "syclnn",
@@ -30,7 +26,6 @@
    "workload": "monk",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -38,10 +33,7 @@
    "backend": "syclnn",
    "device": "gpu",
    "workload": "monk",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "syclnn",
@@ -49,7 +41,6 @@
    "workload": "cup",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -57,10 +48,7 @@
    "backend": "syclnn",
    "device": "gpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "syclnn",
@@ -68,7 +56,6 @@
    "workload": "cup",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -76,10 +63,7 @@
    "backend": "syclnn",
    "device": "gpu",
    "workload": "cup",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "syclnn",
@@ -87,7 +71,6 @@
    "workload": "mnist-512-256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -95,10 +78,7 @@
    "backend": "syclnn",
    "device": "gpu",
    "workload": "mnist-512-256",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "syclnn",
@@ -106,7 +86,6 @@
    "workload": "mnist-512-256",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -114,10 +93,7 @@
    "backend": "syclnn",
    "device": "gpu",
    "workload": "mnist-512-256",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "cudann",
@@ -125,7 +101,6 @@
    "workload": "monk",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -133,10 +108,7 @@
    "backend": "cudann",
    "device": "gpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "cudann",
@@ -144,7 +116,6 @@
    "workload": "monk",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -152,10 +123,7 @@
    "backend": "cudann",
    "device": "gpu",
    "workload": "monk",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "cudann",
@@ -163,7 +131,6 @@
    "workload": "cup",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -171,10 +138,7 @@
    "backend": "cudann",
    "device": "gpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "cudann",
@@ -182,7 +146,6 @@
    "workload": "cup",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -190,10 +153,7 @@
    "backend": "cudann",
    "device": "gpu",
    "workload": "cup",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "cudann",
@@ -201,7 +161,6 @@
    "workload": "mnist-512-256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -209,10 +168,7 @@
    "backend": "cudann",
    "device": "gpu",
    "workload": "mnist-512-256",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "cudann",
@@ -220,7 +176,6 @@
    "workload": "mnist-512-256",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -228,10 +183,7 @@
    "backend": "cudann",
    "device": "gpu",
    "workload": "mnist-512-256",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "ompnn",
@@ -239,7 +191,6 @@
    "workload": "monk",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -247,10 +198,7 @@
    "backend": "ompnn",
    "device": "gpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "ompnn",
@@ -258,7 +206,6 @@
    "workload": "monk",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -266,10 +213,7 @@
    "backend": "ompnn",
    "device": "gpu",
    "workload": "monk",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "ompnn",
@@ -277,7 +221,6 @@
    "workload": "cup",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -285,10 +228,7 @@
    "backend": "ompnn",
    "device": "gpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "ompnn",
@@ -296,7 +236,6 @@
    "workload": "cup",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -304,10 +243,7 @@
    "backend": "ompnn",
    "device": "gpu",
    "workload": "cup",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "ompnn",
@@ -315,7 +251,6 @@
    "workload": "mnist-512-256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -323,10 +258,7 @@
    "backend": "ompnn",
    "device": "gpu",
    "workload": "mnist-512-256",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "ompnn",
@@ -334,7 +266,6 @@
    "workload": "mnist-512-256",
    "dtype": "double",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -342,10 +273,7 @@
    "backend": "ompnn",
    "device": "gpu",
    "workload": "mnist-512-256",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "backend": "syclnn",
@@ -353,7 +281,6 @@
    "workload": "monk",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -363,7 +290,6 @@
    "workload": "cup",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -373,7 +299,6 @@
    "workload": "mnist-512-256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -383,7 +308,6 @@
    "workload": "monk",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -393,7 +317,6 @@
    "workload": "cup",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -403,7 +326,6 @@
    "workload": "mnist-512-256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    }
   },
@@ -413,7 +335,6 @@
    "workload": "sweep-w256-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -424,9 +345,6 @@
    "device": "gpu",
    "workload": "sweep-w256-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -436,7 +354,6 @@
    "workload": "sweep-w1024-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -447,9 +364,6 @@
    "device": "gpu",
    "workload": "sweep-w1024-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -459,7 +373,6 @@
    "workload": "sweep-w4096-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -470,9 +383,6 @@
    "device": "gpu",
    "workload": "sweep-w4096-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -482,7 +392,6 @@
    "workload": "sweep-w256-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -493,9 +402,6 @@
    "device": "gpu",
    "workload": "sweep-w256-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -505,7 +411,6 @@
    "workload": "sweep-w1024-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -516,9 +421,6 @@
    "device": "gpu",
    "workload": "sweep-w1024-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -528,7 +430,6 @@
    "workload": "sweep-w4096-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -539,9 +440,6 @@
    "device": "gpu",
    "workload": "sweep-w4096-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -551,7 +449,6 @@
    "workload": "sweep-w256-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -562,9 +459,6 @@
    "device": "gpu",
    "workload": "sweep-w256-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -574,7 +468,6 @@
    "workload": "sweep-w1024-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -585,9 +478,6 @@
    "device": "gpu",
    "workload": "sweep-w1024-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -597,7 +487,6 @@
    "workload": "sweep-w4096-d4-b256",
    "dtype": "float",
    "options": {
-    "profile": true,
     "blas": "tiled"
    },
    "epochs": 2,
@@ -608,9 +497,6 @@
    "device": "gpu",
    "workload": "sweep-w4096-d4-b256",
    "dtype": "float",
-   "options": {
-    "profile": true
-   },
    "epochs": 2,
    "repeat": 3
   },
@@ -618,55 +504,37 @@
    "backend": "syclnn",
    "device": "cpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "syclnn",
    "device": "cpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "syclnn",
    "device": "cpu",
    "workload": "mnist-512-256",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "ompnn",
    "device": "cpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "ompnn",
    "device": "cpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "backend": "ompnn",
    "device": "cpu",
    "workload": "mnist-512-256",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   }
  ]
 }

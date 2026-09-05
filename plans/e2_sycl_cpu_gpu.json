@@ -9,34 +9,22 @@
   {
    "device": "cpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "device": "cpu",
    "workload": "monk",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "device": "cpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "device": "cpu",
    "workload": "cup",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "device": "cpu",
@@ -44,10 +32,7 @@
    "dtype": "float",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -55,10 +40,7 @@
    "dtype": "float",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -66,10 +48,7 @@
    "dtype": "float",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -77,10 +56,7 @@
    "dtype": "double",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -88,10 +64,7 @@
    "dtype": "double",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -99,10 +72,7 @@
    "dtype": "double",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -110,10 +80,7 @@
    "dtype": "float",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -121,10 +88,7 @@
    "dtype": "float",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -132,10 +96,7 @@
    "dtype": "float",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -143,10 +104,7 @@
    "dtype": "double",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -154,10 +112,7 @@
    "dtype": "double",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -165,10 +120,7 @@
    "dtype": "double",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -178,9 +130,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -190,10 +139,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -203,9 +149,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -215,10 +158,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -228,9 +168,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -240,10 +177,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -253,9 +187,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -265,10 +196,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -278,9 +206,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -290,10 +215,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -303,9 +225,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -315,10 +234,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -328,9 +244,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -340,10 +253,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "cpu",
@@ -353,9 +263,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -365,42 +272,27 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "device": "gpu",
    "workload": "monk",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "device": "gpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "device": "gpu",
    "workload": "cup",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "device": "gpu",
@@ -408,10 +300,7 @@
    "dtype": "float",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -419,10 +308,7 @@
    "dtype": "float",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -430,10 +316,7 @@
    "dtype": "float",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -441,10 +324,7 @@
    "dtype": "double",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -452,10 +332,7 @@
    "dtype": "double",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -463,10 +340,7 @@
    "dtype": "double",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -474,10 +348,7 @@
    "dtype": "float",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -485,10 +356,7 @@
    "dtype": "float",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -496,10 +364,7 @@
    "dtype": "float",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -507,10 +372,7 @@
    "dtype": "double",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -518,10 +380,7 @@
    "dtype": "double",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -529,10 +388,7 @@
    "dtype": "double",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -542,9 +398,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -554,10 +407,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -567,9 +417,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -579,10 +426,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -592,9 +436,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -604,10 +445,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -617,9 +455,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -629,10 +464,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -642,9 +474,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -654,10 +483,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -667,9 +493,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -679,10 +502,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -692,9 +512,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -704,10 +521,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -717,9 +531,6 @@
    "batch": 1,
    "epochs": 3,
    "repeat": 3,
-   "options": {
-    "profile": true
-   },
    "samples": 2048
   },
   {
@@ -729,10 +540,7 @@
    "mode": "infer",
    "batch": 4096,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   }
  ]
 }

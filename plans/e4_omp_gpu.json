@@ -7,34 +7,22 @@
   {
    "device": "gpu",
    "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "device": "gpu",
    "workload": "monk",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "device": "gpu",
    "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "profile": true
-   }
+   "dtype": "float"
   },
   {
    "device": "gpu",
    "workload": "cup",
-   "dtype": "double",
-   "options": {
-    "profile": true
-   }
+   "dtype": "double"
   },
   {
    "device": "gpu",
@@ -42,10 +30,7 @@
    "dtype": "float",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -53,10 +38,7 @@
    "dtype": "float",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -64,10 +46,7 @@
    "dtype": "float",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -75,10 +54,7 @@
    "dtype": "double",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -86,10 +62,7 @@
    "dtype": "double",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -97,10 +70,7 @@
    "dtype": "double",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -108,10 +78,7 @@
    "dtype": "float",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -119,10 +86,7 @@
    "dtype": "float",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -130,10 +94,7 @@
    "dtype": "float",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -141,10 +102,7 @@
    "dtype": "double",
    "batch": 64,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -152,10 +110,7 @@
    "dtype": "double",
    "batch": 256,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -163,10 +118,7 @@
    "dtype": "double",
    "batch": 1024,
    "epochs": 3,
-   "repeat": 3,
-   "options": {
-    "profile": true
-   }
+   "repeat": 3
   },
   {
    "device": "gpu",
@@ -176,8 +128,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "omp",
-    "profile": true
+    "blas": "omp"
    }
   },
   {
@@ -188,8 +139,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "omp",
-    "profile": true
+    "blas": "omp"
    }
   },
   {
@@ -200,8 +150,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "blas": "omp",
-    "profile": true
+    "blas": "omp"
    }
   }
  ]
