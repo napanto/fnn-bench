@@ -34,6 +34,7 @@ RUN git clone --depth 1 -b ${ONEMATH_TAG} https://github.com/uxlfoundation/oneMa
     && cmake -S /tmp/onemath -B /tmp/onemath/build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/onemath-acpp \
         -DONEMATH_SYCL_IMPLEMENTATION=adaptivecpp \
+        -DAdaptiveCpp_DIR=/opt/acpp/lib/cmake/AdaptiveCpp -DCMAKE_PREFIX_PATH=/opt/acpp \
         -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=/opt/acpp/bin/acpp -DACPP_TARGETS=generic \
         -DENABLE_MKLCPU_BACKEND=OFF -DENABLE_MKLGPU_BACKEND=OFF \
         -DENABLE_CUBLAS_BACKEND=ON -DCUDA_CUDA_LIBRARY=${CUDA_HOME}/lib64/stubs/libcuda.so \

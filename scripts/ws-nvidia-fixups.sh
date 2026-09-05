@@ -28,7 +28,7 @@ ssh "$HOST" "$RUN -w /work/ompnn localhost/fnn-cuda:dev bash -c '
     rm -rf /work/fnn-bench/.wheels/ws-nvidia-omp-clang22
     pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-omp-clang22 --config-settings=build-dir=/tmp/b-clang22 . 2>&1 | grep -E \"error:\" || true
     objdump -p /work/fnn-bench/.wheels/ws-nvidia-omp-clang22/ompnn/_ompnn*.so | grep -E \"RPATH|RUNPATH\"
-    # OMP_NUM_THREADS: the image default (16) is ws-amd's core count; ws-nvidia has 2 x 6 cores (24 hardware threads)
+    # OMP_NUM_THREADS: the image default 16 is the ws-amd core count; ws-nvidia has 2 x 6 cores, 24 hardware threads
     export FNN_REF_CACHE=/work/fnn-bench/.cache/ref OMP_PROC_BIND=close OMP_PLACES=cores OMP_NUM_THREADS=12; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
     cd /work/fnn-bench; export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22
     python scripts/supersede-stale.py results/ws-nvidia/$DATE/omp-cpu-clang22 --all
