@@ -24,7 +24,7 @@ distrobox enter fnn-rocm -- bash -lc "
         fnnbench run --backend syclnn --device \$dev --workload \$1 --batch \$2 --dtype float --epochs 5 --repeat 3 --warmup 1 --option blas=\$b --out results/ws-amd/$DATE/portable-acpp --tag portable-acpp-ws-amd-\$dev 2>&1 | tail -1
     done; done; done
 " 2>&1 | grep -vE 'Warning|^\s*$' | tail -13
-rsync -a "$ACPP_WHEEL/syclnn/" ws-nvidia:$HOME/fnn/fnn-bench/.wheels/portable-acpp/syclnn/
+ssh ws-nvidia mkdir -p $HOME/fnn/fnn-bench/.wheels/portable-acpp/syclnn && rsync -a "$ACPP_WHEEL/syclnn/" ws-nvidia:$HOME/fnn/fnn-bench/.wheels/portable-acpp/syclnn/
 ssh ws-nvidia 'R=$HOME/fnn; podman image exists localhost/fnn-acpp-cuda:dev && podman run --rm --memory=40g --device nvidia.com/gpu=all --security-opt=label=disable -v $R/syclnn:/work/syclnn -v $R/fnn-bench:/work/fnn-bench -w /work/fnn-bench localhost/fnn-acpp-cuda:dev bash -c "
     pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench; export PYTHONPATH=/work/fnn-bench/.wheels/portable-acpp LD_LIBRARY_PATH=/opt/onemath-acpp/lib:/opt/acpp/lib:/opt/openblas-openmp/lib:\${LD_LIBRARY_PATH:-} FNN_REF_CACHE=/work/fnn-bench/.cache/ref ACPP_TARGETS=generic
     sha256sum /work/fnn-bench/.wheels/portable-acpp/syclnn/_syclnn*.so; python -c \"import syclnn; print([d[\\\"name\\\"] for d in syclnn.devices()])\"
