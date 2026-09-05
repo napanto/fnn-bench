@@ -13,9 +13,14 @@ bench/        fnnbench: run / sweep / collect / replay / peak / plot, FLOP model
 containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic Containerfiles (+ the oneMath/OpenBLAS patch)
 plans/        the experiment matrix as JSON plans (E1-E7, W4 sweeps; e5_breakdown is the only profiled plan)
 scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh,
-              ws-amd-pass2.sh, run-ws-nvidia.sh (NVIDIA runs over ssh + podman CDI), analyze.sh,
-              supersede-stale.py, rocprof-crosscheck.sh, perf-crosscheck.sh, nsys-crosscheck.py
+              ws-amd-pass3-*.sh / ws-amd-cpu-fixups*.sh (the third pass and its CPU fix-ups),
+              run-ws-nvidia.sh (NVIDIA runs over ssh + podman CDI), ws-nvidia-acpp.sh, ws-nvidia-fixups.sh,
+              analyze.sh, headline.py (Markdown headline tables + run-to-run spread),
+              supersede-stale.py, zluda-crosscheck.sh, rocprof-crosscheck.sh, perf-crosscheck.sh,
+              nsys-crosscheck.py, commit.sh
 docs/         toolchains.md (compiler x device matrix and the facts learned), methodology.md
+              (protocol, metrics, caveats, the profiler and CPU fix-ups), optional.md (optional experiments:
+              tiled GEMM, DPC++ vs AdaptiveCpp, one-binary portability, ZLUDA)
 results/      raw JSONL per machine/date (+ peaks, rocprof/perf/nsys cross-checks); superseded.jsonl = replaced rows
 analysis/     figures produced by `fnnbench plot`
 report/, slides/   the write-up
@@ -40,8 +45,17 @@ fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --out results/ws-nvidia/$(d
 scripts/matrix-ws-amd.sh                                        # ws-amd: all environments, sequentially
 scripts/run-ws-nvidia.sh all                                       # ws-nvidia: sync, build, parity, matrix, fetch
 scripts/analyze.sh                                              # both machines -> analysis/<machine>-<date>.csv, analysis/figures/<machine>-<date>/
+scripts/headline.py results/ws-amd/2026-09-05                   # Markdown: defaults per toolchain, tiled/vendor ratios, run-to-run spread
 ```
 
+The rows the report uses are the third pass, `results/*/2026-09-05` (timing
+rows unprofiled, oracle check on a separate instance, every confounder found
+on the way fixed or isolated: `docs/methodology.md`). Rows replaced by a
+re-measurement live in `superseded.jsonl` next to the live file and are
+skipped by every reader.
+
 See `docs/methodology.md` for what a row means (two per-epoch numbers, the
-bounded oracle check, the FLOP model) and `docs/toolchains.md` for which
-compiler/device combinations are validated.
+bounded oracle check, the FLOP model), `docs/toolchains.md` for which
+compiler/device combinations are validated and `docs/optional.md` for the
+optional experiments (hand-written GEMM, DPC++ vs AdaptiveCpp, portability,
+ZLUDA).
