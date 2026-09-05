@@ -493,31 +493,6 @@
     "sync_ops": true
    },
    "batch": 256
-  },
-  {
-   "backend": "syclnn",
-   "workload": "monk",
-   "dtype": "float",
-   "options": {
-    "sync_ops": true
-   }
-  },
-  {
-   "backend": "syclnn",
-   "workload": "cup",
-   "dtype": "float",
-   "options": {
-    "sync_ops": true
-   }
-  },
-  {
-   "backend": "syclnn",
-   "workload": "mnist-512-256",
-   "dtype": "float",
-   "options": {
-    "sync_ops": true
-   },
-   "batch": 256
   }
  ]
 }

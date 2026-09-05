@@ -380,9 +380,12 @@ def plot_all(paths: list[str], out: str) -> int:
     prof_rows = _profiled(all_rows)
     peaks = [r for r in results.read(paths) if r.get("kind") == "peak"]
     outp = Path(out)
-    print(f"{len(rows)} usable rows, {len(peaks)} peak rows")
-    if not rows:
+    print(f"{len(rows)} unprofiled rows, {len(prof_rows)} profiled rows, {len(peaks)} peak rows")
+    if not rows and not prof_rows:
         return 1
+    if not rows:  # a directory measured entirely with the profiler on (passes before 2026-09-05)
+        plot_breakdown(plt, prof_rows, outp)
+        return 0
     plot_throughput(plt, rows, outp)
     plot_breakdown(plt, prof_rows, outp)
     plot_roofline(plt, rows, peaks, outp)
