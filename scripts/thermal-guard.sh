@@ -18,7 +18,7 @@ while true; do
     [ "$t" -gt "$peak" ] && peak=$t && echo "[$(date +%T)] new peak Tctl ${t} C (mean MHz $(awk '/MHz/{s+=$4;n++} END{printf "%.0f", s/n}' /proc/cpuinfo))"
     if [ "$t" -ge "$KILL" ]; then
         echo "==== [$(date +%T)] Tctl ${t} C >= ${KILL}: killing the benchmark containers and sweeps"
-        for c in $(podman ps -q 2>/dev/null); do podman kill "$c" >/dev/null 2>&1; done
+        for img in fnn-cuda fnn-sycl fnn-sycl-generic fnn-acpp-cuda; do for c in $(podman ps -q --filter ancestor=localhost/$img:dev 2>/dev/null); do podman kill "$c" >/dev/null 2>&1; done; done
         pkill -f 'fnnbench (sweep|run|peak)' 2>/dev/null
         pkill -f 'ws-amd-cpu-fixed-cloc[k]' 2>/dev/null
         sleep 30
