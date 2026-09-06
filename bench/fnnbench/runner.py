@@ -218,7 +218,7 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
     q1, q3 = np.percentile(walls, [25, 75])
     # steady-state epoch: the library's own per-epoch wall (inside the call, after the
     # dataset upload) without the first epoch of each call, which carries the H2D
-    # staging, lazy initialisation and (graph mode) the capture. Needs profile=True.
+    # staging, lazy initialisation and (graph mode) the capture. the libraries record the per-epoch clock with or without the profiler.
     steady = None
     ew = prof_all.get("epoch_wall_ns") or []
     if cfg.mode == "train" and cfg.epochs > 1 and len(ew) == cfg.repeat * cfg.epochs:

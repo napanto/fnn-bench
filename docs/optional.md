@@ -30,21 +30,25 @@ and toolchain are in `analysis/headline-<machine>-<date>.md` and the
   (`scripts/ws-nvidia-acpp.sh`, sweeps `sycl-gpu-acpp`, `peaks-acpp`). Results:
   the "DPC++ vs AdaptiveCpp" table below (`scripts/acpp-vs-dpcpp.py`).
 - **CPU**: both, on ws-amd's Threadripper 2950X: DPC++ through the Intel
-  OpenCL CPU runtime (`sycl-cpu*`), AdaptiveCpp through its OpenMP host
-  device (`sycl-cpu-acpp`, 16 threads). See the same table.
+  OpenCL CPU runtime (`sycl-cpu*`, 16 compute units by `DPCPP_CPU_NUM_CUS`),
+  AdaptiveCpp through its OpenMP host device (`sycl-cpu-acpp`, 16 threads).
+  See the same table.
 
 <!-- DPCPP-VS-ACPP-TABLE -->
 Steady epoch in ms, float training rows, vendor BLAS / hand-written tiled
-BLAS (`scripts/acpp-vs-dpcpp.py`, regenerated from the rows; the CPU rows use
-16 compute units / 16 threads, ws-amd at the fixed 2.8 GHz):
+BLAS (`scripts/acpp-vs-dpcpp.py --update docs/optional.md` rewrites this block
+from the rows; the DPC++ CPU rows run with `DPCPP_CPU_NUM_CUS=16` although the
+device keeps reporting 32 compute units, the AdaptiveCpp host rows with 16
+threads, ws-amd at the fixed 2.8 GHz):
 
 | device | SYCL implementation | units | monk b40 | cup b40 | mnist-512-256 b256 | mnist-512-256 b1024 |
 |---|---|---|---|---|---|---|
 | GTX 1080 Ti | AdaptiveCpp | 28 | 2.1 / 1.4 | 18.0 / 12.1 | 224.9 / 192.5 | 69.0 / - |
 | GTX 1080 Ti | DPC++ | 28 | 2.4 / 1.6 | 16.7 / 11.7 | 145.8 / 243.9 | 40.7 / - |
 | RX 7900 XTX | AdaptiveCpp | 48 | 2.1 / 1.0 | 19.1 / 8.2 | 221.7 / 102.4 | 63.5 / - |
-| TR 2950X, OpenCL CPU | DPC++ | 32 CUs | 1.7 / 1.8 | 11.9 / 13.1 | 1002.8 / 3108.2 | 683.7 / - |
+| TR 2950X, OpenCL CPU | DPC++ | 16 CUs (device reports 32) | 1.7 / 1.8 | 11.9 / 13.1 | 1002.8 / 3108.2 | 683.7 / - |
 | TR 2950X, OpenMP host | AdaptiveCpp | 16 threads | 1.0 / 2.1 | 19.4 / 9.0 | 1164.9 / 2916.9 | 807.2 / - |
+| Xeon E5-2643 v2, OpenMP host | AdaptiveCpp | 16 threads | 1.6 / 1.4 | 11.1 / 12.6 | 3821.2 / 3180.4 | - / - |
 
 vendor / tiled cells are steady epochs in ms; ratios above 1 mean AdaptiveCpp is slower:
 
@@ -54,7 +58,7 @@ vendor / tiled cells are steady epochs in ms; ratios above 1 mean AdaptiveCpp is
 Same-GPU findings on the GTX 1080 Ti (both wheels built in their own image on
 ws-nvidia, both through oneMath's cuBLAS backend):
 
-- With cuBLAS, DPC++ is 1.4x faster at mnist-512-256 b256 (146 vs 209-240 ms)
+- With cuBLAS, DPC++ is 1.4-1.5x faster at mnist-512-256 b256 (146 vs 210-224 ms)
   and 1.7x at b1024; monk/cup are within the run-to-run spread. With the
   tiled kernels the order flips (DPC++ 244 ms, AdaptiveCpp 192 ms): the
   DPC++ tiled rows run on the out-of-order queue that the CUDA adapter
@@ -65,7 +69,7 @@ ws-nvidia, both through oneMath's cuBLAS backend):
   `queue=in_order`, `streams=1`, `blas_queue=dedicated`, `memory=shared`; 3
   failures only for `memory=host`, zero-copy host USM, the same class of
   failure as on the RX 7900 XTX), but not faster: its E6 rows give 178 ms
-  in-order against 240 ms out-of-order (1.35x, the same sign as on the RX
+  in-order against 224 ms out-of-order (1.26x, the same sign as on the RX
   7900 XTX: 144 vs 228), `sync_ops=true` 235 ms (no overlap to lose), and the
   bracketed `blas_queue=dedicated` 373 ms.
 - Per-operation cost, the launch-bound regime of the methodology: AdaptiveCpp
@@ -74,9 +78,9 @@ ws-nvidia, both through oneMath's cuBLAS backend):
   converge (methodology, "the two regimes").
 - On the CPU the two implementations are different devices: DPC++ drives the
   OpenCL CPU runtime (TBB workers, `DPCPP_CPU_NUM_CUS`), AdaptiveCpp its
-  OpenMP host device (`OMP_NUM_THREADS`); at mnist-512-256 b256 they are
-  within a few percent of each other, with different BLAS paths (MKLCPU /
-  Netlib on DPC++, the generic SYCL BLAS on AdaptiveCpp).
+  OpenMP host device (`OMP_NUM_THREADS`); at mnist-512-256 b256 the
+  AdaptiveCpp host device is 16 % slower (1165 vs 1003 ms), with different
+  BLAS paths (MKLCPU / Netlib on DPC++, the generic SYCL BLAS on AdaptiveCpp).
 <!-- /DPCPP-VS-ACPP-TABLE -->
 
 ## 3. Portability: one binary, four devices
@@ -139,7 +143,7 @@ run-to-run spread):
 
 | workload | cudann on ZLUDA, `blas=tiled` | cudann/HIP (hipify), `blas=tiled` | cudann on ZLUDA, cuBLAS gemm (`bias_gemv=False`) | cudann/HIP, rocBLAS | syclnn/AdaptiveCpp, `blas=tiled` | syclnn/AdaptiveCpp, rocBLAS |
 |---|---|---|---|---|---|---|
-| monk b40 | 0.69 ms | 0.50 ms | fails (nrm2) | 0.72 ms | 0.92 ms | 2.26 ms |
+| monk b40 | 0.69 ms | 0.50 ms | fails (nrm2) | 0.72 ms | 0.92 ms | 2.16 ms |
 | cup b40 | 4.00 ms | 4.86 ms | fails (nrm2) | 5.42 ms | 9.5 ms | 20.6 ms |
 | mnist-512-256 b256 | 79.2 ms | 85.5 ms | 74.5 ms | 65.5 ms | 103.5 ms | 227 ms |
 | mnist-512-256 b1024 | 49.2 ms | - | 28.6 ms | 21.0 ms | - | 63.5 ms |

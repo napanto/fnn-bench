@@ -127,8 +127,9 @@ def _thread_env(threads: int | None) -> dict[str, str]:
             env[k] = str(threads)
         # the DPC++ OpenCL CPU device ignores the OpenMP variables: it has its own knob
         env["DPCPP_CPU_NUM_CUS"] = str(threads)
-        env.setdefault("OMP_PROC_BIND", "close")
-        env.setdefault("OMP_PLACES", "cores")
+        if "OMP_PROC_BIND" not in env:  # a caller that chose the binding (or none) keeps it
+            env["OMP_PROC_BIND"] = "close"
+            env.setdefault("OMP_PLACES", "cores")
     return env
 
 

@@ -5,7 +5,7 @@ shared parity suite (`fnn-testkit`, 117 tests × float/double) passes; "build"
 means it compiles but no device to run on; "-" not applicable. Updated as the
 the local runs work progresses (see `the study plan`).
 
-Last update: 2026-09-04.
+Last update: 2026-09-06.
 
 ## Images and environments
 
@@ -62,10 +62,10 @@ parallel for simd` on `omp_target_alloc` memory + vendor BLAS interop
 | clang 18.1 (Ubuntu) | ws-amd CPU | OpenBLAS | **OK** double + float | |
 | amdclang++ 22 (ROCm 7.2.4) | ws-amd CPU (host path of the AMD build) | OpenBLAS | **OK** double + float, all ablations, `blas=omp` | |
 | amdclang++ 22 (`-fopenmp-targets=amdgcn-amd-amdhsa --offload-arch=gfx1100`) | ws-amd RX 7900 XTX | hipBLAS 3.2 interop; `blas=omp` | **OK** double + float, ablations, `blas=omp` | mnist-512-256 b256 float (second pass, steady epoch): ompnn/amdclang++ 186 ms (650-690 GFLOP/s GEMM), cudann/HIP 95 ms, syclnn/AdaptiveCpp 244-294 ms |
-| gcc 14.2 (`-foffload=amdgcn-amdhsa -march=gfx1100`, needs `-fcf-protection=none`) | ws-amd RX 7900 XTX | hipBLAS interop | **OK** double + float | 6.7x slower than amdclang++ at batch 256: mnist-512-256 1.38 s/epoch (steady) |
+| gcc 14.2 (`-foffload=amdgcn-amdhsa -march=gfx1100`, needs `-fcf-protection=none`) | ws-amd RX 7900 XTX | hipBLAS interop | **OK** double + float | 7.5x slower than amdclang++ at batch 256 (third pass): mnist-512-256 1.37 s/epoch (steady) against 0.18 s |
 | clang 18.1 (`--offload-arch=gfx1100`) | ws-amd RX 7900 XTX | - | **fails to build**: `/opt/rocm/amdgcn/bitcode/ocml.bc: Unknown attribute kind (Producer LLVM 22, Reader LLVM 18)` | ROCm 7.2's device libs are LLVM-22 bitcode; clang-18 would need older device libs |
-| clang 18.1 (`-fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_61 --cuda-path=/usr/local/cuda-12.9`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): E4/E7/E5 measured (mnist-512-256 float: 795 GFLOP/s GEMM rate at batch 1024; the 1024-wide `mnist` reaches 2.1 TFLOP/s) | needs `clang-tools-18` (`clang-offload-packager`) and the host offload runtime `libomptarget.so.18.1` + `libomptarget.rtl.cuda.so`, which Ubuntu's `libomp5-18` does not ship: extracted from apt.llvm.org's `llvm-toolchain-noble-18` `libomp5-18` into `/usr/lib/llvm-18/lib` (both machines' `fnn-cuda:dev` were patched in place on 2026-09-04 and the Containerfile now does the same); ompnn rpaths the compiler's own lib dir |
-| gcc 14.2 (`-foffload=nvptx-none -foffload-options=nvptx-none=-misa=sm_53 -fcf-protection=none -fno-stack-protector`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): parity green, E4/E7/E5 measured; the tiled kernel is 53-513x slower than cuBLAS on the GEMM-bound rows (mnist-512-256 float 131x, double 88x, w256 53x, w1024 513x) and 1.8-2.3x on monk/cup (one thread per warp), and its PTX fails to load for one of the two precisions depending on the build (`libgomp: cuLaunchKernel error: invalid resource handle`, double on 2026-09-04, float on 2026-09-05 after the team-memory C tile): the gcc-offload tiled rows on NVIDIA are reported as unreliable | gcc's nvptx back end knows sm_30/35/53/70/75/80 only; sm_53 PTX runs on Pascal through the driver JIT; Ubuntu's `-fstack-protector-strong` default breaks ptxas (`__stack_chk_guard`) |
+| clang 18.1 (`-fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_61 --cuda-path=/usr/local/cuda-12.9`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): E4/E7/E5 measured (mnist-512-256 float: 779 GFLOP/s GEMM rate at batch 1024; the 1024-wide `mnist` reaches 1.84 TFLOP/s (third pass)) | needs `clang-tools-18` (`clang-offload-packager`) and the host offload runtime `libomptarget.so.18.1` + `libomptarget.rtl.cuda.so`, which Ubuntu's `libomp5-18` does not ship: extracted from apt.llvm.org's `llvm-toolchain-noble-18` `libomp5-18` into `/usr/lib/llvm-18/lib` (both machines' `fnn-cuda:dev` were patched in place on 2026-09-04 and the Containerfile now does the same); ompnn rpaths the compiler's own lib dir |
+| gcc 14.2 (`-foffload=nvptx-none -foffload-options=nvptx-none=-misa=sm_53 -fcf-protection=none -fno-stack-protector`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): parity green, E4/E7/E5 measured; the tiled kernel is 50-526x slower than cuBLAS on the GEMM-bound rows (third pass: mnist-512-256 float 142x, double 96x, w256 50x, w1024 526x) and 1.8-2.3x on monk/cup (one thread per warp), and its PTX fails to load for one of the two precisions depending on the build (`libgomp: cuLaunchKernel error: invalid resource handle`, double on 2026-09-04, float on 2026-09-05 after the team-memory C tile): the gcc-offload tiled rows on NVIDIA are reported as unreliable | gcc's nvptx back end knows sm_30/35/53/70/75/80 only; sm_53 PTX runs on Pascal through the driver JIT; Ubuntu's `-fstack-protector-strong` default breaks ptxas (`__stack_chk_guard`) |
 | nvc++ 26.5 (`-mp=gpu -gpu=cc61|cc80`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | the department runs / ws-nvidia | V100+ officially |
 
 Findings: gcc compiles every `omp target` region for all installed accelerator
@@ -100,7 +100,7 @@ Code review then found the op(A) tile indexed with the fast thread index as
 the slow dimension (stride-16 local-memory bank conflicts in all three); the
 tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 (DPC++ opencl:cpu, gcc-14, clang-22), the GPU suites re-run by
-`scripts/ws-amd-pass2.sh` (`results/ws-amd/<date>/tiled-parity.txt`).
+`scripts/ws-amd-pass2.sh` (`results/ws-amd/2026-09-03/tiled-parity.txt`, second pass).
 
 ## Facts worth remembering
 
@@ -124,7 +124,7 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
   `compute_units` whatever the variable says, only the times follow it; a
   `--cpuset-cpus` limit is honoured and is reflected in `compute_units`.
   Unset, it uses all 32 hardware threads of the 2950X while the OpenMP rows
-  use the 16 cores (20 % faster at mnist-512-256 b256, E1).
+  use the 16 cores; 16 units are faster than 32 (9 % at the fixed clock, 20 % in the pre-cap probe; E1).
 
 - **Intel OpenCL CPU runtime and deep queues**: the per-submission cost of
   `opencl:cpu` (oclcpuexp 2026-WW28 under DPC++) grows with the number of
@@ -136,7 +136,7 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
   (never on GPUs; 2-4 measured best, 8 costs 10 %, 32 three times): the same
   epoch takes 2.3 s. AdaptiveCpp's OpenMP CPU
   backend does not show the effect (3.7 s unbounded; the 1024-wide `mnist`
-  takes 6.0-6.4 s with DPC++ and 9.9 s with AdaptiveCpp). The 16384-sample and
+  takes 6.3-6.4 s with DPC++ and 6.6 s with AdaptiveCpp at the fixed 2.8 GHz; 9.9 s in the pre-cap 32-thread run). The 16384-sample and
   depth-sweep numbers come from ad-hoc runs, not from result rows. Found 2026-09-04; the
   DPC++ CPU rows measured before it were superseded and re-measured.
 - **oneMath on the DPC++ CUDA backend does not compose with out-of-order
@@ -152,7 +152,7 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
   on the dedicated in-order queue (input dependencies carried by a kernel,
   the event of a kernel returned) is correct, so syclnn offers it as
   `blas_queue=dedicated`; it is 40-60 % slower than plain in-order on the
-  GTX 1080 Ti (cup 24 vs 15 ms, MNIST 512-256 248 vs 169 ms), so the default
+  GTX 1080 Ti (third pass: cup 23.0 vs 14.3 ms, MNIST 512-256 216 vs 138 ms), so the default
   on the CUDA backend is the in-order queue. AdaptiveCpp + rocBLAS on the RX
   7900 XTX is unaffected (out-of-order passes). Same conclusion for the E6
   rows on NVIDIA: `queue=in_order` equals the default, `blas_queue=dedicated`
