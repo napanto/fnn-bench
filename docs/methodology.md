@@ -260,7 +260,8 @@ ws-amd and is not recorded.
 Four defects in how the CPU rows were run were found while checking the
 third pass for run-to-run consistency (`scripts/headline.py` lists every
 visible configuration that was measured in more than one sweep); all four are
-fixed and the affected rows re-measured (`scripts/ws-amd-cpu-fixups.sh` +
+fixed and the affected rows re-measured (then all CPU-device rows once more
+at a fixed clock, next section; `scripts/ws-amd-cpu-fixups.sh` +
 `ws-amd-cpu-fixups-resume.sh` for the thread rows, the AdaptiveCpp host and
 the OpenMP host rows; `ws-amd-cpu-fixups-2.sh` for the DPC++ CPU blocks;
 `ws-nvidia-fixups.sh` on ws-nvidia; old rows in `superseded.jsonl`):
@@ -339,6 +340,39 @@ launch-bound monk/cup rows (epochs under 10 ms) differ by 21 % (median) and
 up to 60 % between sweeps, the larger workloads by 2 % (median) with single
 outliers around 50 %. Differences below the spread of the row family in
 question are not results.
+
+### CPU rows at a fixed clock (ws-amd hard-froze at 18:22 on 2026-09-05)
+
+ws-amd froze without a trace in the journal (no kernel message, no hardware
+error record, the journal "uncleanly shut down" at the next boot) while the
+generic SYCL BLAS sweep was running; a manual reset followed fifteen minutes
+later. `sar` shows nothing unusual (23 GB available, swap flat, 40 % CPU).
+The cause is thermal: `k10temp` puts the Threadripper 2950X at its throttle
+point within twenty seconds of any 16-thread load (Tdie 68 C, Tctl 95 C,
+spikes to 98.6 C, Tccd1 97 C; probe of 2026-09-06, `scripts/thermal-guard.sh`
+and the sampler below). Two consequences:
+
+- Every CPU row measured on 2026-09-05 ran at whatever clock kept the die at
+  68 C, an uncontrolled, load-dependent clock (denser code, lower clock), and
+  the generic SYCL BLAS, the densest AVX load of the matrix, pushed it over.
+- The CPU-device rows of ws-amd are therefore re-measured at a fixed clock:
+  `cpupower frequency-set -u 2.8GHz` with turbo boost off (`acpi-cpufreq`
+  P-state 2.8 GHz), where the same load holds Tctl 75 C / Tdie 47 C with the
+  clock flat at 2.8 GHz (`scripts/ws-amd-cpu-fixed-clock.sh`; the old rows
+  are in `superseded.jsonl`). Every row now records `results.cpu_monitor`
+  (k10temp/coretemp temperatures and the mean core clock sampled every
+  200 ms during the timed repetitions) and `sysinfo.cpu.scaling_max_khz` /
+  `boost`, so the clock a row ran at is in the row. A thermal guard kills
+  the sweeps at Tctl 92 C instead of letting the box freeze.
+- The GPU rows keep the host at stock clocks (boost to 4.4 GHz on the
+  submitting thread): the launch-bound regime is partly host-side cost, and
+  those rows predate the cap. CPU-vs-GPU ratios (E2) therefore compare a
+  2.8 GHz host device with a GPU driven by a boosting host; the effect on the
+  GPU rows is confined to the per-operation overhead and is stated where the
+  E2 ratios are discussed.
+- ws-nvidia's Xeon E5-2643 v2 has no frequency scaling (constant 3.5 GHz,
+  `cpufreq` absent) and exposes no temperature sensor; its rows are what
+  they are and its clocks cannot have varied.
 
 ### The profiler is not free: timing rows run unprofiled
 
