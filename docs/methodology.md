@@ -257,8 +257,11 @@ ws-amd and is not recorded.
 
 ### CPU rows: thread counts, affinity and the OpenBLAS variant (third-pass fix-ups)
 
-Four defects in how the CPU rows were run were found while checking the
-third pass for run-to-run consistency (`scripts/headline.py` lists every
+The numbers quoted in this section are the ad-hoc probes that established
+each defect, taken on 2026-09-05 at the CPU's thermal ceiling (next section);
+the rows in `results/ws-amd/2026-09-05` were all re-measured afterwards at
+the fixed 2.8 GHz and are the record. Four defects in how the CPU rows were
+run were found while checking the third pass for run-to-run consistency (`scripts/headline.py` lists every
 visible configuration that was measured in more than one sweep); all four are
 fixed and the affected rows re-measured (then all CPU-device rows once more
 at a fixed clock, next section; `scripts/ws-amd-cpu-fixups.sh` +
