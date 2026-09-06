@@ -72,6 +72,8 @@ def cpu_info() -> dict[str, Any]:
                 info[key.lower().replace("(s)", "s").replace(" ", "_")] = m.group(1).strip()
     info["governor"] = _read("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
     info["max_khz"] = _read("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
+    info["scaling_max_khz"] = _read("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq")  # the cap in force
+    info["boost"] = _read("/sys/devices/system/cpu/cpufreq/boost")
     try:
         info["affinity"] = len(os.sched_getaffinity(0))  # of the calling (master) thread: pinned to one place under OMP_PROC_BIND
     except Exception:

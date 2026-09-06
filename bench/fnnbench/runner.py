@@ -36,7 +36,7 @@ from fnn_testkit import workloads as wl
 from fnn_testkit.plugin import random_params
 from fnn_testkit.reference import NetSpec, ReferenceNetwork
 
-from . import gpumon
+from . import cpumon, gpumon
 
 from . import flops as fl
 from . import results, sysinfo
@@ -193,7 +193,8 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
     # ---- measured repetitions (GPU utilisation / power sampled alongside) ----
     walls = []
     losses = []
-    with gpumon.GpuSampler(enabled=cfg.device != "cpu" and not net.is_reference) as sampler:
+    with gpumon.GpuSampler(enabled=cfg.device != "cpu" and not net.is_reference) as sampler, \
+            cpumon.CpuSampler(enabled=not net.is_reference) as csampler:
         for _ in range(cfg.repeat):
             t0 = time.perf_counter()
             if cfg.mode == "train":
@@ -288,6 +289,7 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
             "profile": prof,
             "profile_per_epoch_ms": per_epoch,
             "gpu_monitor": gpu_samples,
+            "cpu_monitor": csampler.summary(),
         },
         "check": check,
         "sysinfo": sys_info,
