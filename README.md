@@ -15,6 +15,7 @@ plans/        the experiment matrix as JSON plans (E1-E7, W4 sweeps; e5_breakdow
 scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh,
               ws-amd-pass3-*.sh / ws-amd-cpu-fixups*.sh (the third pass and its CPU fix-ups),
               run-ws-nvidia.sh (NVIDIA runs over ssh + podman CDI), ws-nvidia-acpp.sh, ws-nvidia-fixups.sh,
+              ws-amd-cpu-fixed-clock.sh + thermal-guard.sh (CPU rows at 2.8 GHz after the thermal freeze),
               analyze.sh, headline.py (Markdown headline tables + run-to-run spread),
               supersede-stale.py, zluda-crosscheck.sh, rocprof-crosscheck.sh, perf-crosscheck.sh,
               nsys-crosscheck.py, commit.sh

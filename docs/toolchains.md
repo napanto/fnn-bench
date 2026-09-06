@@ -104,6 +104,14 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 
 ## Facts worth remembering
 
+- **ws-amd's 2950X is at its thermal limit under any 16-thread load** (Tctl
+  95-99 C within 20 s, `k10temp`) and hard-froze once (2026-09-05 18:22,
+  nothing in the journal). CPU sweeps on ws-amd run with
+  `cpupower frequency-set -u 2.8GHz` and boost off (volatile: re-apply after
+  a reboot; `scripts/ws-amd-cpu-fixed-clock.sh` refuses to start otherwise)
+  and `scripts/thermal-guard.sh` running; every row carries
+  `results.cpu_monitor`.
+
 - **libgomp pins the importing thread at load time** under `OMP_PROC_BIND`:
   a process that imported an OpenMP-linked module and then spawns a child
   hands it a one-core affinity mask (`cpus_allowed 0,16`), and the child's
