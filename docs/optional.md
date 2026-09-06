@@ -2,7 +2,8 @@
 
 The four optional experiments of the study, what was run and what came out. Numbers
 are steady epochs (median per-epoch wall time excluding the first epoch of
-each call, unprofiled, third pass 2026-09-05 unless stated); the rows are in
+each call, unprofiled, third pass 2026-09-05 unless stated; ws-amd CPU rows at
+the fixed 2.8 GHz of 2026-09-06); the rows are in
 `results/<machine>/2026-09-05/` and `results/ws-amd/zluda/`.
 
 ## 1. Hand-written tiled GEMM in the three models (E7)
@@ -35,17 +36,19 @@ and toolchain are in `analysis/headline-<machine>-<date>.md` and the
 <!-- DPCPP-VS-ACPP-TABLE -->
 Steady epoch in ms, float training rows, vendor BLAS / hand-written tiled
 BLAS (`scripts/acpp-vs-dpcpp.py`, regenerated from the rows; the CPU rows use
-16 compute units / 16 threads):
+16 compute units / 16 threads, ws-amd at the fixed 2.8 GHz):
 
 | device | SYCL implementation | units | monk b40 | cup b40 | mnist-512-256 b256 | mnist-512-256 b1024 |
 |---|---|---|---|---|---|---|
 | GTX 1080 Ti | AdaptiveCpp | 28 | 2.1 / 1.4 | 18.0 / 12.1 | 224.9 / 192.5 | 69.0 / - |
 | GTX 1080 Ti | DPC++ | 28 | 2.4 / 1.6 | 16.7 / 11.7 | 145.8 / 243.9 | 40.7 / - |
 | RX 7900 XTX | AdaptiveCpp | 48 | 2.1 / 1.0 | 19.1 / 8.2 | 221.7 / 102.4 | 63.5 / - |
-| TR 2950X, OpenMP host | AdaptiveCpp | 16 threads | 1.0 / 1.4 | 8.6 / 12.6 | 2413.8 / 3180.4 | 738.7 / - |
+| TR 2950X, OpenCL CPU | DPC++ | 32 CUs | 1.7 / 1.8 | 11.9 / 13.1 | 1002.8 / 3108.2 | 683.7 / - |
+| TR 2950X, OpenMP host | AdaptiveCpp | 16 threads | 1.0 / 2.1 | 19.4 / 9.0 | 1164.9 / 2916.9 | 807.2 / - |
 
 vendor / tiled cells are steady epochs in ms; ratios above 1 mean AdaptiveCpp is slower:
 
+- TR 2950X: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.57x; monk b40 tiled: 1.15x; cup b40 vendor: 1.63x; cup b40 tiled: 0.69x; mnist-512-256 b256 vendor: 1.16x; mnist-512-256 b256 tiled: 0.94x; mnist-512-256 b1024 vendor: 1.18x
 - GTX 1080 Ti: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.85x; monk b40 tiled: 0.91x; cup b40 vendor: 1.08x; cup b40 tiled: 1.04x; mnist-512-256 b256 vendor: 1.54x; mnist-512-256 b256 tiled: 0.79x; mnist-512-256 b1024 vendor: 1.69x
 
 Same-GPU findings on the GTX 1080 Ti (both wheels built in their own image on
@@ -85,11 +88,11 @@ the unmodified NVIDIA wheel on AMD through ZLUDA.
 
 | wheel (SHA-256 of `_syclnn*.so`) | built on / targets | device | mnist-512-256 b256 float | monk b40 | cup b40 | sweep dir |
 |---|---|---|---|---|---|---|
-| AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX (HIP) | 215 ms (tiled 102 ms) | 1.9 ms (tiled 1.0) | 17.5 ms (tiled 8.2) | `results/ws-amd/2026-09-05/portable-acpp` |
-| same | | TR 2950X (OpenMP host device, 16 threads) | 956 ms (tiled 2288 ms) | 0.9 ms (tiled 1.6) | 7.0 ms (tiled 8.4) | same |
+| AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX (HIP) | 215 ms (tiled 102 ms) | 1.9 ms (tiled 1.0 ms) | 17.5 ms (tiled 8.2 ms) | `results/ws-amd/2026-09-05/portable-acpp` |
+| same | | TR 2950X (OpenMP host device, 16 threads, 2.8 GHz) | 1173 ms (tiled 2917 ms) | 1.2 ms (tiled 2.1 ms) | 23.3 ms (tiled 9.0 ms) | same |
 | same | | GTX 1080 Ti (CUDA, ws-nvidia) | 210 ms (tiled 193 ms) | 2.1 ms (tiled 1.5) | 17.6 ms (tiled 11.5) | `results/ws-nvidia/2026-09-05/portable-acpp` (`scripts/ws-nvidia-portable-acpp.sh`; parity suite on the GPU: 111 passed, 7 skipped) |
 | same | | Xeon E5-2643 v2 (OpenMP host device, ws-nvidia; does-it-run row, 16 threads on 12 cores) | 3821 ms (tiled 3180 ms) | 1.6 ms (tiled 1.4) | 11.1 ms (tiled 12.6) | same |
-| DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia, two AOT targets | TR 2950X (OpenCL CPU, 32 compute units; the 16-unit re-measurement of `ws-amd-cpu-fixups-2.sh` replaces these) | 998 ms (tiled 2381 ms) | 1.9 ms (tiled 1.4) | 13.8 ms (tiled 11.4) | `results/ws-amd/2026-09-05/portable-dpcpp` |
+| DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia, two AOT targets | TR 2950X (OpenCL CPU, 16 compute units, 2.8 GHz) | 1047 ms (tiled 3108 ms) | 2.1 ms (tiled 1.8 ms) | 11.7 ms (tiled 13.1 ms) | `results/ws-amd/2026-09-05/portable-dpcpp` |
 | same | | GTX 1080 Ti | the `sycl-gpu` rows of ws-nvidia (same wheel) | | | `results/ws-nvidia/2026-09-05/sycl-gpu` |
 | same | | RX 7900 XTX | **cannot**: no HIP adapter in the DPC++ release; a fat binary with `amd_gpu_gfx1100` does not build (see 2.) | | | |
 
