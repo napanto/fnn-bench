@@ -73,8 +73,9 @@ ws-nvidia, both through oneMath's cuBLAS backend):
   7900 XTX: 180 vs 240), `sync_ops=true` 235 ms (no overlap to lose), and the
   bracketed `blas_queue=dedicated` 373 ms.
 - Per-operation cost, the launch-bound regime of the methodology: AdaptiveCpp
-  0.9-1.15 ms per batch of about 30 operations on both GPUs, DPC++
-  0.6 ms on the 1080 Ti, cudann 0.24-0.35 ms. At width 4096 all three
+  0.82-1.17 ms per batch of about 30 operations on both GPUs, DPC++
+  0.6 ms on the 1080 Ti, cudann 0.29-0.35 ms on the RX 7900 XTX and
+  0.18-0.50 ms on the GTX 1080 Ti. At width 4096 all three
   converge (methodology, "the two regimes").
 - On the CPU the two implementations are different devices: DPC++ drives the
   OpenCL CPU runtime (TBB workers, `DPCPP_CPU_NUM_CUS`), AdaptiveCpp its
