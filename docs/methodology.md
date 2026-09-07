@@ -249,7 +249,7 @@ ws-amd and is not recorded.
   AdaptiveCpp's scheduler ~34 us, a synchronous OpenMP target region ~30 us),
   not in kernel or GEMM speed; the E5 breakdown shows the same (device totals
   94 / 194 / 213 ms against walls of 131 / 337 / 213 ms, profiled rows). The same on the GTX 1080 Ti with DPC++:
-  cudann 181 / 240 / 497 us per batch, syclnn 597 / 613 / 671 (588 in-order).
+  cudann 181 / 239 / 497 us per batch, syclnn 597 / 613 / 671 (588 in-order).
   The W4 sweep is where the GEMMs get long enough for the compute rates to
   matter: the syclnn/cudann epoch ratio at width 4096 is 1.0-1.4x on the
   RX 7900 XTX and 0.99-1.02x on the GTX 1080 Ti (b32 / b256 / b4096, depths
@@ -348,9 +348,9 @@ one sweep of the third pass (E3 default vs E7 `blas=auto` vs the E6 baseline,
 E4 vs E7 vendor rows). `scripts/headline.py` tabulates the 25 worst such pairs from
 the raw rows (before de-duplication) and summarises all of them at the end of
 `analysis/headline-<machine>-<date>.md`. On ws-amd's third pass: the
-launch-bound monk/cup rows (epochs under 10 ms) differ by 21 % (median) and
+launch-bound monk/cup rows (epochs under 10 ms) differ by 15 % (median) and
 up to 150 % between sweeps (sub-millisecond epochs), the larger workloads by
-3 % (median) with single outliers around 55 %. Differences below the spread of the row family in
+3 % (median) and at most 22 %. Differences below the spread of the row family in
 question are not results.
 
 ### CPU rows at a fixed clock (ws-amd hard-froze at 18:22 on 2026-09-05)
@@ -393,7 +393,8 @@ and the sampler below). Two consequences:
 
 The per-launch event pairs of the in-library profiler cost, measured on the
 same configuration with the profiler off and on (median epoch, 10 epochs per
-call, second pass of 2026-09-04):
+call, second pass of 2026-09-04, host at stock clocks; the overhead ratios are
+the point, the absolute times predate the third pass):
 
 | device | library | cup b40 | mnist-512-256 b256 |
 |---|---|---|---|
@@ -418,7 +419,8 @@ figures) that is never used for a timing comparison.
 `scripts/rocprof-crosscheck.sh` trains `mnist-512-256` (8 192 samples, batch
 256, float) on the RX 7900 XTX under `rocprofv3 --kernel-trace` and compares
 the second epoch's kernel time per family with the library's own profile of
-that epoch (`results/ws-amd/rocprof/`). The three profilers measure different
+that epoch (`results/ws-amd/rocprof/`, 2026-09-03, host at stock clocks; the
+profiler-to-kernel ratios are the point, the absolute times predate the cap). The three profilers measure different
 things, and the difference is itself a result:
 
 * **rocprofv3** counts kernel execution only (7.6 ms (syclnn), 8.3 ms (cudann) and 10.2 ms (ompnn) per epoch
