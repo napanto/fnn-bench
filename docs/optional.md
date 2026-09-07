@@ -45,7 +45,7 @@ threads, ws-amd at the fixed 2.8 GHz):
 |---|---|---|---|---|---|---|
 | GTX 1080 Ti | AdaptiveCpp | 28 | 2.1 / 1.4 | 18.0 / 12.1 | 224.9 / 192.5 | 69.0 / - |
 | GTX 1080 Ti | DPC++ | 28 | 2.4 / 1.6 | 16.7 / 11.7 | 145.8 / 243.9 | 40.7 / - |
-| RX 7900 XTX | AdaptiveCpp | 48 | 2.1 / 1.0 | 19.1 / 8.2 | 221.7 / 102.4 | 63.5 / - |
+| RX 7900 XTX | AdaptiveCpp | 48 | 2.7 / 1.7 | 23.3 / 9.1 | 245.6 / 110.4 | 67.1 / - |
 | TR 2950X, OpenCL CPU | DPC++ | 16 CUs (device reports 32) | 1.7 / 1.8 | 11.9 / 13.1 | 1002.8 / 3108.2 | 683.7 / - |
 | TR 2950X, OpenMP host | AdaptiveCpp | 16 threads | 1.0 / 2.1 | 19.4 / 9.0 | 1164.9 / 2916.9 | 807.2 / - |
 | Xeon E5-2643 v2, OpenMP host | AdaptiveCpp | 16 threads | 1.6 / 1.4 | 11.1 / 12.6 | 3821.2 / 3180.4 | - / - |
@@ -70,11 +70,11 @@ ws-nvidia, both through oneMath's cuBLAS backend):
   failures only for `memory=host`, zero-copy host USM, the same class of
   failure as on the RX 7900 XTX), but not faster: its E6 rows give 178 ms
   in-order against 224 ms out-of-order (1.26x, the same sign as on the RX
-  7900 XTX: 144 vs 228), `sync_ops=true` 235 ms (no overlap to lose), and the
+  7900 XTX: 180 vs 240), `sync_ops=true` 235 ms (no overlap to lose), and the
   bracketed `blas_queue=dedicated` 373 ms.
 - Per-operation cost, the launch-bound regime of the methodology: AdaptiveCpp
-  about 0.9-1.0 ms per batch of about 30 operations on both GPUs, DPC++
-  0.6 ms on the 1080 Ti, cudann 0.24-0.28 ms. At width 4096 all three
+  0.9-1.15 ms per batch of about 30 operations on both GPUs, DPC++
+  0.6 ms on the 1080 Ti, cudann 0.24-0.35 ms. At width 4096 all three
   converge (methodology, "the two regimes").
 - On the CPU the two implementations are different devices: DPC++ drives the
   OpenCL CPU runtime (TBB workers, `DPCPP_CPU_NUM_CUS`), AdaptiveCpp its
@@ -92,7 +92,7 @@ the unmodified NVIDIA wheel on AMD through ZLUDA.
 
 | wheel (SHA-256 of `_syclnn*.so`) | built on / targets | device | mnist-512-256 b256 float | monk b40 | cup b40 | sweep dir |
 |---|---|---|---|---|---|---|
-| AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX (HIP) | 215 ms (tiled 102 ms) | 1.9 ms (tiled 1.0 ms) | 17.5 ms (tiled 8.2 ms) | `results/ws-amd/2026-09-05/portable-acpp` |
+| AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX (HIP, host at 2.8 GHz) | 228 ms (tiled 110 ms) | 2.5 ms (tiled 1.7) | 21.8 ms (tiled 9.1) | `results/ws-amd/2026-09-05/portable-acpp` |
 | same | | TR 2950X (OpenMP host device, 16 threads, 2.8 GHz) | 1173 ms (tiled 2917 ms) | 1.2 ms (tiled 2.1 ms) | 23.3 ms (tiled 9.0 ms) | same |
 | same | | GTX 1080 Ti (CUDA, ws-nvidia) | 210 ms (tiled 193 ms) | 2.1 ms (tiled 1.5) | 17.6 ms (tiled 11.5) | `results/ws-nvidia/2026-09-05/portable-acpp` (`scripts/ws-nvidia-portable-acpp.sh`; parity suite on the GPU: 111 passed, 7 skipped) |
 | same | | Xeon E5-2643 v2 (OpenMP host device, ws-nvidia; does-it-run row, 16 threads on 12 cores) | 3821 ms (tiled 3180 ms) | 1.6 ms (tiled 1.4) | 11.1 ms (tiled 12.6) | same |
@@ -134,30 +134,30 @@ Does it run:
 | streams, events, the fork/join default (4 streams, out-of-order) | yes (the tiled rows use the default stream mode) |
 | CUDA graphs, managed/host memory, pinned host | not reachable: the parity suite constructs default-option networks first and stops at the GEMV |
 
-Speed (steady epoch, float; the ZLUDA columns are the median of 3 repeats,
-the native columns the median over every third-pass sweep that measured the
-configuration on the same GPU: E3 default + E7 `blas=auto` + the portability
-run for the vendor rows, E7 + the portability run for the tiled ones; the
-monk/cup rows differ by up to 40 % between sweeps, see the methodology's
-run-to-run spread):
+Speed (steady epoch, float, host at the fixed 2.8 GHz, 2026-09-07; the ZLUDA
+columns are the median of 3 repeats, the native columns the median over every
+third-pass sweep that measured the configuration on the same GPU: E3 default +
+E6 baseline + E7 `blas=auto` + the portability run for the vendor rows, E7 +
+the portability run for the tiled ones; the monk/cup rows differ by tens of
+percent between sweeps, see the methodology's run-to-run spread):
 
 | workload | cudann on ZLUDA, `blas=tiled` | cudann/HIP (hipify), `blas=tiled` | cudann on ZLUDA, cuBLAS gemm (`bias_gemv=False`) | cudann/HIP, rocBLAS | syclnn/AdaptiveCpp, `blas=tiled` | syclnn/AdaptiveCpp, rocBLAS |
 |---|---|---|---|---|---|---|
-| monk b40 | 0.69 ms | 0.50 ms | fails (nrm2) | 0.72 ms | 0.92 ms | 2.16 ms |
-| cup b40 | 4.00 ms | 4.86 ms | fails (nrm2) | 5.42 ms | 9.5 ms | 20.6 ms |
-| mnist-512-256 b256 | 79.2 ms | 85.5 ms | 74.5 ms | 65.5 ms | 103.5 ms | 227 ms |
-| mnist-512-256 b1024 | 49.2 ms | - | 28.6 ms | 21.0 ms | - | 63.5 ms |
+| monk b40 | 0.70 ms | 0.60 ms | fails (nrm2) | 0.98 ms | 1.33 ms | 2.47 ms |
+| cup b40 | 4.12 ms | 5.77 ms | fails (nrm2) | 9.64 ms | 10.4 ms | 22.8 ms |
+| mnist-512-256 b256 | 81.5 ms | 85.8 ms | 74.6 ms | 72.6 ms | 112.6 ms | 240 ms |
+| mnist-512-256 b1024 | 50.2 ms | - | 28.8 ms | 20.8 ms | - | 68.0 ms |
 
 Reading: the CUDA binary's own kernels run on RDNA3 through ZLUDA at the
-speed of the HIPified source build (79 vs 85 ms with the same tiled GEMM; the
+speed of the HIPified source build (82 vs 86 ms with the same tiled GEMM; the
 PTX is JIT-compiled through ZLUDA's own back end), and ZLUDA's cuBLAS
-translation reaches 74.5 ms against 65.5 ms for rocBLAS called natively
-(14 % slower at b256, 36 % at b1024). What breaks is coverage of the BLAS
+translation reaches 74.6 ms against 72.6 ms for rocBLAS called natively at
+b256 (3 % slower) and 28.8 against 20.8 ms at b1024 (39 % slower). What breaks is coverage of the BLAS
 API: two level-1/level-2 routines the library uses are not implemented in
 this preview, and a real application would hit them at once. Binary-level
 CUDA-on-AMD is therefore a demonstration, not a deployment path, in this
 version; source-level HIPify (one script, everything runs) and write-once
-SYCL (one binary, everything runs; on these launch-bound workloads 3-4.5x
-slower than the CUDA/HIP build with the vendor BLAS and 1.2-2x with the
-tiled one, 1.0-1.2x at width 4096 where the GEMMs dominate) are the two
+SYCL (one binary, everything runs; on these launch-bound workloads 2.4-3.3x
+slower than the CUDA/HIP build with the vendor BLAS and 1.3-2.2x with the
+tiled one, 1.0-1.4x at width 4096 where the GEMMs dominate) are the two
 working routes.

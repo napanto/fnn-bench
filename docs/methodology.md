@@ -78,20 +78,19 @@ measured peaks.
 bias/activation kernel) through each backend and reports the BLAS library's
 achieved GFLOP/s and a streaming bandwidth from the activation kernel
 (3·n²·sizeof(T) bytes). Third pass, `results/<machine>/2026-09-05/peaks*/`
-(`scripts/peaks-table.py`; the ws-amd CPU peaks at the fixed 2.8 GHz, the GPU
-and ws-nvidia rows at stock clocks; older peaks in `results/ws-amd/peaks/`):
+(`scripts/peaks-table.py`; every ws-amd row with the host at the fixed 2.8 GHz,
+ws-nvidia at its constant 3.5 GHz; older peaks in `results/ws-amd/peaks/`):
 
 | machine | device | backend / toolchain | BLAS | dtype | n | GEMM peak (GFLOP/s) | element-wise streaming (GB/s) | host clock (MHz) |
 |---|---|---|---|---|---|---|---|---|
-| ws-amd | RX 7900 XTX | cudann / hipcc | rocblas | double | 8192 | 1126 | 318 | - |
-| ws-amd | RX 7900 XTX | cudann / hipcc | rocblas | float | 8192 | 26799 | 945 | - |
-| ws-amd | RX 7900 XTX | cudann / hipcc | tiled | float | 8192 | 3018 | 931 | - |
-| ws-amd | RX 7900 XTX | ompnn / amdclang-22 | rocblas | float | 8192 | 23756 | 604 | - |
-| ws-amd | RX 7900 XTX | ompnn / amdclang-22 | tiled | float | 8192 | 1862 | 641 | - |
-| ws-amd | RX 7900 XTX | ompnn / gcc-14 amdgcn | rocblas | float | 8192 | 23667 | 23 | - |
-| ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | auto | double | 8192 | 1129 | 317 | - |
-| ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | auto | float | 8192 | 26769 | 902 | - |
-| ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | tiled | float | 8192 | 2973 | 947 | - |
+| ws-amd | RX 7900 XTX | cudann / hipcc | rocblas | double | 8192 | 1117 | 555 | 2800 (cap) |
+| ws-amd | RX 7900 XTX | cudann / hipcc | rocblas | float | 8192 | 26649 | 925 | 2800 (cap) |
+| ws-amd | RX 7900 XTX | cudann / hipcc | tiled | float | 8192 | 2997 | 924 | 2800 (cap) |
+| ws-amd | RX 7900 XTX | ompnn / amdclang-22 | rocblas | float | 8192 | 23020 | 616 | 2800 (cap) |
+| ws-amd | RX 7900 XTX | ompnn / amdclang-22 | tiled | float | 8192 | 1856 | 658 | 2800 (cap) |
+| ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | auto | double | 8192 | 1120 | 514 | 2800 (cap) |
+| ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | auto | float | 8192 | 26305 | 924 | 2800 (cap) |
+| ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | tiled | float | 8192 | 2939 | 931 | 2800 (cap) |
 | ws-amd | TR 2950X | syclnn / DPC++ | generic | float | 4096 | 8 | 26 | 2800 (cap) |
 | ws-amd | TR 2950X | syclnn / DPC++ | mklcpu | double | 4096 | 156 | 35 | 2800 (cap) |
 | ws-amd | TR 2950X | syclnn / DPC++ | mklcpu | float | 4096 | 317 | 26 | 2800 (cap) |
@@ -179,11 +178,11 @@ ws-amd and is not recorded.
   memory, not page migration: the AMD "shared" rows measure zero-copy PCIe
   traffic, the NVIDIA ones will measure managed-memory migration (no explicit
   prefetch in either library; first-touch faults land in the warm-up epoch).
-- The multi-stream default (`out_of_order`, 4 streams) costs 1.7-2.4x on the
+- The multi-stream default (`out_of_order`, 4 streams) costs 1.8-2.2x on the
   launch-bound workloads (monk, cup) under HIP: the event fork/join overhead
   dominates when kernels are microseconds long. The `queue=in_order` rows are
   reported next to the default in E3; the ratio is a result, not noise
-  (third pass, RX 7900 XTX: monk 1.7x, cup 2.4x). On the GTX 1080 Ti the
+  (third pass, RX 7900 XTX: monk 1.8x, cup 2.2x). On the GTX 1080 Ti the
   picture is mixed: `in_order` is 1.55x slower on monk (0.93 vs 0.60 ms) and
   10-15 % *faster* on cup (3.95 vs 4.65 ms) and mnist-512-256 (49.8 vs
   56.2 ms), the CUDA driver overlapping the small kernels only where the
@@ -204,8 +203,8 @@ ws-amd and is not recorded.
   k accumulation in a register on the SYCL, CUDA and clang-OpenMP paths;
   gcc's OpenMP offload gives a team 16 wavefronts, so its variant strides over
   the tile elements; the CPU paths vectorise across rows. Tiled/library epoch
-  ratios at 4096 wide (`sweep-w4096-d4-b256`, third pass): syclnn 3.9x,
-  cudann 4.6x, ompnn/amdclang++ 5.4x on the RX 7900 XTX; 8.8x / 7.1x / 7.0x
+  ratios at 4096 wide (`sweep-w4096-d4-b256`, third pass): syclnn 3.8x,
+  cudann 4.6x, ompnn/amdclang++ 5.3x on the RX 7900 XTX; 8.8x / 7.1x / 7.0x
   (clang-18) on the GTX 1080 Ti. The reductions for
   asum/nrm2 differ in decomposition (SYCL `sycl::reduction`, one CUDA block,
   OpenMP `reduction` in double), affecting only the reported penalty term.
@@ -238,24 +237,24 @@ ws-amd and is not recorded.
   not need it.
 - **The reference workloads are launch-bound on the GPUs, and the BLAS is not
   the difference.** rocBLAS reaches the same rate through oneMath/AdaptiveCpp
-  and through hipBLAS/HIP on the RX 7900 XTX (`results/ws-amd/2026-09-05/peaks-sizes`:
-  26.77 vs 26.80 TFLOP/s at 8192, 12.2 vs 12.5 at 2048; at 512 one call costs
-  111 vs 82 us, the per-call runtime cost showing). mnist-512-256 (float)
-  costs the same per batch whatever the batch size, 16x more work per batch
-  from 64 to 1024 notwithstanding: cudann/HIP 251 / 279 / 355 us per batch at
-  b64 / b256 / b1024, syclnn/AdaptiveCpp 887 / 972 / 1070 us (613 us with
-  `queue=in_order`), ompnn/amdclang++ (sync after every op) 690-930 us.
-  A batch is about 30 operations, so the libraries differ in the per-operation
-  cost of their runtimes (HIP streams ~10 us, AdaptiveCpp's scheduler ~30 us,
-  a synchronous OpenMP target region ~25 us), not in kernel or GEMM speed;
-  the E5 breakdown shows the same (device totals 82 / 173 / 191 ms against
-  walls of 100 / 297 / 192 ms). The same on the GTX 1080 Ti with DPC++:
+  and through hipBLAS/HIP on the RX 7900 XTX (`results/ws-amd/2026-09-05/peaks-sizes`,
+  host at 2.8 GHz: 26.3 vs 26.6 TFLOP/s at 8192, 12.1 vs 12.5 at 2048; at
+  512 one call costs 111 vs 80 us, the per-call runtime cost showing).
+  mnist-512-256 (float) costs the same per batch whatever the batch size, 16x
+  more work per batch from 64 to 1024 notwithstanding: cudann/HIP 287 / 309 /
+  352 us per batch at b64 / b256 / b1024, syclnn/AdaptiveCpp 935 / 1020 /
+  1153 us (767 us with `queue=in_order`), ompnn/amdclang++ (sync after every
+  op) 790 / 895 / 1019 us. A batch is about 30 operations, so the libraries
+  differ in the per-operation cost of their runtimes (HIP streams ~10 us,
+  AdaptiveCpp's scheduler ~34 us, a synchronous OpenMP target region ~30 us),
+  not in kernel or GEMM speed; the E5 breakdown shows the same (device totals
+  94 / 194 / 213 ms against walls of 131 / 337 / 213 ms, profiled rows). The same on the GTX 1080 Ti with DPC++:
   cudann 181 / 240 / 497 us per batch, syclnn 597 / 613 / 671 (588 in-order).
   The W4 sweep is where the GEMMs get long enough for the compute rates to
-  matter: the syclnn/cudann epoch ratio at width 4096 is 1.01-1.19x on the
-  RX 7900 XTX and 0.99-1.02x on the GTX 1080 Ti (b256 / b4096, depths 2-8),
-  against 2.3-3.9x at width 256 on the RX 7900 XTX and 1.0-3.2x on the GTX
-  1080 Ti (its b4096 rows already at 1.0-1.3x). Report the two regimes separately: the
+  matter: the syclnn/cudann epoch ratio at width 4096 is 1.0-1.4x on the
+  RX 7900 XTX and 0.99-1.02x on the GTX 1080 Ti (b32 / b256 / b4096, depths
+  2-8), against 2.4-3.9x at width 256 on the RX 7900 XTX and 1.0-3.2x on the
+  GTX 1080 Ti (its b4096 rows already at 1.0-1.3x). Report the two regimes separately: the
   reference workloads measure runtime overhead per operation, the wide sweep
   measures kernels and BLAS.
 - CUDA-graph rows have no per-phase profile (the kernels are inside graph
@@ -377,12 +376,15 @@ and the sampler below). Two consequences:
   200 ms during the timed repetitions) and `sysinfo.cpu.scaling_max_khz` /
   `boost`, so the clock a row ran at is in the row. A thermal guard kills
   the sweeps at Tctl 92 C instead of letting the box freeze.
-- The GPU rows keep the host at stock clocks (boost to 4.4 GHz on the
-  submitting thread): the launch-bound regime is partly host-side cost, and
-  those rows predate the cap. CPU-vs-GPU ratios (E2) therefore compare a
-  2.8 GHz host device with a GPU driven by a boosting host; the effect on the
-  GPU rows is confined to the per-operation overhead and is stated where the
-  E2 ratios are discussed.
+- The GPU-device rows were re-measured under the same cap on 2026-09-07
+  (`scripts/ws-amd-gpu-fixed-clock.sh`), so every ws-amd row shares one host
+  clock. The cap moved them in an instructive way: cudann's mnist-512-256
+  rows did not move at all (65.6 to 65.4 ms at b256) while its sub-10 ms monk
+  and cup rows slowed 1.5x, and syclnn's rows slowed 6-15 % across the board.
+  The per-operation cost of the HIP path at the reference size is therefore
+  device-side latency, not host submission; AdaptiveCpp's has a host-side
+  share (its scheduler thread), and only the tiny workloads are host-bound
+  for HIP.
 - ws-nvidia's Xeon E5-2643 v2 has no frequency scaling (constant 3.5 GHz,
   `cpufreq` absent) and exposes no temperature sensor; its rows are what
   they are and its clocks cannot have varied.
