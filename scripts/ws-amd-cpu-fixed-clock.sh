@@ -3,7 +3,7 @@
 #
 # Why: the Threadripper 2950X reaches its throttle point (Tdie 68 C / Tctl 95 C, spikes to 99 C)
 # within 20 s of any 16-thread load, so the CPU rows measured on 2026-09-05 ran at whatever clock
-# kept the die at 68 C (a backend-dependent, uncontrolled clock), and the box hard-froze at 18:22
+# kept the die at 68 C (a backend-dependent, uncontrolled clock), and the host froze at 18:22
 # under the generic SYCL BLAS sweep. At 2.8 GHz with boost off the same load holds Tctl 75 C
 # (docs/methodology.md, "CPU rows at a fixed clock").
 #

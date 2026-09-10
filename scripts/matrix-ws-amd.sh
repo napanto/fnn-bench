@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The the local runs local experiment matrix on ws-amd (Threadripper 2950X + RX 7900 XTX).
+# The local experiment matrix on ws-amd (Threadripper 2950X + RX 7900 XTX).
 #
 # Every environment runs its plans sequentially (CPU sweeps and GPU sweeps must
 # not overlap: the BLAS threads would perturb the GPU launch path).  Results go

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Thermal safety net for the CPU sweeps on ws-amd (Threadripper 2950X): the box hard-froze
+# Thermal safety net for the CPU sweeps on ws-amd (Threadripper 2950X): the host froze
 # on 2026-09-05 18:22 under the generic SYCL BLAS sweep with Tctl at 95-99 C (throttle point
 # Tdie 68 C, Tctl 95 C). The sweeps now run at a fixed 2.8 GHz (Tctl ~75 C); this guard
 # samples k10temp every 2 s and, should the cap not be in force or the cooler fail, kills the

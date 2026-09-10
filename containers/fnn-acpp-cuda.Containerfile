@@ -1,5 +1,5 @@
 # AdaptiveCpp with the CUDA backend on top of fnn-cuda:dev, for the SYCL implementation
-# comparison (E7/optional: DPC++ vs AdaptiveCpp on the same NVIDIA GPU) and the portability
+# comparison (optional experiments: DPC++ vs AdaptiveCpp on the same NVIDIA GPU) and the portability
 # figure. Mirrors scripts/rocm-toolchain.sh (AdaptiveCpp v25.10.0 SSCP "generic"
 # target, oneMath v0.9 built with acpp) with cuBLAS instead of rocBLAS.
 #   podman build --memory=40g -f containers/fnn-acpp-cuda.Containerfile -t fnn-acpp-cuda:dev containers/

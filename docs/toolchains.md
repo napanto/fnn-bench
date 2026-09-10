@@ -30,7 +30,7 @@ compile with `-j8` (`CMAKE_BUILD_PARALLEL_LEVEL=8`).
 | intel/llvm v7.1.0 (DPC++) | ws-nvidia GTX 1080 Ti (`cuda:gpu`, sm_61, CUDA 12.9, driver 580) | cuBLAS (oneMath run-time loader) | **runs** (2026-09-04): parity suites green in every mode, E2/E6/W4/E3/E7/E5 measured | wheel built for `spir64;nvidia_gpu_sm_61` only; in-order queue forced with oneMath (event race, see below) |
 | AdaptiveCpp 25.10 (generic/SSCP, `containers/fnn-acpp-cuda.Containerfile`: clang-18 host, CUDA backend, oneMath cuBLAS + Netlib built with acpp) | ws-nvidia GTX 1080 Ti (`cuda:gpu`) | cuBLAS (oneMath, `AdaptiveCpp_enqueue_custom_operation`) | **runs** (2026-09-05): parity double 117 passed, float 111 passed, `queue=in_order` / `streams=1` / `blas_queue=dedicated` / `memory=shared` 221 passed each, `blas=tiled` 111 passed; `memory=host` 3 failed (zero-copy host USM, as on the RX 7900 XTX); E2/E3/E7/E5/E6 rows and peaks in `results/ws-nvidia/2026-09-05/sycl-gpu-acpp`, `peaks-acpp`, `sycl-gpu-acpp/parity.txt` | the out-of-order queue with cuBLAS is correct here (the DPC++ defect below is DPC++'s); mnist-512-256 b256 float: 209-224 ms against 146 ms with DPC++ on the same GPU, tiled 192 against 244 ms (`docs/optional.md`) |
 | AdaptiveCpp wheel built on ws-amd (generic IR, one binary) | ws-nvidia GTX 1080 Ti and Xeon E5-2643 v2 host device | cuBLAS / Netlib | **runs unchanged** (2026-09-05): 111 passed, 7 skipped on the GPU; same speed as the wheel built on ws-nvidia (210 ms) | `scripts/ws-nvidia-portable-acpp.sh`, `results/ws-nvidia/2026-09-05/portable-acpp`, SHA-256 in `docs/optional.md` |
-| intel/llvm v7.1.0 (DPC++) | dept. A30 (sm_80) | cuBLAS | the department runs | |
+| intel/llvm v7.1.0 (DPC++) | dept. A30 (sm_80) | cuBLAS | pending (department A30) | |
 
 Known AdaptiveCpp note: its persistent JIT cache (`~/.local/share/acpp/apps/<app>/jit-cache`)
 is shared by every process of the same executable; running two test sessions
@@ -42,7 +42,7 @@ sequentially, or give each run its own `ACPP_APPDB_DIR`.
 | Compiler | Device | Status | Notes |
 |---|---|---|---|
 | nvcc 12.9 | ws-nvidia 1080 Ti (sm_61) | **runs** (2026-09-04): parity green in every mode (graphs, streams, managed/host memory, tiled), E3/W4/E7/E5 measured, nsys trace | |
-| nvcc 12.9 / 13.x | dept. A30 (sm_80) | the department runs | |
+| nvcc 12.9 / 13.x | dept. A30 (sm_80) | pending (department A30) | |
 | hipcc 7.2.4 (`CUDANN_HIP=ON`: hipify-perl + hipBLAS 3.2) | ws-amd 7900 XTX (gfx1100) | **OK** double + float; `memory=device/shared/host`, `queue=in_order/out_of_order/graph`, `streams=1/8`, every kernel ablation | graph mode captures from one stream on HIP (multi-stream fork/join capture segfaults in ROCm 7.2); `memory=host` (mapped zero-copy) works here, unlike SYCL host USM through AdaptiveCpp |
 
 ## ompnn (OpenMP)
@@ -65,7 +65,7 @@ parallel for simd` on `omp_target_alloc` memory + vendor BLAS interop
 | clang 18.1 (`--offload-arch=gfx1100`) | ws-amd RX 7900 XTX | - | **fails to build**: `/opt/rocm/amdgcn/bitcode/ocml.bc: Unknown attribute kind (Producer LLVM 22, Reader LLVM 18)` | ROCm 7.2's device libs are LLVM-22 bitcode; clang-18 would need older device libs |
 | clang 18.1 (`-fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_61 --cuda-path=/usr/local/cuda-12.9`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): E4/E7/E5 measured (mnist-512-256 float: 779 GFLOP/s GEMM rate at batch 1024; the 1024-wide `mnist` reaches 1.84 TFLOP/s (third pass)) | needs `clang-tools-18` (`clang-offload-packager`) and the host offload runtime `libomptarget.so.18.1` + `libomptarget.rtl.cuda.so`, which Ubuntu's `libomp5-18` does not ship: extracted from apt.llvm.org's `llvm-toolchain-noble-18` `libomp5-18` into `/usr/lib/llvm-18/lib` (both machines' `fnn-cuda:dev` were patched in place on 2026-09-04 and the Containerfile now does the same); ompnn rpaths the compiler's own lib dir |
 | gcc 14.2 (`-foffload=nvptx-none -foffload-options=nvptx-none=-misa=sm_53 -fcf-protection=none -fno-stack-protector`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | **runs** (2026-09-04): parity green, E4/E7/E5 measured; the tiled kernel is 50-526x slower than cuBLAS on the GEMM-bound rows (third pass: mnist-512-256 float 142x, double 96x, w256 50x, w1024 526x) and 1.8-2.3x on monk/cup (one thread per warp), and its PTX fails to load for one of the two precisions depending on the build (`libgomp: cuLaunchKernel error: invalid resource handle`, double on 2026-09-04, float on 2026-09-05 after the team-memory C tile): the gcc-offload tiled rows on NVIDIA are reported as unreliable | gcc's nvptx back end knows sm_30/35/53/70/75/80 only; sm_53 PTX runs on Pascal through the driver JIT; Ubuntu's `-fstack-protector-strong` default breaks ptxas (`__stack_chk_guard`) |
-| nvc++ 26.5 (`-mp=gpu -gpu=cc61|cc80`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | the department runs / ws-nvidia | V100+ officially |
+| nvc++ 26.5 (`-mp=gpu -gpu=cc61|cc80`) | ws-nvidia 1080 Ti / A30 | cuBLAS interop | pending (department A30) / ws-nvidia | V100+ officially |
 
 Findings: gcc compiles every `omp target` region for all installed accelerator
 back ends unless told `-foffload=disable`; Ubuntu's default `-fcf-protection=full`
@@ -104,7 +104,7 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 ## Facts worth remembering
 
 - **ws-amd's 2950X is at its thermal limit under any 16-thread load** (Tctl
-  95-99 C within 20 s, `k10temp`) and hard-froze once (2026-09-05 18:22,
+  95-99 C within 20 s, `k10temp`) and the host froze once (2026-09-05 18:22,
   nothing in the journal). every ws-amd sweep, CPU and GPU rows alike, runs with
   `cpupower frequency-set -u 2.8GHz` and boost off (volatile: re-apply after
   a reboot; `scripts/ws-amd-cpu-fixed-clock.sh` refuses to start otherwise)

@@ -6,7 +6,7 @@ to /proc/cpuinfo). Sampling every 200 ms costs nothing measurable; every source 
 best-effort and yields `None` when absent (containers usually see the host's hwmon).
 
 Why: the Threadripper 2950X of ws-amd reaches its throttle point (Tdie 68 C, Tctl
-95 C) within 20 s of a 16-thread load and hard-froze once under the generic SYCL
+95 C) within 20 s of a 16-thread load and froze once under the generic SYCL
 BLAS sweep (2026-09-05, 18:22); the third-pass CPU rows are re-measured at a fixed
 2.8 GHz and this sampler records the clock and temperature every row ran at."""
 from __future__ import annotations

@@ -350,9 +350,9 @@ up to 150 % between sweeps (sub-millisecond epochs), the larger workloads by
 3 % (median) and at most 22 %. Differences below the spread of the row family in
 question are not results.
 
-### CPU rows at a fixed clock (ws-amd hard-froze at 18:22 on 2026-09-05)
+### CPU rows at a fixed clock (the ws-amd host froze at 18:22 on 2026-09-05)
 
-ws-amd froze without a trace in the journal (no kernel message, no hardware
+The ws-amd host froze without a trace in the journal (no kernel message, no hardware
 error record, the journal "uncleanly shut down" at the next boot) while the
 generic SYCL BLAS sweep was running; a manual reset followed fifteen minutes
 later. `sar` shows nothing unusual (23 GB available, swap flat, 40 % CPU).
@@ -372,7 +372,7 @@ and the sampler below). Two consequences:
   (k10temp/coretemp temperatures and the mean core clock sampled every
   200 ms during the timed repetitions) and `sysinfo.cpu.scaling_max_khz` /
   `boost`, so the clock a row ran at is in the row. A thermal guard kills
-  the sweeps at Tctl 92 C instead of letting the box freeze.
+  the sweeps at Tctl 92 C instead of letting the host freeze.
 - The GPU-device rows were re-measured under the same cap on 2026-09-07
   (`scripts/ws-amd-gpu-fixed-clock.sh`), so every ws-amd row shares one host
   clock. The cap moved them in an instructive way: cudann's mnist-512-256
