@@ -15,6 +15,23 @@ mean. This is the reference for the "Methodology" chapter of the report.
 
 Every workload runs in `float` and `double`. Definitions: `testkit/fnn_testkit/workloads.py`.
 
+## Experiments
+
+Each experiment is a JSON plan in `plans/` (the harness input: a list of
+configurations, run with `fnnbench sweep --plan`); the ids are used throughout
+the docs, the sweep directory names and the figures.
+
+| id | plan | what it measures |
+|---|---|---|
+| E1 | `e1_cpu_blas.json`, `e1_cpu_generic.json`, `e1_cpu_threads.json` | SYCL on the CPU: the three oneMath BLAS backends (MKLCPU, Netlib/OpenBLAS, generic SYCL BLAS) and thread scaling |
+| E2 | `e2_sycl_cpu_gpu.json` | SYCL on the CPU vs the GPU, training and inference |
+| E3 | `e3_cuda_vs_sycl_gpu.json` | CUDA (cudann) vs SYCL (syclnn) on the same GPU, with the stream / graph / memory-mode ablations |
+| E4 | `e4_omp_cpu.json`, `e4_omp_gpu.json` | OpenMP (ompnn) host and target-offload paths, one run per compiler |
+| E5 | `e5_breakdown.json`, `e5_inference.json` | per-phase device-time breakdown (the only profiled plan) and the inference rows (W5) |
+| E6 | `e6_sycl_ablations.json` | syclnn's optimisations switched off one at a time, down to the version-0.1 behaviour |
+| E7 | `e7_tiled_gemm.json` | the hand-written 16x16 tiled GEMM against the vendor BLAS, same kernel in the three models |
+| W4 | `w4_sweep_cpu.json`, `w4_sweep_gpu.json` | the width x depth x batch scaling sweep (compute-bound regime) |
+
 ## Protocol
 
 `fnnbench run` / `fnnbench sweep` (`bench/fnnbench/runner.py`):
