@@ -12,20 +12,28 @@ testkit/      fnn-testkit: float64 reference implementation + pytest suite run a
 bench/        fnnbench: run / sweep / collect / replay / peak / plot, FLOP model, system capture, JSONL rows
 containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic, fnn-acpp-cuda (AdaptiveCpp on CUDA) Containerfiles, fnn-sycl-portable (unused: DPC++ on AMD dropped)
 plans/        the experiment matrix as JSON plans (E1-E7, W4 sweeps; e5_breakdown is the only profiled plan)
-scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh,
-              ws-amd-pass3-*.sh / ws-amd-cpu-fixups*.sh (the third pass and its CPU fix-ups),
-              run-ws-nvidia.sh (NVIDIA runs over ssh + podman CDI), ws-nvidia-acpp.sh, ws-nvidia-fixups.sh,
-              ws-amd-cpu-fixed-clock.sh + thermal-guard.sh (CPU rows at 2.8 GHz after the thermal freeze),
-              analyze.sh, headline.py (Markdown headline tables + run-to-run spread),
+scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh (the
+              ws-amd matrix), run-ws-nvidia.sh (the ws-nvidia matrix over ssh + podman CDI),
+              ws-nvidia-acpp.sh / ws-nvidia-portable-acpp.sh (AdaptiveCpp on CUDA, one-binary portability),
+              ws-amd-{cpu,gpu}-fixed-clock.sh + thermal-guard.sh (the ws-amd rows at a fixed host clock),
+              analyze.sh, headline.py, peaks-table.py, acpp-vs-dpcpp.py (tables from the rows),
               supersede-stale.py, zluda-crosscheck.sh, rocprof-crosscheck.sh, perf-crosscheck.sh,
-              nsys-crosscheck.py, commit.sh
+              nsys-crosscheck.py, dpcpp-hip-toolchain.sh (the DPC++-on-AMD attempt)
 docs/         toolchains.md (compiler x device matrix and the facts learned), methodology.md
               (protocol, metrics, caveats, the profiler and CPU fix-ups), optional.md (optional experiments:
               tiled GEMM, DPC++ vs AdaptiveCpp, one-binary portability, ZLUDA)
 results/      raw JSONL per machine/date (+ peaks, rocprof/perf/nsys cross-checks); superseded.jsonl = replaced rows
-analysis/     figures produced by `fnnbench plot`
-report/, slides/   the write-up
+analysis/     CSVs, figures and headline tables produced from the rows
 ```
+
+## Machines
+
+| id | CPU | GPU | role |
+|---|---|---|---|
+| `ws-amd` | AMD Ryzen Threadripper 2950X (16 cores, Zen+) | AMD Radeon RX 7900 XTX (RDNA3, gfx1100), ROCm 7.2.4 | CPU rows (DPC++ OpenCL, AdaptiveCpp host, OpenMP host), AMD GPU rows (AdaptiveCpp, HIP, OpenMP offload) |
+| `ws-nvidia` | Intel Xeon E5-2643 v2 (2 x 6 cores, Ivy Bridge) | NVIDIA GeForce GTX 1080 Ti (Pascal, sm_61), CUDA 12.9 | NVIDIA GPU rows (DPC++, AdaptiveCpp, CUDA, OpenMP offload) |
+
+Result directories, analysis files and driver scripts are named after these ids.
 
 ## Reproduce
 
@@ -44,7 +52,7 @@ pytest --pyargs fnn_testkit --backend syclnn --device cpu --blas mklcpu
 fnnbench run --backend cudann --device gpu --workload mnist --batch 256 --dtype float --epochs 5 --repeat 5 --option profile=True --out results/ws-nvidia/$(date +%F)
 fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --out results/ws-nvidia/$(date +%F)/gpu
 scripts/matrix-ws-amd.sh                                        # ws-amd: all environments, sequentially
-scripts/run-ws-nvidia.sh all                                       # ws-nvidia: sync, build, parity, matrix, fetch
+scripts/run-ws-nvidia.sh all                                    # ws-nvidia: sync, build, parity, matrix, fetch (NVIDIA_HOST, NVIDIA_DIR)
 scripts/analyze.sh                                              # both machines -> analysis/<machine>-<date>.csv, analysis/figures/<machine>-<date>/
 PYTHONPATH=bench python scripts/headline.py results/ws-amd/2026-09-05   # Markdown: defaults per toolchain, tiled/vendor ratios, run-to-run spread (needs numpy)
 ```

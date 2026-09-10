@@ -269,10 +269,8 @@ the fixed 2.8 GHz and are the record. Four defects in how the CPU rows were
 run were found while checking the third pass for run-to-run consistency (`scripts/headline.py` lists every
 visible configuration that was measured in more than one sweep); all four are
 fixed and the affected rows re-measured (then all CPU-device rows once more
-at a fixed clock, next section; `scripts/ws-amd-cpu-fixups.sh` +
-`ws-amd-cpu-fixups-resume.sh` for the thread rows, the AdaptiveCpp host and
-the OpenMP host rows; `ws-amd-cpu-fixups-2.sh` for the DPC++ CPU blocks;
-`ws-nvidia-fixups.sh` on ws-nvidia; old rows in `superseded.jsonl`):
+at a fixed clock, next section; the drivers in `scripts/` carry the fixes;
+old rows in `superseded.jsonl`):
 
 - **The OpenMP thread-scaling rows ran on one core.** A `--threads N` row
   runs in a child process (the OpenMP and BLAS runtimes read their thread
@@ -333,8 +331,7 @@ the OpenMP host rows; `ws-amd-cpu-fixups-2.sh` for the DPC++ CPU blocks;
 - **ws-nvidia's OpenMP host rows ran 16 threads on 12 cores.** The container
   image sets `OMP_NUM_THREADS=16` (ws-amd's core count); ws-nvidia has two
   6-core Xeons (24 hardware threads), so its clang-22 host rows ran 16 threads
-  on 12 places. Re-measured at 12 (`scripts/ws-nvidia-fixups.sh`; the matrix
-  script sets it too now): 1.33 s at mnist-512-256 b256 against 3.73 s
+  on 12 places. Re-measured at 12 (`scripts/run-ws-nvidia.sh` sets it): 1.33 s at mnist-512-256 b256 against 3.73 s
   before (pthread OpenBLAS, 16 bound threads). The thread series on that
   machine (unbound) peaks at 16 threads (0.84 s) rather than at the 12
   physical cores (1.33-1.47 s), and collapses at 24 (3.5 s) and 32 (5.2 s):

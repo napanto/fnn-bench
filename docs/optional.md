@@ -1,4 +1,4 @@
-# Optional experiments (optional experiments)
+# Optional experiments
 
 The four optional experiments of the study, what was run and what came out. Numbers
 are steady epochs (median per-epoch wall time excluding the first epoch of

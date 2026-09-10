@@ -2,8 +2,7 @@
 
 Status of every compiler × device combination used by the study. "OK" means the
 shared parity suite (`fnn-testkit`, 117 tests × float/double) passes; "build"
-means it compiles but no device to run on; "-" not applicable. Updated as the
-the local runs work progresses (see `the study plan`).
+means it compiles but no device to run on; "-" not applicable.
 
 Last update: 2026-09-06.
 
@@ -14,7 +13,7 @@ Last update: 2026-09-06.
 | `localhost/fnn-cuda:dev` (→ `ghcr.io/napanto/fnn-cuda`) | ubuntu 24.04 | CUDA 12.9 (nvcc 12.9.86, cuBLAS, NVTX, CUPTI, Nsight Systems 2025.1.3), gcc-13 (nvcc host), gcc-14 + `gcc-14-offload-nvptx` + `gcc-14-offload-amdgcn`, clang-22 (apt.llvm.org, host OpenMP only), clang-18 (Ubuntu) with `libomptarget` nvptx/amdgpu device runtimes, OpenBLAS 0.3.26 (openmp + pthread), Intel oneMKL 2026.1 from PyPI (`mkl`, `mkl-devel`, `onemkl-sycl-blas`, `onemkl-sycl-include`, `tbb-devel`), Python 3.12 venv (numpy 2.5.2, pytest 9.1, pybind11 3.1.0, scikit-build-core 1.0.3) | 2026-09-03 on ws-amd, 7.6 GB |
 | `localhost/fnn-sycl:dev` (→ `ghcr.io/napanto/fnn-sycl`) | fnn-cuda | intel/llvm **v7.1.0** `sycl_linux.tar.gz` (clang 22.1, libsycl 9; adapters: opencl, level_zero, **cuda**), Intel OpenCL CPU runtime **oclcpuexp 2026-WW28** (`sycl-ls` → `[opencl:cpu] AMD Ryzen Threadripper 2950X`), oneMath **v0.9** in `/opt/onemath` (MKLCPU + NETLIB/OpenBLAS + cuBLAS); `CC=clang CXX=clang++` | 2026-09-03 |
 | `localhost/fnn-sycl-generic:dev` | fnn-sycl | + oneMath v0.9 with the generic SYCL BLAS backend in `/opt/onemath-generic` (INTEL_CPU tuning = `spir64_x86_64` AOT, ~2 h at -j8) | 2026-09-03 |
-| `fnn-rocm` distrobox (ws-amd) | `localhost/rocm-pytorch-distrobox` = Ubuntu 24.04 + ROCm 7.2.4 | hipcc, amdclang++ 22 (ROCm), rocBLAS 5.2 / hipBLAS 3.2, rocprofv3, gcc-13/14 + `gcc-14-offload-amdgcn`, clang-18 + libomp-18 (`libomptarget-amdgpu-gfx1100.bc`), OpenBLAS; `~/.local/opt/fnn-rocm/`: **AdaptiveCpp 25.10.0** (LLVM 18, SSCP `generic` target, ROCm + OpenMP backends), oneMath v0.9 (rocBLAS + NETLIB), Python venv | 2026-09-03, `scripts/rocm-toolchain.sh` |
+| `fnn-rocm` distrobox (ws-amd) | Ubuntu 24.04 + ROCm 7.2.4 (a distrobox container on the host) | hipcc, amdclang++ 22 (ROCm), rocBLAS 5.2 / hipBLAS 3.2, rocprofv3, gcc-13/14 + `gcc-14-offload-amdgcn`, clang-18 + libomp-18 (`libomptarget-amdgpu-gfx1100.bc`), OpenBLAS; `~/.local/opt/fnn-rocm/`: **AdaptiveCpp 25.10.0** (LLVM 18, SSCP `generic` target, ROCm + OpenMP backends), oneMath v0.9 (rocBLAS + NETLIB), Python venv | 2026-09-03, `scripts/rocm-toolchain.sh` |
 
 Build-safety: every image build runs with `podman build --memory=20g`, every
 compile with `-j8` (`CMAKE_BUILD_PARALLEL_LEVEL=8`).
@@ -100,7 +99,7 @@ Code review then found the op(A) tile indexed with the fast thread index as
 the slow dimension (stride-16 local-memory bank conflicts in all three); the
 tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
 (DPC++ opencl:cpu, gcc-14, clang-22), the GPU suites re-run by
-`scripts/ws-amd-pass2.sh` (`results/ws-amd/2026-09-03/tiled-parity.txt`, second pass).
+`results/ws-amd/2026-09-03/tiled-parity.txt` (second pass).
 
 ## Facts worth remembering
 
