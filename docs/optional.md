@@ -14,7 +14,7 @@ per C element, sequential k accumulation in a register), a row-per-work-item
 GEMV and reductions for asum/nrm2. Protocol, kernel-equivalence notes and
 the gcc-offload exception are in `docs/methodology.md` (E7 caveats) and
 `docs/toolchains.md` (Hand-written BLAS). The tiled/vendor ratios per device
-and toolchain are in `analysis/headline-<machine>-<date>.md` and the
+and toolchain are in `results/analysis/headline-<machine>-<date>.md` and the
 `tiled-*.png` figures.
 
 ## 2. DPC++ vs AdaptiveCpp on the same GPU
