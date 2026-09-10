@@ -22,7 +22,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc-14 g++-14 gcc-14-offload-amdgcn \
-        clang-18 llvm-18-dev libclang-18-dev lld-18 \
+        clang-18 llvm-18-dev libclang-18-dev libomp-18-dev lld-18 \
         libboost-context-dev libboost-fiber-dev libboost-filesystem-dev libboost-test-dev \
         libopenblas-openmp-dev libopenblas-pthread-dev \
         python3.12 python3.12-venv python3.12-dev python3-pip \
