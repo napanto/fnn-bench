@@ -12,6 +12,8 @@
 #   podman build --memory=20g -f containers/fnn-sycl.Containerfile -t fnn-sycl:dev containers/
 ARG BASE=localhost/fnn-cuda:dev
 FROM ${BASE}
+ARG FNN_IMAGE=fnn-sycl:dev
+ARG FNN_IMAGE_BUILT=unknown
 
 ARG SYCL_TAG=v7.1.0
 ARG OCLCPU_TAG=2026-WW28
@@ -59,3 +61,7 @@ ENV ONEMATH_ROOT=/opt/onemath \
     SYCL_CACHE_PERSISTENT=1
 
 LABEL org.opencontainers.image.description="fnn-bench SYCL toolchain: intel/llvm v7.1.0 (CUDA adapter), oclcpuexp, oneMath v0.9 (MKLCPU, NETLIB/OpenBLAS, cuBLAS, generic SYCL BLAS)"
+
+# identity of the image, recorded by fnnbench in every row (sysinfo.env / sysinfo.container)
+ENV FNN_IMAGE=${FNN_IMAGE} FNN_IMAGE_BUILT=${FNN_IMAGE_BUILT}
+LABEL fnn.image="${FNN_IMAGE}" fnn.image.built="${FNN_IMAGE_BUILT}"

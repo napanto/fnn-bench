@@ -10,6 +10,8 @@
 #   podman build --memory=20g -f containers/fnn-sycl-generic.Containerfile -t fnn-sycl-generic:dev containers/
 ARG BASE=localhost/fnn-sycl:dev
 FROM ${BASE}
+ARG FNN_IMAGE=fnn-sycl-generic:dev
+ARG FNN_IMAGE_BUILT=unknown
 ARG JOBS=8
 ARG TUNING=INTEL_CPU
 
@@ -25,3 +27,7 @@ RUN cmake -S /opt/src/onemath -B /tmp/onemath-build -G Ninja \
 
 ENV ONEMATH_GENERIC_ROOT=/opt/onemath-generic
 LABEL org.opencontainers.image.description="fnn-sycl + oneMath generic SYCL BLAS backend (/opt/onemath-generic)"
+
+# identity of the image, recorded by fnnbench in every row (sysinfo.env / sysinfo.container)
+ENV FNN_IMAGE=${FNN_IMAGE} FNN_IMAGE_BUILT=${FNN_IMAGE_BUILT}
+LABEL fnn.image="${FNN_IMAGE}" fnn.image.built="${FNN_IMAGE_BUILT}"
