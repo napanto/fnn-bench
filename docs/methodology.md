@@ -355,7 +355,7 @@ Run-to-run spread: the same visible configuration is measured in more than
 one sweep of the third pass (E3 default vs E7 `blas=auto` vs the E6 baseline,
 E4 vs E7 vendor rows). `scripts/headline.py` tabulates the 25 worst such pairs from
 the raw rows (before de-duplication) and summarises all of them at the end of
-`analysis/headline-<machine>-<date>.md`. On ws-amd's third pass: the
+`results/analysis/headline-<machine>-<date>.md`. On ws-amd's third pass: the
 launch-bound monk/cup rows (epochs under 10 ms) differ by 15 % (median) and
 up to 150 % between sweeps (sub-millisecond epochs), the larger workloads by
 3 % (median) and at most 22 %. Differences below the spread of the row family in

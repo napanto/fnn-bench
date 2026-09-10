@@ -74,5 +74,5 @@ podman run --rm --memory=20g --security-opt label=disable -v "$AC/syclnn:/work/s
 log "5. supersede older duplicates, analyze, headline"
 $PY scripts/supersede-stale.py $RES --dupes
 bash scripts/analyze.sh 2>&1 | tail -3
-$PY scripts/headline.py $RES > analysis/headline-ws-amd-$DATE.md && head -20 analysis/headline-ws-amd-$DATE.md
+$PY scripts/headline.py $RES > results/analysis/headline-ws-amd-$DATE.md && head -20 results/analysis/headline-ws-amd-$DATE.md
 log "fixed-clock CPU rows done"

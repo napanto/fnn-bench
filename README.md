@@ -22,8 +22,8 @@ scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), mat
 docs/         toolchains.md (compiler x device matrix and the facts learned), methodology.md
               (protocol, metrics, caveats, the profiler and CPU fix-ups), optional.md (optional experiments:
               tiled GEMM, DPC++ vs AdaptiveCpp, one-binary portability, ZLUDA)
-results/      raw JSONL per machine/date (+ peaks, rocprof/perf/nsys cross-checks); superseded.jsonl = replaced rows
-analysis/     CSVs, figures and headline tables produced from the rows
+results/      submodule -> fnn-results: the raw JSONL rows per machine/date (+ peaks, rocprof/perf/nsys
+              cross-checks; superseded.jsonl = replaced rows) and results/analysis/ (CSVs, figures, headline tables)
 ```
 
 ## Machines
@@ -36,6 +36,11 @@ analysis/     CSVs, figures and headline tables produced from the rows
 Result directories, analysis files and driver scripts are named after these ids.
 
 ## Reproduce
+
+The measurements live in the [fnn-results](https://github.com/napanto/fnn-results)
+repository, checked out as the `results/` submodule: clone with
+`--recurse-submodules` (or `git submodule update --init`) to get the rows and
+the figures; the drivers below write new rows into it.
 
 ```sh
 # images (or pull ghcr.io/napanto/fnn-{cuda,sycl})
@@ -53,11 +58,11 @@ fnnbench run --backend cudann --device gpu --workload mnist --batch 256 --dtype 
 fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --out results/ws-nvidia/$(date +%F)/gpu
 scripts/matrix-ws-amd.sh                                        # ws-amd: all environments, sequentially
 scripts/run-ws-nvidia.sh all                                    # ws-nvidia: sync, build, parity, matrix, fetch (NVIDIA_HOST, NVIDIA_DIR)
-scripts/analyze.sh                                              # both machines -> analysis/<machine>-<date>.csv, analysis/figures/<machine>-<date>/
+scripts/analyze.sh                                              # both machines -> results/analysis/<machine>-<date>.csv, results/analysis/figures/<machine>-<date>/
 PYTHONPATH=bench python scripts/headline.py results/ws-amd/2026-09-05   # Markdown: defaults per toolchain, tiled/vendor ratios, run-to-run spread (needs numpy)
 ```
 
-The rows the report uses are the third pass, `results/*/2026-09-05` (timing
+The rows the report uses are the third pass, `results/*/2026-09-05` in fnn-results (timing
 rows unprofiled, oracle check on a separate instance, every confounder found
 on the way fixed or isolated: `docs/methodology.md`). Rows replaced by a
 re-measurement live in `superseded.jsonl` next to the live file and are

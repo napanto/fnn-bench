@@ -1,6 +1,6 @@
 """`fnnbench plot`: the standard figures of the report from the JSONL results.
 
-    fnnbench plot results/ws-amd/2026-09-03 -o analysis/figures
+    fnnbench plot results/ws-amd/2026-09-03 -o results/analysis/figures
 
 Figures (one PNG + one PDF each, only when the data for them exists):
 * throughput   samples/s vs batch, one line per backend/device, per workload

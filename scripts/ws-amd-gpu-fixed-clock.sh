@@ -61,5 +61,5 @@ distrobox enter fnn-rocm -- bash -lc "bash $HERE/scripts/zluda-crosscheck.sh" 2>
 log "4. supersede older duplicates, analyze, headline"
 $PY scripts/supersede-stale.py $RES --dupes
 bash scripts/analyze.sh 2>&1 | tail -3
-$PY scripts/headline.py $RES > analysis/headline-ws-amd-$DATE.md && head -20 analysis/headline-ws-amd-$DATE.md
+$PY scripts/headline.py $RES > results/analysis/headline-ws-amd-$DATE.md && head -20 results/analysis/headline-ws-amd-$DATE.md
 log "fixed-clock GPU rows done"
