@@ -29,7 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake ninja-build git patch curl ca-certificates rsync \
     && rm -rf /var/lib/apt/lists/*
 
-# the same recipe as on the workstation, installed under /opt/fnn-rocm
+# the same recipe as on the workstation, installed under /opt/fnn-rocm (CMake finds hip/rocBLAS under /opt/rocm)
+ENV ROCM_PATH=/opt/rocm HIP_PATH=/opt/rocm CMAKE_PREFIX_PATH=/opt/rocm
 COPY scripts/rocm-toolchain.sh /tmp/fnn-bench/scripts/rocm-toolchain.sh
 COPY containers/patches/onemath-netlib-openblas.patch /tmp/fnn-bench/containers/patches/onemath-netlib-openblas.patch
 RUN FNN_ROCM_PREFIX=/opt/fnn-rocm FNN_ROCM_BUILD=/tmp/fnn-build JOBS=${JOBS} \
@@ -44,7 +45,6 @@ RUN FNN_ROCM_PREFIX=/opt/fnn-rocm FNN_ROCM_BUILD=/tmp/fnn-build JOBS=${JOBS} \
     && /opt/fnn-rocm/acpp/bin/acpp --acpp-version | head -2
 
 ENV PATH=/opt/fnn-rocm/venv/bin:/opt/fnn-rocm/acpp/bin:/opt/rocm/bin:/opt/rocm/lib/llvm/bin:$PATH \
-    ROCM_PATH=/opt/rocm \
     SYCLNN_SYCL_IMPL=adaptivecpp \
     SYCLNN_ONEMATH_ROOT=/opt/fnn-rocm/onemath \
     AdaptiveCpp_DIR=/opt/fnn-rocm/acpp/lib/cmake/AdaptiveCpp \
