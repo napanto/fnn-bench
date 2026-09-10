@@ -14,7 +14,8 @@ Last update: 2026-09-06.
 | `localhost/fnn-cuda:dev` (→ `ghcr.io/napanto/fnn-cuda`) | ubuntu 24.04 | CUDA 12.9 (nvcc 12.9.86, cuBLAS, NVTX, CUPTI, Nsight Systems 2025.1.3), gcc-13 (nvcc host), gcc-14 + `gcc-14-offload-nvptx` + `gcc-14-offload-amdgcn`, clang-22 (apt.llvm.org, host OpenMP only), clang-18 (Ubuntu) with `libomptarget` nvptx/amdgpu device runtimes, OpenBLAS 0.3.26 (openmp + pthread), Intel oneMKL 2026.1 from PyPI (`mkl`, `mkl-devel`, `onemkl-sycl-blas`, `onemkl-sycl-include`, `tbb-devel`), Python 3.12 venv (numpy 2.5.2, pytest 9.1, pybind11 3.1.0, scikit-build-core 1.0.3) | 2026-09-03 on ws-amd, 7.6 GB |
 | `localhost/fnn-sycl:dev` (→ `ghcr.io/napanto/fnn-sycl`) | fnn-cuda | intel/llvm **v7.1.0** `sycl_linux.tar.gz` (clang 22.1, libsycl 9; adapters: opencl, level_zero, **cuda**), Intel OpenCL CPU runtime **oclcpuexp 2026-WW28** (`sycl-ls` → `[opencl:cpu] AMD Ryzen Threadripper 2950X`), oneMath **v0.9** in `/opt/onemath` (MKLCPU + NETLIB/OpenBLAS + cuBLAS); `CC=clang CXX=clang++` | 2026-09-03 |
 | `localhost/fnn-sycl-generic:dev` | fnn-sycl | + oneMath v0.9 with the generic SYCL BLAS backend in `/opt/onemath-generic` (INTEL_CPU tuning = `spir64_x86_64` AOT, ~2 h at -j8) | 2026-09-03 |
-| `fnn-rocm` distrobox (ws-amd) | Ubuntu 24.04 + ROCm 7.2.4 (a distrobox container on the host) | hipcc, amdclang++ 22 (ROCm), rocBLAS 5.2 / hipBLAS 3.2, rocprofv3, gcc-13/14 + `gcc-14-offload-amdgcn`, clang-18 + libomp-18 (`libomptarget-amdgpu-gfx1100.bc`), OpenBLAS; `~/.local/opt/fnn-rocm/`: **AdaptiveCpp 25.10.0** (LLVM 18, SSCP `generic` target, ROCm + OpenMP backends), oneMath v0.9 (rocBLAS + NETLIB), Python venv | 2026-09-03, `scripts/rocm-toolchain.sh` |
+| `localhost/fnn-rocm:dev` (→ `ghcr.io/napanto/fnn-rocm`; `containers/fnn-rocm.Containerfile`) | `rocm/dev-ubuntu-24.04:7.2.4-complete` | the AMD stack as a pullable image: ROCm 7.2.4 (hipcc, amdclang++ 22, rocBLAS 5.2 / hipBLAS 3.2, rocprofv3), gcc-14 + `gcc-14-offload-amdgcn`, clang-18 host compiler, both OpenBLAS variants, AdaptiveCpp 25.10 (generic SSCP, ROCm + OpenMP backends), oneMath v0.9 rocBLAS + NETLIB compiled by acpp, venvs for the ompnn compiler matrix; 24.7 GB. Verified on ws-nvidia (no AMD GPU): syclnn builds and passes the parity suite on the host device (117 double / 111 float / 111 tiled), cudann's HIP build and ompnn's amdclang++ and gcc-14 amdgcn builds compile | 2026-09-10 |
+| `fnn-rocm` distrobox (ws-amd) | Ubuntu 24.04 + ROCm 7.2.4 (a distrobox container on the host; the same recipe, `scripts/rocm-toolchain.sh`, as the image above: this is where the ws-amd rows were measured) | hipcc, amdclang++ 22 (ROCm), rocBLAS 5.2 / hipBLAS 3.2, rocprofv3, gcc-13/14 + `gcc-14-offload-amdgcn`, clang-18 + libomp-18 (`libomptarget-amdgpu-gfx1100.bc`), OpenBLAS; `~/.local/opt/fnn-rocm/`: **AdaptiveCpp 25.10.0** (LLVM 18, SSCP `generic` target, ROCm + OpenMP backends), oneMath v0.9 (rocBLAS + NETLIB), Python venv | 2026-09-03, `scripts/rocm-toolchain.sh` |
 
 Build-safety: every image build runs with `podman build --memory=20g`, every
 compile with `-j8` (`CMAKE_BUILD_PARALLEL_LEVEL=8`).
@@ -112,6 +113,12 @@ tile is now stored transposed (`AsT[kk][li]`). Host suites re-validated
   and `scripts/thermal-guard.sh` running; every row carries
   `results.cpu_monitor`.
 
+- **gcc's GCN offload plugin aborts without an AMD GPU**: importing a
+  gcc-14 amdgcn build of ompnn on a host without `/dev/kfd` ends in
+  `libgomp: GCN fatal error: Run-time could not be initialized` at the first
+  OpenMP runtime call, where clang's offload runtime falls back to the host.
+  Compile-only checks of that build are fine on any machine; running it needs
+  the GPU.
 - **libgomp pins the importing thread at load time** under `OMP_PROC_BIND`:
   a process that imported an OpenMP-linked module and then spawns a child
   hands it a one-core affinity mask (`cpus_allowed 0,16`), and the child's

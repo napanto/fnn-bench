@@ -10,7 +10,9 @@ results and the analysis.
 ```
 testkit/      fnn-testkit: float64 reference implementation + pytest suite run against every backend
 bench/        fnnbench: run / sweep / collect / replay / peak / plot, FLOP model, system capture, JSONL rows
-containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic, fnn-acpp-cuda (AdaptiveCpp on CUDA) Containerfiles, fnn-sycl-portable (kept as the record of the DPC++-on-AMD attempt, with scripts/dpcpp-hip-toolchain.sh)
+containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic, fnn-acpp-cuda (AdaptiveCpp on CUDA), fnn-rocm (the AMD stack) Containerfiles;
+              fnn-sycl-portable is kept as the record of the DPC++-on-AMD attempt (with scripts/dpcpp-hip-toolchain.sh);
+              every image carries FNN_IMAGE / FNN_IMAGE_BUILT, which fnnbench records in each row
 plans/        the experiments as JSON plans for `fnnbench sweep` (E1-E7 and the W4 sweep, defined in docs/methodology.md; e5_breakdown is the only profiled plan)
 scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh (the
               ws-amd matrix), run-ws-nvidia.sh (the ws-nvidia matrix over ssh + podman CDI),
