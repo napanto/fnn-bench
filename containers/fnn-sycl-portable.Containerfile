@@ -6,6 +6,8 @@
 #   podman build --memory=20g -f containers/fnn-sycl-portable.Containerfile -t fnn-sycl-portable:dev containers/
 #   AMD run: podman run --device /dev/kfd --device /dev/dri --group-add keep-groups ...
 FROM localhost/fnn-sycl:dev
+ARG FNN_IMAGE=fnn-sycl-portable:dev
+ARG FNN_IMAGE_BUILT=unknown
 ARG ROCM_VER=7.2.4
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg2 \
     && wget -qO- https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor -o /usr/share/keyrings/rocm.gpg \
@@ -20,3 +22,7 @@ ENV ROCM_PATH=/opt/rocm
 # (the oneMath run-time loader picks cuBLAS / rocBLAS / NETLIB by device at run time; the rocBLAS
 # backend of oneMath is not built in this image, so blas=tiled is the device-independent path
 # used for the portability rows, next to the vendor rows where a backend exists)
+
+# identity of the image, recorded by fnnbench in every row (sysinfo.env / sysinfo.container)
+ENV FNN_IMAGE=${FNN_IMAGE} FNN_IMAGE_BUILT=${FNN_IMAGE_BUILT}
+LABEL fnn.image="${FNN_IMAGE}" fnn.image.built="${FNN_IMAGE_BUILT}"
