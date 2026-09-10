@@ -5,7 +5,7 @@
 # samples k10temp every 2 s and, should the cap not be in force or the cooler fail, kills the
 # benchmark containers at TCTL_KILL and logs it. It never pauses a run (a pause would corrupt
 # the timing of the row in flight).
-#   scripts/thermal-guard.sh [tctl-kill-c] >> .logs/thermal-guard.log
+#   scripts/thermal-guard.sh [tctl-kill-c] >> thermal-guard.log
 set -u
 KILL=${1:-92}
 HW=$(grep -l k10temp /sys/class/hwmon/hwmon*/name 2>/dev/null | head -1 | xargs dirname)

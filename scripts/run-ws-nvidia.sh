@@ -189,6 +189,6 @@ fetch) fetch ;;
 omp-clang18) omp_clang18 ;;
 sycl-fix) sycl_fix ;;
 omp-gcc14nv) omp_gcc14nv ;;
-all) sync; tests; matrix; fetch ;;
+all) sync; build_all; tests; matrix; fetch ;;
 *) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda|matrix-omp|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|all"; exit 1 ;;
 esac

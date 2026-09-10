@@ -3,7 +3,7 @@
 How the numbers in `results/` are produced, what they mean, and what they do not
 mean. This is the reference for the "Methodology" chapter of the report.
 
-## Workloads 
+## Workloads
 
 | id | network | data | batch | why |
 |---|---|---|---|---|
@@ -15,7 +15,7 @@ mean. This is the reference for the "Methodology" chapter of the report.
 
 Every workload runs in `float` and `double`. Definitions: `testkit/fnn_testkit/workloads.py`.
 
-## Protocol 
+## Protocol
 
 `fnnbench run` / `fnnbench sweep` (`bench/fnnbench/runner.py`):
 
@@ -57,7 +57,7 @@ container image, filtered environment, package versions, git SHA of the bench).
 `fnnbench replay <file> [--id]` re-runs any row; `fnnbench collect` flattens
 everything into one CSV.
 
-## FLOP model 
+## FLOP model
 
 For layer sizes n_0 … n_L and batch B (`bench/fnnbench/flops.py`):
 
@@ -78,8 +78,11 @@ measured peaks.
 bias/activation kernel) through each backend and reports the BLAS library's
 achieved GFLOP/s and a streaming bandwidth from the activation kernel
 (3·n²·sizeof(T) bytes). Third pass, `results/<machine>/2026-09-05/peaks*/`
-(`scripts/peaks-table.py`; every ws-amd row with the host at the fixed 2.8 GHz,
-ws-nvidia at its constant 3.5 GHz; older peaks in `results/ws-amd/peaks/`):
+(`scripts/peaks-table.py`; every ws-amd row with the host at the fixed 2.8 GHz
+except the gcc-14 amdgcn GPU row, re-measured on 2026-09-10 at the stock host
+clock after its fixed-clock run had left no row (an 8192-wide GEMM does not
+depend on the host clock); ws-nvidia at its constant 3.5 GHz; older peaks in
+`results/ws-amd/peaks/`):
 
 | machine | device | backend / toolchain | BLAS | dtype | n | GEMM peak (GFLOP/s) | element-wise streaming (GB/s) | host clock (MHz) |
 |---|---|---|---|---|---|---|---|---|
@@ -88,6 +91,7 @@ ws-nvidia at its constant 3.5 GHz; older peaks in `results/ws-amd/peaks/`):
 | ws-amd | RX 7900 XTX | cudann / hipcc | tiled | float | 8192 | 2997 | 924 | 2800 (cap) |
 | ws-amd | RX 7900 XTX | ompnn / amdclang-22 | rocblas | float | 8192 | 23020 | 616 | 2800 (cap) |
 | ws-amd | RX 7900 XTX | ompnn / amdclang-22 | tiled | float | 8192 | 1856 | 658 | 2800 (cap) |
+| ws-amd | RX 7900 XTX | ompnn / gcc-14 amdgcn | rocblas | float | 8192 | 23602 | 24 | - |
 | ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | auto | double | 8192 | 1120 | 514 | 2800 (cap) |
 | ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | auto | float | 8192 | 26305 | 924 | 2800 (cap) |
 | ws-amd | RX 7900 XTX | syclnn / AdaptiveCpp | tiled | float | 8192 | 2939 | 931 | 2800 (cap) |
@@ -230,6 +234,13 @@ ws-amd and is not recorded.
   the inert-on-GPU `sync_every` option, so those rows are comparable with the
   rest. Rows that predate the GPU sampler or run shorter than its 200 ms
   interval have no `gpu_monitor`.
+- Revision strings: `build_info.git_sha` (`git describe` at build time) and
+  the `git_*` columns of the CSVs refer to the development history that
+  preceded the published one, whose commits were renumbered when the machines
+  were given their ids; the tags they count from are unchanged in content. A
+  `-dirty` suffix marks a wheel built from a tree with uncommitted changes
+  (committed right after); a row's `effective_options` and `build_info` are
+  the record of what ran.
 - `blas_queue=dedicated` rows are timing rows only: with the profiler on, the
   event recorded for a BLAS call is the marker kernel's, not the library's
   (the breakdown plan never sets it). On the RX 7900 XTX and on the CPU the
@@ -411,7 +422,7 @@ the steady-state metric needs, and the per-phase device times come from one
 dedicated profiled plan (`plans/e5_breakdown.json`, the E5 breakdown
 figures) that is never used for a timing comparison.
 
-## Profiler cross-validation 
+## Profiler cross-validation
 
 `scripts/rocprof-crosscheck.sh` trains `mnist-512-256` (8 192 samples, batch
 256, float) on the RX 7900 XTX under `rocprofv3 --kernel-trace` and compares
@@ -421,7 +432,7 @@ profiler-to-kernel ratios are the point, the absolute times predate the cap). Th
 things, and the difference is itself a result:
 
 * **rocprofv3** counts kernel execution only (7.6 ms (syclnn), 8.3 ms (cudann) and 10.2 ms (ompnn) per epoch
-  backends: the GPU work is the same);
+  in the three backends: the GPU work is the same);
 * **cudann** (`cudaEvent` pairs on the stream) and **syclnn** (SYCL event
   profiling) measure the interval between the event before and the event after
   a command on its queue: launch latency and idle gaps while the host is still
@@ -441,7 +452,9 @@ the third-pass rerun in `results/ws-amd/perf-2026-09-05/README.md` gives
 62-71 / 10-11 / 54-58 % for the same three shares):
 `perf record -e cpu-clock` (user space, all threads) attached to a profiled
 `fnnbench run` of syclnn (AdaptiveCpp host device) and ompnn (amdclang++
-host), MNIST 512-256 at batch 256 on 24 pinned threads. The profiler
+host), MNIST 512-256 at batch 256 on 24 pinned threads (the cross-check
+predates the physical-core rule of the timing rows; it compares shares, which
+do not depend on the thread count). The profiler
 attributes 61-70 % of the epoch to the GEMM calls and about 30 % to the
 element-wise kernels; perf finds only 11-13 % of the samples inside the
 OpenBLAS kernels and 52-56 % inside the OpenMP runtime (fork/join and
