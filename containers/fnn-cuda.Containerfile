@@ -15,8 +15,8 @@
 # runs on Ampere (A30). Build with a memory cap:
 #   podman build --memory=20g -f containers/fnn-cuda.Containerfile -t fnn-cuda:dev containers/
 FROM docker.io/library/ubuntu:24.04
-ARG FNN_IMAGE=fnn-cuda:dev
-ARG FNN_IMAGE_BUILT=unknown
+ARG IMAGE_NAME=fnn-cuda:dev
+ARG IMAGE_BUILT=unknown
 
 ARG CUDA_PKG_VER=12-9
 ARG CUDA_VER=12.9
@@ -115,9 +115,10 @@ ENV MKLROOT=/opt/venv \
 LABEL org.opencontainers.image.source=https://github.com/napanto/fnn-bench \
       org.opencontainers.image.description="fnn-bench NVIDIA/OpenMP toolchain: CUDA 12.9, gcc-14 offload, clang-22, OpenBLAS, oneMKL"
 
-# identity of the image, recorded by fnnbench in every row (sysinfo.env / sysinfo.container)
-ENV FNN_IMAGE=${FNN_IMAGE} FNN_IMAGE_BUILT=${FNN_IMAGE_BUILT}
-LABEL fnn.image="${FNN_IMAGE}" fnn.image.built="${FNN_IMAGE_BUILT}"
+# identity of the image, recorded by fnnbench in every row (sysinfo.env / sysinfo.container); the build
+# arguments are not named FNN_IMAGE on purpose: an ENV of a base image overrides a same-named ARG
+ENV FNN_IMAGE=${IMAGE_NAME} FNN_IMAGE_BUILT=${IMAGE_BUILT}
+LABEL fnn.image="${IMAGE_NAME}" fnn.image.built="${IMAGE_BUILT}"
 
 WORKDIR /work
 CMD ["/bin/bash"]
