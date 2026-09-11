@@ -76,3 +76,9 @@ bounded oracle check, the FLOP model), `docs/toolchains.md` for which
 compiler/device combinations are validated and `docs/optional.md` for the
 optional experiments (hand-written GEMM, DPC++ vs AdaptiveCpp, portability,
 ZLUDA).
+
+## Open items
+
+- Run the AMD tags of the library images (`syclnn:acpp-rocm`, `cudann:hip`, `ompnn:rocm`) from the
+  registry on the RX 7900 XTX and pass the parity suite there: they have only been checked at build
+  time (`docs/toolchains.md`, published images).

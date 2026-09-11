@@ -45,6 +45,10 @@ repository's CI on every push, AMD tags by `scripts/publish-amd-variants.sh` on 
 | `ghcr.io/napanto/cudann:hip` | fnn-rocm | `sha256:d12a051b11bd46a82eb52900517b99d6539d7296b277a515607e7a9344bf807a` | 8478 MB |
 | `ghcr.io/napanto/ompnn:rocm` | fnn-rocm | `sha256:28f179a0b36db0d8d5b2239b7de95dee856a65859fe60077d9203627250f00a1` | 8480 MB |
 
+The AMD tags passed their build-time checks only (syclnn's device enumeration on the host device,
+cudann's and ompnn's build info): a run from the registry on the RX 7900 XTX, with the parity
+suite, is still to be done and is listed as an open item in the README.
+
 `fnn-cuda` carries two layers added after its 2026-09-04 build: the `FNN_IMAGE` stamp and the
 `libomptarget` runtime-lookup fix (`containers/fnn-cuda.Containerfile`); the wheels measured in the
 study are unaffected by either.
