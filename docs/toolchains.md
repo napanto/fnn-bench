@@ -33,6 +33,18 @@ the `FNN_IMAGE` / `FNN_IMAGE_BUILT` variables inside them identify the build a r
 | `ghcr.io/napanto/fnn-acpp-cuda:2026-09` | `sha256:676b0c3b6d9b9797dc5f40a5017cc85079d29429133950e94c844c21ac612a91` | 3471 MB |
 | `ghcr.io/napanto/fnn-rocm:2026-09` | `sha256:151c6abcb9ba0b13113cd9db4cfd6311e2dc3fbdb26373afa6ef5c405a4a458a` | 8476 MB |
 
+Library images (the library installed into a toolchain image; `latest` tags built by each
+repository's CI on every push, AMD tags by `scripts/publish-amd-variants.sh` on a workstation):
+
+| image | base | manifest digest | compressed size |
+|---|---|---|---|
+| `ghcr.io/napanto/syclnn:latest` | fnn-sycl | `sha256:a592ad6c78b6e7a551685fd2aa0a465741739a3b3fc95eedbbcb3c9fa822d892` | 3646 MB |
+| `ghcr.io/napanto/cudann:latest` | fnn-cuda | `sha256:4505c2f6c0d6e44973e769903dd146ed6ca9b8ceef846ab582a3d7d17ae437f4` | 3458 MB |
+| `ghcr.io/napanto/ompnn:latest` | fnn-cuda | `sha256:6a4da2f8d86b87131cb53c0bcb9fd89ec0f30aefcc95101d46506f24dc2f3d4b` | 3548 MB |
+| `ghcr.io/napanto/syclnn:acpp-rocm` | fnn-rocm | `sha256:53dc24d88a637e9c9e919f88e85cc43ca68cde4cf3ef67ebe467aee17faaeee7` | 8485 MB |
+| `ghcr.io/napanto/cudann:hip` | fnn-rocm | `sha256:d12a051b11bd46a82eb52900517b99d6539d7296b277a515607e7a9344bf807a` | 8478 MB |
+| `ghcr.io/napanto/ompnn:rocm` | fnn-rocm | `sha256:28f179a0b36db0d8d5b2239b7de95dee856a65859fe60077d9203627250f00a1` | 8480 MB |
+
 `fnn-cuda` carries two layers added after its 2026-09-04 build: the `FNN_IMAGE` stamp and the
 `libomptarget` runtime-lookup fix (`containers/fnn-cuda.Containerfile`); the wheels measured in the
 study are unaffected by either.

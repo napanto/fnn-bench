@@ -20,7 +20,8 @@ scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), mat
               ws-amd-{cpu,gpu}-fixed-clock.sh + thermal-guard.sh (the ws-amd rows at a fixed host clock),
               analyze.sh, headline.py, peaks-table.py, acpp-vs-dpcpp.py (tables from the rows),
               supersede-stale.py, zluda-crosscheck.sh, rocprof-crosscheck.sh, perf-crosscheck.sh,
-              nsys-crosscheck.py, dpcpp-hip-toolchain.sh (the DPC++-on-AMD attempt)
+              nsys-crosscheck.py, dpcpp-hip-toolchain.sh (the DPC++-on-AMD attempt),
+              publish-amd-variants.sh (the AMD tags of the library images, built on the fnn-rocm base)
 docs/         toolchains.md (compiler x device matrix and the facts learned), methodology.md
               (protocol, metrics, caveats, the profiler and CPU fix-ups), optional.md (optional experiments:
               tiled GEMM, DPC++ vs AdaptiveCpp, one-binary portability, ZLUDA)
