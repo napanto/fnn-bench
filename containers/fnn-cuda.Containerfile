@@ -89,6 +89,14 @@ RUN python3.12 -m venv /opt/venv \
     && ldconfig
 
 # CBLAS shim dirs so that plain find_library(cblas)/cblas.h works for every
+# libomptarget (apt.llvm.org) dlopens the unversioned libomp.so through the system libLLVM-18, whose search
+# path found the clang-22 copy: two OpenMP runtimes in one process (OMP: Error #15) on hosts without a GPU.
+# Pin both lookups to the LLVM-18 directory.
+RUN apt-get update && apt-get install -y --no-install-recommends patchelf && rm -rf /var/lib/apt/lists/* \
+    && ln -sf libomp.so.5 /usr/lib/llvm-18/lib/libomp.so \
+    && for f in /usr/lib/llvm-18/lib/libomptarget.so.18.1 /usr/lib/llvm-18/lib/libomptarget.rtl.*.so; do patchelf --set-rpath /usr/lib/llvm-18/lib "$f"; done \
+    && patchelf --set-rpath /usr/lib/llvm-18/lib "$(readlink -f /usr/lib/x86_64-linux-gnu/libLLVM-18.so.18.1)"
+
 # OpenBLAS variant (Ubuntu installs them under openblas-<variant>/).
 RUN for v in openmp pthread; do \
         d=/opt/openblas-$v; mkdir -p $d/lib $d/include; \
