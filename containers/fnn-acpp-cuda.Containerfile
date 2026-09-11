@@ -7,8 +7,8 @@
 #   CXX=/opt/acpp/bin/acpp CC=clang-18 SYCLNN_SYCL_IMPL=adaptivecpp SYCLNN_ONEMATH_ROOT=/opt/onemath-acpp \
 #   CMAKE_PREFIX_PATH=/opt/acpp:/opt/onemath-acpp pip install .
 FROM localhost/fnn-cuda:dev
-ARG FNN_IMAGE=fnn-acpp-cuda:dev
-ARG FNN_IMAGE_BUILT=unknown
+ARG IMAGE_NAME=fnn-acpp-cuda:dev
+ARG IMAGE_BUILT=unknown
 ARG ACPP_TAG=v25.10.0
 ARG ONEMATH_TAG=v0.9
 ARG JOBS=8
@@ -47,5 +47,5 @@ ENV PATH=/opt/acpp/bin:$PATH
 ENV ACPP_TARGETS=generic
 
 # identity of the image, recorded by fnnbench in every row (sysinfo.env / sysinfo.container)
-ENV FNN_IMAGE=${FNN_IMAGE} FNN_IMAGE_BUILT=${FNN_IMAGE_BUILT}
-LABEL fnn.image="${FNN_IMAGE}" fnn.image.built="${FNN_IMAGE_BUILT}"
+ENV FNN_IMAGE=${IMAGE_NAME} FNN_IMAGE_BUILT=${IMAGE_BUILT}
+LABEL fnn.image="${IMAGE_NAME}" fnn.image.built="${IMAGE_BUILT}"

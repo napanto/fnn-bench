@@ -10,13 +10,13 @@
 # ompnn with amdclang++ and gcc-14 amdgcn offload, the ZLUDA cross-check.
 #
 # Build from the fnn-bench root (the recipe script and the oneMath patch are copied in):
-#   podman build --memory=20g --build-arg FNN_IMAGE=fnn-rocm:dev --build-arg FNN_IMAGE_BUILT=$(date -u +%F) \
+#   podman build --memory=20g --build-arg IMAGE_NAME=fnn-rocm:dev --build-arg IMAGE_BUILT=$(date -u +%F) \
 #       -f containers/fnn-rocm.Containerfile -t fnn-rocm:dev .
 # Run with the GPU: podman run --device /dev/kfd --device /dev/dri --group-add keep-groups ...
 ARG BASE=docker.io/rocm/dev-ubuntu-24.04:7.2.4-complete
 FROM ${BASE}
-ARG FNN_IMAGE=fnn-rocm:dev
-ARG FNN_IMAGE_BUILT=unknown
+ARG IMAGE_NAME=fnn-rocm:dev
+ARG IMAGE_BUILT=unknown
 ARG JOBS=8
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -53,12 +53,12 @@ ENV PATH=/opt/fnn-rocm/venv/bin:/opt/fnn-rocm/acpp/bin:/opt/rocm/bin:/opt/rocm/l
     OMPNN_BLAS_ROOT=/opt/fnn-rocm/openblas-openmp \
     CMAKE_BUILD_PARALLEL_LEVEL=8 \
     OMP_NUM_THREADS=16 \
-    FNN_IMAGE=${FNN_IMAGE} \
-    FNN_IMAGE_BUILT=${FNN_IMAGE_BUILT}
+    FNN_IMAGE=${IMAGE_NAME} \
+    FNN_IMAGE_BUILT=${IMAGE_BUILT}
 
 LABEL org.opencontainers.image.source=https://github.com/napanto/fnn-bench \
       org.opencontainers.image.description="fnn-bench AMD toolchain: ROCm 7.2.4, AdaptiveCpp 25.10 (generic SSCP), oneMath rocBLAS/NETLIB, gcc-14 amdgcn offload, amdclang++" \
-      fnn.image="${FNN_IMAGE}" fnn.image.built="${FNN_IMAGE_BUILT}"
+      fnn.image="${IMAGE_NAME}" fnn.image.built="${IMAGE_BUILT}"
 
 WORKDIR /work
 CMD ["/bin/bash"]
