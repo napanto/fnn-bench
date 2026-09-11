@@ -79,6 +79,19 @@ ZLUDA).
 
 ## Open items
 
+- Fix the inference timing boundary and re-run the inference rows (E2, E5 `mode = infer`).
+  The Python bindings of the three libraries copy the NumPy input into a `std::vector` before
+  every call; training rows exclude that copy (the library's own per-epoch clock starts after
+  it), inference rows time the whole `predict` call and include it. Measured on the RX 7900 XTX
+  (AdaptiveCpp, float): mnist shape on 60000 samples (188 MB copied per call) 97-99 ms in the
+  C++ driver against 173-198 ms through the harness; the 65536-sample width-1024 shape (67 MB)
+  168-174 ms against 181-193 ms. The offset is the same for all three libraries (same binding
+  code), so it compresses their ratios rather than favouring one; the mnist throughput rows
+  (batch 4096) are the affected ones, the latency rows (batch 1) and monk/cup are within 3 %.
+  Fix: zero-copy bindings (pointer overloads of `train`/`predict`), a per-call wall clock
+  recorded by the library for `predict` (the inference counterpart of `epoch_wall_ns`), the
+  harness reading it, the affected rows re-measured and superseded (`docs/methodology.md`,
+  Inference rows).
 - Run the AMD tags of the library images (`syclnn:acpp-rocm`, `cudann:hip`, `ompnn:rocm`) from the
   registry on the RX 7900 XTX and pass the parity suite there: they have only been checked at build
   time (`docs/toolchains.md`, published images).

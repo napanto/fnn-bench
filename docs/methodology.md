@@ -184,6 +184,25 @@ samples for cup and mnist, on its 124 training samples for monk (E2 and E5 alike
 shows the launch overhead of each programming model); batch 4096 is the
 throughput regime. The FLOP model is the forward GEMM only, 2B*sum(n_l n_{l+1}).
 
+**Known defect of the inference rows (to be fixed, rows to be re-measured).** The
+timed region of an inference row is the Python `predict` call, and the pybind11
+binding copies the NumPy input into a `std::vector` before entering the library
+(the training rows exclude that copy: `epoch_wall_ns` starts inside the call).
+Measured on the RX 7900 XTX with AdaptiveCpp in float, C++ driver
+(`bench/train_bench --infer`, no copy) against the harness, same shape, back to
+back: mnist shape on 60000 samples (188 MB copied per call) 97-99 ms against
+173-198 ms per pass; the 65536-sample width-1024 shape (67 MB) 168-174 ms
+against 181-193 ms. The copy is identical for the three libraries (same binding
+code), so it does not favour one programming model, but it inflates the mnist
+throughput rows (batch 4096) by up to 2x in float and copies twice the bytes in
+double; the latency rows (batch 1, at most 13 MB per call against hundreds of
+milliseconds) and the monk/cup rows (under 0.2 MB) are within 3 %. The headline
+tables are not affected (they key on `steady_epoch_s`, which inference rows do not
+carry). The fix is zero-copy bindings (pointer overloads of `train`/`predict`),
+a per-call wall clock recorded by the library for `predict` so that both modes
+share the measurement boundary, the harness reading it as the inference
+`steady_epoch_s`, and the E2/E5 inference rows re-run and superseded.
+
 ### GPU utilisation and power
 
 Every GPU row carries `gpu_monitor`: mean/max utilisation, mean/max power,
