@@ -20,6 +20,23 @@ Last update: 2026-09-06.
 Build-safety: every image build runs with `podman build --memory=20g`, every
 compile with `-j8` (`CMAKE_BUILD_PARALLEL_LEVEL=8`).
 
+### Published images (2026-09-11)
+
+The images above are on the GitHub container registry, tags `latest` and `2026-09` (same content);
+the `FNN_IMAGE` / `FNN_IMAGE_BUILT` variables inside them identify the build a row ran in.
+
+| image | manifest digest | compressed size |
+|---|---|---|
+| `ghcr.io/napanto/fnn-cuda:2026-09` | `sha256:d111a865add84b0b8fd673357596b0644904a9e738d97f9698c7d4eaee8a4e78` | 3452 MB |
+| `ghcr.io/napanto/fnn-sycl:2026-09` | `sha256:eaf7debc84fc906f75059e87ad964bb166ea04c7e0adc0046b61da72508f5a56` | 3631 MB |
+| `ghcr.io/napanto/fnn-sycl-generic:2026-09` | `sha256:12ca315d547ec498dcb5b6b0caf4b53f8ebbc7364f3ef49bc9ef13cc5df633c0` | 3659 MB |
+| `ghcr.io/napanto/fnn-acpp-cuda:2026-09` | `sha256:676b0c3b6d9b9797dc5f40a5017cc85079d29429133950e94c844c21ac612a91` | 3471 MB |
+| `ghcr.io/napanto/fnn-rocm:2026-09` | `sha256:151c6abcb9ba0b13113cd9db4cfd6311e2dc3fbdb26373afa6ef5c405a4a458a` | 8476 MB |
+
+`fnn-cuda` carries two layers added after its 2026-09-04 build: the `FNN_IMAGE` stamp and the
+`libomptarget` runtime-lookup fix (`containers/fnn-cuda.Containerfile`); the wheels measured in the
+study are unaffected by either.
+
 ## syclnn (SYCL)
 
 | Compiler | Device | BLAS | Status | Notes |
