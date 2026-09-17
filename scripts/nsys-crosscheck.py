@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare the in-library profiler's per-phase device time with nsys' kernel sums.
 
-    scripts/nsys-crosscheck.py results/ws-nvidia/2026-09-04 [workload] [batch] [dtype]
+    scripts/nsys-crosscheck.py results/ws-nvidia/2026-09-04 [workload] [batch] [dtype]   (also results/hpc-a30/2026-09-17)
 
 Reads nsys-<backend>-mnist-kernels_cuda_gpu_kern_sum.csv (from `nsys stats
 --report cuda_gpu_kern_sum`) for cudann and syclnn, classifies the kernel names
@@ -56,8 +56,10 @@ def nsys_shares(path: Path) -> tuple[dict[str, float], float, int, int]:
 
 
 def profiler_shares(root: Path, backend: str, workload: str, batch: int, dtype: str):
-    """Kernel-only shares from the E3 row (profile_per_epoch_ms is in ms; H2D/D2H excluded)."""
-    for f in root.glob("gpu-cuda-vs-sycl/*.jsonl"):
+    """Kernel-only shares from the profiled row of the configuration (profile_per_epoch_ms is in
+    ms; H2D/D2H excluded): the E3 row in the profiled passes, the E5 breakdown row in the third
+    pass and on hpc-a30 (timing rows run unprofiled there)."""
+    for f in list(root.glob("gpu-cuda-vs-sycl/*.jsonl")) + list(root.glob("e5-breakdown-gpu/*.jsonl")):
         if f.name == "superseded.jsonl":
             continue
         for line in f.read_text().splitlines():
@@ -69,6 +71,8 @@ def profiler_shares(root: Path, backend: str, workload: str, batch: int, dtype: 
             if {k: v for k, v in (r.get("options") or {}).items() if k != "profile"}:
                 continue
             per = r["results"].get("profile_per_epoch_ms") or {}
+            if not per:
+                continue  # an unprofiled timing row: look further (the breakdown directory)
             dev = {p: per.get(f"{p}_ns", 0.0) for p in PHASES}
             total = sum(dev.values())
             batches = (r["n_samples"] + batch - 1) // batch
@@ -98,7 +102,7 @@ def main() -> None:
                    f"({ns_launches/ns_batches:.1f} per batch)\n")
         if pr:
             shares, total, batches, per, r = pr
-            out.append(f"- profiler (E3 row): {total:.1f} ms of kernel phases per epoch over {batches} batches "
+            out.append(f"- profiler (profiled row): {total:.1f} ms of kernel phases per epoch over {batches} batches "
                        f"({total/batches:.3f} ms per batch), plus H2D {per.get('h2d_ns', 0):.1f} ms and D2H {per.get('d2h_ns', 0):.2f} ms "
                        f"per epoch; steady epoch {r['results'].get('steady_epoch_s', 0)*1e3:.1f} ms\n")
             out.append(f"- ratio profiler/nsys per batch: {(total/batches)/(ns_total/1e6/ns_batches):.2f}x "

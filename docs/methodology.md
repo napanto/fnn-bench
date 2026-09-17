@@ -98,7 +98,7 @@ achieved GFLOP/s and a streaming bandwidth from the activation kernel
 (`scripts/peaks-table.py`; every ws-amd row with the host at the fixed 2.8 GHz
 except the gcc-14 amdgcn GPU row, re-measured on 2026-09-10 at the stock host
 clock after its fixed-clock run had left no row (an 8192-wide GEMM does not
-depend on the host clock); ws-nvidia at its constant 3.5 GHz; older peaks in
+depend on the host clock); ws-nvidia at its constant 3.5 GHz; hpc-a30 at the node's firmware clocks (no cpufreq interface, `-`); older peaks in
 `results/ws-amd/peaks/`):
 
 | machine | device | backend / toolchain | BLAS | dtype | n | GEMM peak (GFLOP/s) | element-wise streaming (GB/s) | host clock (MHz) |
@@ -130,6 +130,29 @@ depend on the host clock); ws-nvidia at its constant 3.5 GHz; older peaks in
 | ws-nvidia | GTX 1080 Ti | syclnn / DPC++ | auto | float | 8192 | 9160 | 359 | - |
 | ws-nvidia | GTX 1080 Ti | syclnn / DPC++ | tiled | float | 8192 | 661 | 358 | - |
 | ws-nvidia | Xeon E5-2643 v2 (OpenMP host, 12 threads) | ompnn / clang-22 | openblas | float | 4096 | 234 | 24 | - |
+| hpc-a30 | 2x EPYC 7301 | syclnn / DPC++ | generic | float | 4096 | 13 | 12 | - |
+| hpc-a30 | 2x EPYC 7301 | syclnn / DPC++ | mklcpu | double | 4096 | 505 | 88 | - |
+| hpc-a30 | 2x EPYC 7301 | syclnn / DPC++ | mklcpu | float | 4096 | 920 | 51 | - |
+| hpc-a30 | 2x EPYC 7301 | syclnn / DPC++ | netlib | float | 4096 | 912 | 51 | - |
+| hpc-a30 | 2x EPYC 7301 (AdaptiveCpp host) | syclnn / AdaptiveCpp | auto | float | 4096 | 564 | 13 | - |
+| hpc-a30 | 2x EPYC 7301 (OpenMP host, 32 threads) | ompnn / clang-18 | openblas | float | 4096 | 462 | 16 | - |
+| hpc-a30 | 2x EPYC 7301 (OpenMP host, 32 threads) | ompnn / clang-22 | openblas | float | 4096 | 441 | 16 | - |
+| hpc-a30 | 2x EPYC 7301 (OpenMP host, 32 threads) | ompnn / gcc-14 | openblas | float | 4096 | 724 | 28 | - |
+| hpc-a30 | 2x EPYC 7301 (OpenMP host, 32 threads) | ompnn / gcc-14 + oneMKL | mkl | float | 4096 | 930 | 47 | - |
+| hpc-a30 | 2x EPYC 7301 (OpenMP host, 32 threads) | ompnn / nvc++ multicore | openblas | float | 4096 | 441 | 44 | - |
+| hpc-a30 | NVIDIA A30 | cudann / nvcc | cublas | double | 8192 | 7169 | 773 | - |
+| hpc-a30 | NVIDIA A30 | cudann / nvcc | cublas | float | 8192 | 9724 | 776 | - |
+| hpc-a30 | NVIDIA A30 | cudann / nvcc | tiled | float | 8192 | 1564 | 776 | - |
+| hpc-a30 | NVIDIA A30 | ompnn / clang-18 nvptx | cublas | float | 8192 | 9747 | 495 | - |
+| hpc-a30 | NVIDIA A30 | ompnn / clang-18 nvptx | tiled | float | 8192 | 804 | 514 | - |
+| hpc-a30 | NVIDIA A30 | ompnn / gcc-14 nvptx | cublas | float | 8192 | 9744 | 230 | - |
+| hpc-a30 | NVIDIA A30 | ompnn / nvc++ nvptx | cublas | float | 8192 | 9763 | 661 | - |
+| hpc-a30 | NVIDIA A30 | ompnn / nvc++ nvptx | tiled | float | 8192 | 310 | 664 | - |
+| hpc-a30 | NVIDIA A30 | syclnn / AdaptiveCpp | auto | double | 8192 | 8979 | 767 | - |
+| hpc-a30 | NVIDIA A30 | syclnn / AdaptiveCpp | auto | float | 8192 | 9777 | 776 | - |
+| hpc-a30 | NVIDIA A30 | syclnn / DPC++ | auto | double | 8192 | 7775 | 775 | - |
+| hpc-a30 | NVIDIA A30 | syclnn / DPC++ | auto | float | 8192 | 9741 | 781 | - |
+| hpc-a30 | NVIDIA A30 | syclnn / DPC++ | tiled | float | 8192 | 1172 | 776 | - |
 
 The fp64 rate of the RX 7900 XTX is 1/23 of its fp32 rate (RDNA3 has no fast
 FP64), which is the "float vs double" discussion point of the report.
@@ -433,6 +456,12 @@ at about 100 s per epoch on the A30 and its kernel aborts the process with
 instability already seen on the 1080 Ti), so its E7 rows are the restricted
 set and only the rows measured before an abort exist; its GEMM peak with the
 tiled kernel (an 8192^3 probe) was not attempted.
+
+Run-to-run spread on the node (`scripts/headline.py`, 35 configurations
+measured in more than one sweep): median 2.6 %, 90th percentile 30 %, worst
+76 % on the DPC++ CPU device's monk row (1.7 against 3.0 ms between sweeps);
+the launch-bound monk/cup rows spread 4.6 % in the median, the other workloads
+1.9 %. The headline tables take the median over the sweeps.
 
 ### CPU rows at a fixed clock (the ws-amd host froze at 18:22 on 2026-09-05)
 

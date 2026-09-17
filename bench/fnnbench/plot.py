@@ -77,9 +77,9 @@ def _label(row: dict[str, Any]) -> str:
     short = dev.split("(")[0].strip()
     short = short.replace("AMD Ryzen Threadripper 2950X 16-Core Processor", "TR 2950X").replace("AMD Radeon RX 7900 XTX", "RX 7900 XTX")
     comp = (row.get("build_info") or {}).get("compiler", "")
-    for k in ("AdaptiveCpp", "Clang 22", "GNU 14", "Clang 18", "nvcc", "hipcc"):
+    for k in ("AdaptiveCpp", "Clang 22", "GNU 14", "Clang 18", "nvcc", "hipcc", "NVHPC"):
         if k in comp:
-            comp = {"AdaptiveCpp": "acpp", "Clang 22": "clang-22", "GNU 14": "gcc-14", "Clang 18": "clang-18", "nvcc": "nvcc", "hipcc": "hipcc"}[k]
+            comp = {"AdaptiveCpp": "acpp", "Clang 22": "clang-22", "GNU 14": "gcc-14", "Clang 18": "clang-18", "nvcc": "nvcc", "hipcc": "hipcc", "NVHPC": "nvc++"}[k]
             break
     else:
         comp = comp.split(" ")[0] if comp else ""
@@ -123,7 +123,7 @@ def plot_throughput(plt, rows, out):
         if all(len({p[0] for p in v}) < 2 for v in series.values()):
             continue  # one batch size only: nothing to plot against
         fig, ax = plt.subplots(figsize=(7.5, 3.8))
-        markers = {"acpp": "o", "clang-22": "s", "clang-18": "^", "gcc-14": "v", "nvcc": "D", "hipcc": "P", "icpx": "X"}
+        markers = {"acpp": "o", "clang-22": "s", "clang-18": "^", "gcc-14": "v", "nvcc": "D", "hipcc": "P", "icpx": "X", "nvc++": "*"}
         styles = {"tiled": "--", "omp": ":", "handwritten": "--"}
         for label, pts in sorted(series.items()):
             pts.sort()

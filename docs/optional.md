@@ -43,8 +43,12 @@ threads, ws-amd at the fixed 2.8 GHz):
 
 | device | SYCL implementation | units | monk b40 | cup b40 | mnist-512-256 b256 | mnist-512-256 b1024 |
 |---|---|---|---|---|---|---|
+| AMD EPYC 7301 16-Core Processor, OpenCL CPU | DPC++ | 32 CUs (device reports 64) | 1.7 / 2.1 | 19.6 / 20.2 | 1083.1 / 2167.5 | 570.4 / - |
+| AMD EPYC 7301 16-Core Processor, OpenMP host | AdaptiveCpp | 32 threads | 0.8 / 1.3 | 12.0 / 15.1 | 1429.7 / 1678.9 | 794.0 / - |
 | GTX 1080 Ti | AdaptiveCpp | 28 | 2.1 / 1.4 | 18.0 / 12.1 | 224.9 / 192.5 | 69.0 / - |
 | GTX 1080 Ti | DPC++ | 28 | 2.4 / 1.6 | 16.7 / 11.7 | 145.8 / 243.9 | 40.7 / - |
+| NVIDIA A30 | AdaptiveCpp | 56 | 1.6 / 1.0 | 15.3 / 8.6 | 167.9 / 135.1 | 56.9 / - |
+| NVIDIA A30 | DPC++ | 56 | 1.2 / 1.0 | 10.1 / 6.9 | 101.1 / 172.7 | 36.0 / - |
 | RX 7900 XTX | AdaptiveCpp | 48 | 2.7 / 1.7 | 23.3 / 9.1 | 245.6 / 110.4 | 67.1 / - |
 | TR 2950X, OpenCL CPU | DPC++ | 16 CUs (device reports 32) | 1.7 / 1.8 | 11.9 / 13.1 | 1002.8 / 3108.2 | 683.7 / - |
 | TR 2950X, OpenMP host | AdaptiveCpp | 16 threads | 1.0 / 2.1 | 19.4 / 9.0 | 1164.9 / 2916.9 | 807.2 / - |
@@ -54,6 +58,8 @@ vendor / tiled cells are steady epochs in ms; ratios above 1 mean AdaptiveCpp is
 
 - TR 2950X: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.57x; monk b40 tiled: 1.15x; cup b40 vendor: 1.63x; cup b40 tiled: 0.69x; mnist-512-256 b256 vendor: 1.16x; mnist-512-256 b256 tiled: 0.94x; mnist-512-256 b1024 vendor: 1.18x
 - GTX 1080 Ti: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.85x; monk b40 tiled: 0.91x; cup b40 vendor: 1.08x; cup b40 tiled: 1.04x; mnist-512-256 b256 vendor: 1.54x; mnist-512-256 b256 tiled: 0.79x; mnist-512-256 b1024 vendor: 1.69x
+- AMD EPYC 7301 16-Core Processor: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.47x; monk b40 tiled: 0.63x; cup b40 vendor: 0.61x; cup b40 tiled: 0.75x; mnist-512-256 b256 vendor: 1.32x; mnist-512-256 b256 tiled: 0.77x; mnist-512-256 b1024 vendor: 1.39x
+- NVIDIA A30: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 1.39x; monk b40 tiled: 1.00x; cup b40 vendor: 1.52x; cup b40 tiled: 1.25x; mnist-512-256 b256 vendor: 1.66x; mnist-512-256 b256 tiled: 0.78x; mnist-512-256 b1024 vendor: 1.58x
 
 Same-GPU findings on the GTX 1080 Ti (both wheels built in their own image on
 ws-nvidia, both through oneMath's cuBLAS backend):

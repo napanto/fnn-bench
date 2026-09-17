@@ -30,7 +30,7 @@ REF = [("monk", 40), ("cup", 40), ("mnist-512-256", 256), ("mnist-512-256", 1024
 TOOLCHAIN = {  # sweep-directory suffix -> label
     "gcc14mkl": "gcc-14 + oneMKL", "gcc14amd": "gcc-14 amdgcn", "gcc14nv": "gcc-14 nvptx", "gcc14": "gcc-14",
     "clang18nv": "clang-18 nvptx", "clang18": "clang-18", "clang22": "clang-22", "amdclang": "amdclang-22",
-    "acpp": "AdaptiveCpp", "dpcpp": "DPC++",
+    "acpp": "AdaptiveCpp", "dpcpp": "DPC++", "nvcppmc": "nvc++ multicore", "nvcpp": "nvc++ nvptx",
 }
 
 
