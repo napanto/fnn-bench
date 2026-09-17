@@ -201,6 +201,7 @@ def cmd_sweep(a: argparse.Namespace) -> int:
         ]
     done: dict[Path, set[str]] = {}
     failures = 0
+    n_done = n_todo = 0
     print(f"{len(configs)} configurations")
     for i, cfg in enumerate(configs, 1):
         out = _out_path(a.out, cfg.backend)
@@ -213,6 +214,10 @@ def cmd_sweep(a: argparse.Namespace) -> int:
             failures += 1
             continue
         if out and rid in done[out] and not a.rerun:
+            n_done += 1
+            continue
+        if a.dry_run:
+            n_todo += 1
             continue
         print(f"[{i}/{len(configs)}] ", end="", flush=True)
         try:
@@ -231,6 +236,9 @@ def cmd_sweep(a: argparse.Namespace) -> int:
             failures += 1
             if a.fail_fast:
                 return 1
+    if a.dry_run:
+        print(f"dry run: {n_done} done, {n_todo} to run -> {a.out}")
+        return 0
     return 1 if failures else 0
 
 
@@ -314,6 +322,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--select", action="append", default=[], metavar="KEY=V1,V2",
                    help="keep only plan entries whose field/option matches (e.g. device=cpu, backend=cudann)")
     s.add_argument("--rerun", action="store_true", help="repeat configurations already present in --out")
+    s.add_argument("--dry-run", action="store_true", help="only report how many configurations are done / still to run")
     s.add_argument("--fail-fast", action="store_true")
     s.set_defaults(func=cmd_sweep, backend=None)  # no default backend: plan entries carry their own
 

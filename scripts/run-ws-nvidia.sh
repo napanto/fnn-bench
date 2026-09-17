@@ -6,6 +6,7 @@
 #   fnn-bench/scripts/run-ws-nvidia.sh tests     # parity suites: syclnn cuda:gpu, cudann, ompnn (clang-18, gcc-14, nvc++)
 #   fnn-bench/scripts/run-ws-nvidia.sh matrix    # E2/E3/E4/E6/W4 GPU plans + peaks + nsys traces -> results/ws-nvidia/<date>
 #   fnn-bench/scripts/run-ws-nvidia.sh fetch     # copy results back
+#   DATE=2026-09-05 fnn-bench/scripts/run-ws-nvidia.sh infer-rerun  # re-measure the inference rows (zero-copy bindings)
 # Images are transferred with `podman save | ssh podman load` (no registry needed yet).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd)
@@ -172,6 +173,54 @@ omp_gcc14nv() {
     fetch
 }
 
+infer_rerun() {
+    # Re-measure every inference row (mode=infer: E2 gpu, E5 inference + breakdown, the AdaptiveCpp rows)
+    # with the zero-copy bindings (syclnn 0.2.1, cudann 0.1.1, ompnn 0.1.1): the old rows timed a host
+    # copy of the input inside the predict call (docs/methodology.md, Inference rows). Old rows ->
+    # superseded.jsonl; the wheels are rebuilt first (`build`, plus the AdaptiveCpp wheel here).
+    rsync -a "$HERE/results/ws-nvidia/$DATE/" "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/$DATE/"
+    ssh "$HOST" "cd $REMOTE/fnn-bench && python3 - <<'EOF'
+import json
+from pathlib import Path
+root = Path('results/ws-nvidia/$DATE'); total = 0
+for f in sorted(root.rglob('*.jsonl')):
+    if f.name in ('superseded.jsonl', 'peak.jsonl'): continue
+    rows = [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
+    drop = [r for r in rows if r.get('mode') == 'infer']; keep = [r for r in rows if r.get('mode') != 'infer']
+    if drop:
+        with (f.parent / 'superseded.jsonl').open('a') as fh:
+            for r in drop: fh.write(json.dumps(r) + '\n')
+        f.write_text(''.join(json.dumps(r) + '\n' for r in keep)); total += len(drop)
+        print(f'{f}: superseded {len(drop)} inference rows, kept {len(keep)}')
+print('superseded', total, 'rows')
+EOF"
+    ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-sycl:dev bash -c '
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl
+        fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu
+        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-infer-gpu
+        fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=syclnn --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-gpu'" || echo "infer_rerun: syclnn block failed"
+    ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-cuda
+        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-infer-gpu
+        fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=cudann --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-gpu
+        for w in clang18nv gcc14nv; do
+            export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w
+            fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-\$w
+            fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=ompnn --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-omp-gpu-\$w
+        done'" || echo "infer_rerun: cudann/ompnn block failed"
+    ssh "$HOST" "$RUN -w /work/syclnn localhost/fnn-acpp-cuda:dev bash -c '
+        set -e; export CXX=/opt/acpp/bin/acpp CC=clang-18 SYCLNN_SYCL_IMPL=adaptivecpp SYCLNN_ONEMATH_ROOT=/opt/onemath-acpp CMAKE_PREFIX_PATH=/opt/acpp:/opt/onemath-acpp SYCLNN_CT_BACKENDS=netlib CMAKE_BUILD_PARALLEL_LEVEL=8 ACPP_TARGETS=generic
+        rm -rf /work/fnn-bench/.wheels/ws-nvidia-sycl-acpp
+        pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-sycl-acpp --config-settings=build-dir=/tmp/b-acpp .
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
+        export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl-acpp; cd /work/fnn-bench
+        fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu-acpp
+        fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=syclnn --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu-acpp'" 2>&1 | grep -v 'AdaptiveCpp Warning' || echo "infer_rerun: acpp block failed"
+    fetch
+}
+
 fetch() {
     rsync -a "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/" "$HERE/results/ws-nvidia/"
 }
@@ -189,6 +238,7 @@ fetch) fetch ;;
 omp-clang18) omp_clang18 ;;
 sycl-fix) sycl_fix ;;
 omp-gcc14nv) omp_gcc14nv ;;
+infer-rerun) infer_rerun ;;
 all) sync; build_all; tests; matrix; fetch ;;
-*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda|matrix-omp|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|all"; exit 1 ;;
+*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda|matrix-omp|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|infer-rerun|all"; exit 1 ;;
 esac

@@ -224,6 +224,12 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
     if cfg.mode == "train" and cfg.epochs > 1 and len(ew) == cfg.repeat * cfg.epochs:
         inner = [ew[i] / 1e9 for i in range(len(ew)) if i % cfg.epochs != 0]
         steady = float(statistics.median(inner))
+    # inference rows: the library's own per-call wall clock (predict_wall_ns, libraries >= syclnn
+    # 0.2.1 / cudann 0.1.1 / ompnn 0.1.1), which starts after the binding has handed the NumPy
+    # buffer over (zero-copy) and so shares the measurement boundary of the training rows
+    pw = prof_all.get("predict_wall_ns") or []
+    if cfg.mode == "infer" and len(pw) == cfg.repeat * cfg.epochs:
+        steady = float(statistics.median([v / 1e9 for v in pw]))
     if cfg.mode == "train":
         step = fl.train_epoch(sizes, n, batch)
         intensity = fl.step_intensity(sizes, batch, itemsize)
