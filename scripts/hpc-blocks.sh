@@ -7,7 +7,7 @@
 # `fnnbench sweep` skips the rows a previous job already measured).
 #
 #   scripts/hpc-blocks.sh build-wheels | build-nvcpp | parity-<sycl|cuda|omp-gpu|acpp|cpu> |
-#                         <block> | <block>-extras | status
+#                         <block> | <block>-extras | nsys | status
 #   blocks: sycl-gpu cuda omp-gpu acpp-gpu sycl-cpu sycl-generic omp-cpu acpp-cpu
 #
 # Environment: HPC_DIR (repos, default ~/fnn), HPC_SANDBOXES (default ~/sandboxes), APPTAINER, DATE.
@@ -105,9 +105,7 @@ sycl-gpu)
 sycl-gpu-extras)
     run fnn-sycl "$(wheel sycl); mkdir -p $RES
         for dt in float double; do $FB peak --backend syclnn --device gpu --dtype \$dt --size 8192 --out $RES/peaks; done
-        $FB peak --backend syclnn --device gpu --dtype float --size 8192 --option blas=tiled --out $RES/peaks-tiled
-        nsys profile -o $RES/nsys-syclnn-mnist --force-overwrite true $FB run --backend syclnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
-        for rep in cuda_gpu_kern_sum cuda_api_sum cuda_gpu_mem_time_sum; do nsys stats --report \$rep --format csv -o $RES/nsys-syclnn-mnist-\$rep $RES/nsys-syclnn-mnist.nsys-rep >/dev/null 2>&1; done; ls $RES | grep nsys" ;;
+        $FB peak --backend syclnn --device gpu --dtype float --size 8192 --option blas=tiled --out $RES/peaks-tiled" ;;
 cuda)
     run fnn-cuda "$(wheel cuda); $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
         sw e3_cuda_vs_sycl_gpu gpu-cuda-vs-sycl --select backend=cudann
@@ -119,9 +117,8 @@ cuda-extras)
     run fnn-cuda "$(wheel cuda); mkdir -p $RES
         for dt in float double; do $FB peak --backend cudann --device gpu --dtype \$dt --size 8192 --out $RES/peaks; done
         $FB peak --backend cudann --device gpu --dtype float --size 8192 --option blas=tiled --out $RES/peaks-tiled
-        for n in 1024 2048 4096; do $FB peak --backend cudann --device gpu --dtype float --size \$n --out $RES/peaks-sizes; $FB peak --backend syclnn --device gpu --dtype float --size \$n --out $RES/peaks-sizes 2>/dev/null; done
-        nsys profile -o $RES/nsys-cudann-mnist --force-overwrite true $FB run --backend cudann --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
-        for rep in cuda_gpu_kern_sum cuda_api_sum cuda_gpu_mem_time_sum; do nsys stats --report \$rep --format csv -o $RES/nsys-cudann-mnist-\$rep $RES/nsys-cudann-mnist.nsys-rep >/dev/null 2>&1; done; ls $RES | grep nsys" ;;
+        for n in 1024 2048 4096; do $FB peak --backend cudann --device gpu --dtype float --size \$n --out $RES/peaks-sizes; $FB peak --backend syclnn --device gpu --dtype float --size \$n --out $RES/peaks-sizes 2>/dev/null; done" ;;
+
 omp-gpu)
     # the gcc-14 nvptx tiled GEMM (E7) runs last: ~100 s per epoch on the A30 and the kernel aborts
     # the process on some rows (documented in toolchains.md), so it must not stand between the other
@@ -144,9 +141,7 @@ omp-gpu-extras)
         run fnn-cuda "$(wheel omp-$w); export PATH=$NVHPC/compilers/bin:\$PATH; $nvl mkdir -p $RES
             $FB peak --backend ompnn --device gpu --dtype float --size 8192 --out $RES/peaks-omp-$w
             $tiled"
-    done
-    run fnn-cuda "$(wheel omp-clang18nv); nsys profile -o $RES/nsys-ompnn-clang18nv-mnist --force-overwrite true $FB run --backend ompnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
-        for rep in cuda_gpu_kern_sum cuda_api_sum cuda_gpu_mem_time_sum; do nsys stats --report \$rep --format csv -o $RES/nsys-ompnn-clang18nv-mnist-\$rep $RES/nsys-ompnn-clang18nv-mnist.nsys-rep >/dev/null 2>&1; done; ls $RES | grep nsys" ;;
+    done ;;
 acpp-gpu)
     run fnn-acpp-cuda "$(wheel sycl-acpp); export OMP_NUM_THREADS=$CORES; $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
         sw e2_sycl_cpu_gpu sycl-gpu-acpp --select device=gpu
@@ -211,6 +206,22 @@ acpp-cpu)
         sw e7_tiled_gemm e7-tiled-cpu-acpp --select device=cpu --select backend=syclnn" 2>&1 | grep -v 'AdaptiveCpp Warning' ;;
 acpp-cpu-extras)
     run fnn-acpp-cuda "$(wheel sycl-acpp); export OMP_NUM_THREADS=$CORES OMP_PROC_BIND=close OMP_PLACES=cores; mkdir -p $RES; $FB peak --backend syclnn --device cpu --dtype float --size 4096 --out $RES/peaks-acpp" 2>&1 | grep -v 'AdaptiveCpp Warning' ;;
+nsys)
+    # the traces for the profiler cross-validation (docs/methodology.md): the images' nsys is only the
+    # CUDA 12.9 stub ("hasn't been installed with CUDA Toolkit 12.9"), so the node's own Nsight Systems
+    # (under /opt/nvidia, bind-mounted) is used inside the sandboxes
+    NSYS=""; for c in /opt/nvidia/nsight-systems/2026.1.3/bin/nsys /opt/nvidia/nsight-systems/2026.1.3/target-linux-x64/nsys /opt/nvidia/nsight-systems/2023.3.3/bin/nsys; do [ -x $c ] && { NSYS=$c; break; }; done
+    [ -n "$NSYS" ] || { echo "no Nsight Systems under /opt/nvidia on $(hostname)"; exit 1; }; echo "nsys: $NSYS ($($NSYS --version 2>/dev/null | head -1))"
+    trace() { # trace <image> <wheel> <backend> <tag> [env...]
+        local img=$1 w=$2 be=$3 tag=$4; shift 4
+        run $img "$(wheel $w); export PATH=$NVHPC/compilers/bin:\$PATH $*; mkdir -p $RES
+            $NSYS profile -o $RES/nsys-$tag --force-overwrite true $FB run --backend $be --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192 2>&1 | tail -3
+            for rep in cuda_gpu_kern_sum cuda_api_sum cuda_gpu_mem_time_sum; do $NSYS stats --report \$rep --format csv -o $RES/nsys-$tag-\$rep $RES/nsys-$tag.nsys-rep >/dev/null 2>&1 || echo \"stats \$rep failed\"; done; ls -la $RES | grep nsys-$tag | cut -c30-"
+    }
+    trace fnn-sycl sycl syclnn syclnn-mnist
+    trace fnn-cuda cuda cudann cudann-mnist
+    trace fnn-cuda omp-clang18nv ompnn ompnn-clang18nv-mnist
+    trace fnn-cuda omp-nvcpp ompnn ompnn-nvcpp-mnist LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-} ;;
 status)
     for b in sycl-gpu cuda omp-gpu acpp-gpu sycl-cpu sycl-generic omp-cpu acpp-cpu; do
         echo "--- $b"; DRY=--dry-run "$0" $b 2>&1 | grep -E 'dry run:|Error|error' | sed 's/^/    /'

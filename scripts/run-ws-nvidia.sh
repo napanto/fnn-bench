@@ -178,6 +178,7 @@ infer_rerun() {
     # with the zero-copy bindings (syclnn 0.2.1, cudann 0.1.1, ompnn 0.1.1): the old rows timed a host
     # copy of the input inside the predict call (docs/methodology.md, Inference rows). Old rows ->
     # superseded.jsonl; the wheels are rebuilt first (`build`, plus the AdaptiveCpp wheel here).
+    ssh "$HOST" "mkdir -p $REMOTE/fnn-bench/results/ws-nvidia/$DATE"
     rsync -a "$HERE/results/ws-nvidia/$DATE/" "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/$DATE/"
     ssh "$HOST" "cd $REMOTE/fnn-bench && python3 - <<'EOF'
 import json

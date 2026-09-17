@@ -420,6 +420,20 @@ the GPU monitor as everywhere else. nvc++ rows (OpenMP `-mp=gpu` and
 fnn-cuda sandbox (same OpenBLAS, Python and harness as the other OpenMP
 variants; `makelocalrc` for the container's gcc-13).
 
+Two restrictions follow from the 30-minute job limit, the counterpart of the
+W4-CPU restriction on ws-amd. The DPC++ OpenCL CPU device on this node pays
+about 35 ms per one-sample launch chain (the mnist batch-1 float inference
+row: 71 s per pass over its 2048 samples), and the double row with its oracle
+check, warm-up and repeats does not finish inside one job, so the batch-1
+mnist rows of E2, E5 inference and E5 breakdown on the DPC++ CPU device were
+measured in float only (the batch-1 monk, cup and mnist-512-256 rows in both
+precisions, every batch-4096 row in both). The gcc-14 nvptx tiled GEMM runs
+at about 100 s per epoch on the A30 and its kernel aborts the process with
+`libgomp: cuLaunchKernel error: invalid resource handle` on some rows (the
+instability already seen on the 1080 Ti), so its E7 rows are the restricted
+set and only the rows measured before an abort exist; its GEMM peak with the
+tiled kernel (an 8192^3 probe) was not attempted.
+
 ### CPU rows at a fixed clock (the ws-amd host froze at 18:22 on 2026-09-05)
 
 The ws-amd host froze without a trace in the journal (no kernel message, no hardware
