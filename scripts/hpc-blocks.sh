@@ -73,6 +73,56 @@ parity-cuda)
         for o in '--dtype double' '--dtype float' '--option memory=shared' '--option memory=host' '--option queue=in_order' '--option queue=graph' '--option streams=8' '--option queue=graph --option streams=4' '--option blas=tiled --dtype double' '--option blas=tiled --dtype float' '--option blas=tiled --option queue=graph'; do printf 'cudann %-40s ' \"\$o\" | tee -a $P; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | grep -E 'passed|failed|error' | tail -1 | tee -a $P; done
         printf 'cudann %-40s ' '--run-slow -k mnist' | tee -a $P; pytest -q --device gpu --run-slow -k mnist -p no:cacheprovider 2>&1 | grep -E 'passed|failed|error' | tail -1 | tee -a $P" ;;
 parity-omp-gpu)
+    mkdir -p $B/$RES/parity; P=$B/$RES/parity/ompnn-gpu.txt; : > $P
+    for w in clang18nv gcc14nv nvcpp; do
+        nvl=""; [ $w = nvcpp ] && nvl="export LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-};"
+        run fnn-cuda "$(wheel omp-$w); export PATH=$NVHPC/compilers/bin:\$PATH; $nvl cd $R/ompnn; python -c 'import ompnn; print(ompnn.build_info())' | tee -a $P
+            for o in '--dtype double' '--dtype float' '--option blas=tiled --dtype double' '--option blas=tiled --dtype float' '--option blas=omp --dtype float'; do printf 'ompnn %-10s gpu %-34s ' $w \"\$o\" | tee -a $P; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | grep -E 'passed|failed|error' | tail -1 | tee -a $P; done"
+    done ;;
+parity-acpp)
+    mkdir -p $B/$RES/parity; P=$B/$RES/parity/sycl-acpp.txt; : > $P
+    run fnn-acpp-cuda "$(wheel sycl-acpp); export OMP_NUM_THREADS=$CORES; cd $R/syclnn; python -c 'import syclnn; print(syclnn.build_info()); print(syclnn.devices())' | tee -a $P
+        for o in '--dtype double' '--dtype float' '--option queue=in_order' '--option streams=1' '--option blas_queue=dedicated' '--option memory=shared' '--option memory=host' '--option blas=tiled --dtype float'; do printf 'syclnn AdaptiveCpp cuda:gpu %-34s ' \"\$o\" | tee -a $P; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | grep -E 'passed|failed|error' | tail -1 | tee -a $P; done
+        printf 'syclnn AdaptiveCpp cuda:gpu %-34s ' '--run-slow -k mnist' | tee -a $P; pytest -q --device gpu --run-slow -k mnist -p no:cacheprovider 2>&1 | grep -E 'passed|failed|error' | tail -1 | tee -a $P
+        for o in '--dtype double' '--dtype float' '--blas tiled --dtype float'; do printf 'syclnn AdaptiveCpp omp:cpu %-34s ' \"\$o\" | tee -a $P; pytest -q --device cpu -p no:cacheprovider \$o 2>&1 | grep -E 'passed|failed|error' | tail -1 | tee -a $P; done" 2>&1 | grep -v 'AdaptiveCpp Warning' ;;
+parity-cpu)
+    mkdir -p $B/$RES/parity; P=$B/$RES/parity/ompnn-cpu.txt; : > $P
+    for w in gcc14 clang22 clang18 gcc14mkl nvcppmc; do
+        case $w in clang*) bind="OMP_PROC_BIND=false" ;; *) bind="OMP_PROC_BIND=close OMP_PLACES=cores" ;; esac
+        run fnn-cuda "$(wheel omp-$w); export PATH=$NVHPC/compilers/bin:\$PATH OMP_NUM_THREADS=$CORES $bind MKL_THREADING_LAYER=GNU; cd $R/ompnn; python -c 'import ompnn; print(ompnn.build_info())' | tee -a $P
+            for o in '--dtype double' '--dtype float' '--option blas=tiled --dtype float'; do printf 'ompnn %-10s cpu %-30s ' $w \"\$o\" | tee -a $P; pytest -q --device cpu -p no:cacheprovider \$o 2>&1 | grep -E 'passed|failed|error' | tail -1 | tee -a $P; done"
+    done ;;
+# ---------------------------------------------------------------- GPU blocks (gpu-excl, node09)
+sycl-gpu)
+    run fnn-sycl "$(wheel sycl); $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
+        sw e2_sycl_cpu_gpu sycl-gpu --select device=gpu
+        sw e6_sycl_ablations sycl-gpu-ablations --select device=gpu
+        sw w4_sweep_gpu gpu-w4-sycl
+        sw e3_cuda_vs_sycl_gpu gpu-cuda-vs-sycl --select backend=syclnn
+        sw e7_tiled_gemm e7-tiled-gpu --select device=gpu --select backend=syclnn
+        sw e5_inference e5-infer-gpu --select device=gpu --select backend=syclnn
+        sw e5_breakdown e5-breakdown-gpu --select device=gpu --select backend=syclnn" ;;
+sycl-gpu-extras)
+    run fnn-sycl "$(wheel sycl); mkdir -p $RES
+        for dt in float double; do $FB peak --backend syclnn --device gpu --dtype \$dt --size 8192 --out $RES/peaks; done
+        $FB peak --backend syclnn --device gpu --dtype float --size 8192 --option blas=tiled --out $RES/peaks-tiled
+        nsys profile -o $RES/nsys-syclnn-mnist --force-overwrite true $FB run --backend syclnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
+        for rep in cuda_gpu_kern_sum cuda_api_sum cuda_gpu_mem_time_sum; do nsys stats --report \$rep --format csv -o $RES/nsys-syclnn-mnist-\$rep $RES/nsys-syclnn-mnist.nsys-rep >/dev/null 2>&1; done; ls $RES | grep nsys" ;;
+cuda)
+    run fnn-cuda "$(wheel cuda); $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
+        sw e3_cuda_vs_sycl_gpu gpu-cuda-vs-sycl --select backend=cudann
+        sw w4_sweep_gpu gpu-w4-cuda --backend cudann
+        sw e7_tiled_gemm e7-tiled-gpu --select device=gpu --select backend=cudann
+        sw e5_inference e5-infer-gpu --select device=gpu --select backend=cudann
+        sw e5_breakdown e5-breakdown-gpu --select device=gpu --select backend=cudann" ;;
+cuda-extras)
+    run fnn-cuda "$(wheel cuda); mkdir -p $RES
+        for dt in float double; do $FB peak --backend cudann --device gpu --dtype \$dt --size 8192 --out $RES/peaks; done
+        $FB peak --backend cudann --device gpu --dtype float --size 8192 --option blas=tiled --out $RES/peaks-tiled
+        for n in 1024 2048 4096; do $FB peak --backend cudann --device gpu --dtype float --size \$n --out $RES/peaks-sizes; $FB peak --backend syclnn --device gpu --dtype float --size \$n --out $RES/peaks-sizes 2>/dev/null; done
+        nsys profile -o $RES/nsys-cudann-mnist --force-overwrite true $FB run --backend cudann --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
+        for rep in cuda_gpu_kern_sum cuda_api_sum cuda_gpu_mem_time_sum; do nsys stats --report \$rep --format csv -o $RES/nsys-cudann-mnist-\$rep $RES/nsys-cudann-mnist.nsys-rep >/dev/null 2>&1; done; ls $RES | grep nsys" ;;
+omp-gpu)
     # the gcc-14 nvptx tiled GEMM (E7) runs last: ~100 s per epoch on the A30 and the kernel aborts
     # the process on some rows (documented in toolchains.md), so it must not stand between the other
     # wheels' sweeps and the 30-minute limit
@@ -90,9 +140,10 @@ parity-omp-gpu)
 omp-gpu-extras)
     for w in clang18nv gcc14nv nvcpp; do
         nvl=""; [ $w = nvcpp ] && nvl="export LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-};"
+        tiled="$FB peak --backend ompnn --device gpu --dtype float --size 8192 --option blas=tiled --out $RES/peaks-tiled-omp-$w"; [ $w = gcc14nv ] && tiled=""
         run fnn-cuda "$(wheel omp-$w); export PATH=$NVHPC/compilers/bin:\$PATH; $nvl mkdir -p $RES
             $FB peak --backend ompnn --device gpu --dtype float --size 8192 --out $RES/peaks-omp-$w
-            $FB peak --backend ompnn --device gpu --dtype float --size 8192 --option blas=tiled --out $RES/peaks-tiled-omp-$w"
+            $tiled"
     done
     run fnn-cuda "$(wheel omp-clang18nv); nsys profile -o $RES/nsys-ompnn-clang18nv-mnist --force-overwrite true $FB run --backend ompnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192
         for rep in cuda_gpu_kern_sum cuda_api_sum cuda_gpu_mem_time_sum; do nsys stats --report \$rep --format csv -o $RES/nsys-ompnn-clang18nv-mnist-\$rep $RES/nsys-ompnn-clang18nv-mnist.nsys-rep >/dev/null 2>&1; done; ls $RES | grep nsys" ;;

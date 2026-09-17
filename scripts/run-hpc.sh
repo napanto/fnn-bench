@@ -47,7 +47,7 @@ tests() {
 }
 matrix() {
     for b in ${*:-$ALL}; do
-        local prev="" n=${NJOBS[$b]:-4}
+        local prev="" n=${HPC_NJOBS:-${NJOBS[$b]:-4}}   # HPC_NJOBS overrides the table (re-runs of a block)
         for i in $(seq 1 $n); do prev=$(submit hpc-$b $b "$prev"); done
         local ex; ex=$(submit hpc-$b-extras $b-extras "$prev")
         echo "$b: $n chained jobs (last $prev), extras job $ex"
