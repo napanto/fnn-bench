@@ -159,15 +159,24 @@ acpp-gpu-extras)
     run fnn-acpp-cuda "$(wheel sycl-acpp); mkdir -p $RES; for dt in float double; do $FB peak --backend syclnn --device gpu --dtype \$dt --size 8192 --out $RES/peaks-acpp; done" 2>&1 | grep -v 'AdaptiveCpp Warning' ;;
 # ---------------------------------------------------------------- CPU blocks (the node's EPYC, gpu-excl for exclusivity)
 sycl-cpu)
+    # the mnist batch-1 double inference row of the DPC++ CPU device exceeds the 30-minute job limit on
+    # this node (2048 one-sample launch chains: the float row takes 71 s per pass, double several times
+    # that with the check and the repeats), so the batch-1 mnist rows run in float only (documented)
     run fnn-sycl "$(wheel sycl); export OMP_PROC_BIND=close OMP_PLACES=cores DPCPP_CPU_NUM_CUS=$CORES OMP_NUM_THREADS=$CORES; $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
         sw e1_cpu_blas sycl-cpu
         sw e1_cpu_threads sycl-cpu-threads
-        sw e2_sycl_cpu_gpu sycl-cpu --select device=cpu
+        sw e2_sycl_cpu_gpu sycl-cpu --select device=cpu --select dtype=float
+        sw e2_sycl_cpu_gpu sycl-cpu --select device=cpu --select dtype=double --select workload=monk,cup,mnist-512-256
+        sw e2_sycl_cpu_gpu sycl-cpu --select device=cpu --select dtype=double --select workload=mnist --select batch=4096
         sw e6_sycl_ablations sycl-cpu-ablations --select device=cpu
         sw w4_sweep_cpu sycl-cpu-w4
         sw e7_tiled_gemm e7-tiled-cpu-dpcpp --select device=cpu --select backend=syclnn
-        sw e5_inference e5-infer-cpu-dpcpp --select device=cpu --select backend=syclnn
-        sw e5_breakdown e5-breakdown-cpu-dpcpp --select device=cpu --select backend=syclnn" ;;
+        sw e5_inference e5-infer-cpu-dpcpp --select device=cpu --select backend=syclnn --select dtype=float
+        sw e5_inference e5-infer-cpu-dpcpp --select device=cpu --select backend=syclnn --select dtype=double --select workload=monk,cup,mnist-512-256
+        sw e5_inference e5-infer-cpu-dpcpp --select device=cpu --select backend=syclnn --select dtype=double --select workload=mnist --select batch=4096
+        sw e5_breakdown e5-breakdown-cpu-dpcpp --select device=cpu --select backend=syclnn --select dtype=float
+        sw e5_breakdown e5-breakdown-cpu-dpcpp --select device=cpu --select backend=syclnn --select dtype=double --select workload=monk,cup,mnist-512-256
+        sw e5_breakdown e5-breakdown-cpu-dpcpp --select device=cpu --select backend=syclnn --select dtype=double --select workload=mnist --select batch=4096" ;;
 sycl-cpu-extras)
     run fnn-sycl "$(wheel sycl); export OMP_PROC_BIND=close OMP_PLACES=cores DPCPP_CPU_NUM_CUS=$CORES OMP_NUM_THREADS=$CORES; mkdir -p $RES
         $FB peak --backend syclnn --device cpu --dtype float --size 4096 --option blas=mklcpu --out $RES/peaks
