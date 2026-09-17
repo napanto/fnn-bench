@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Markdown table of the GEMM peaks / streaming bandwidths of the third pass (newest row per
-device, backend, toolchain, BLAS and dtype).   python scripts/peaks-table.py results/ws-amd/2026-09-05 results/ws-nvidia/2026-09-05"""
+device, backend, toolchain, BLAS and dtype).   python scripts/peaks-table.py results/ws-amd/2026-09-05 results/ws-nvidia/2026-09-05 results/hpc-a30/2026-09-17"""
 import glob, json, os, sys
 TOOL = {"gcc14mkl": "gcc-14 + oneMKL", "gcc14amd": "gcc-14 amdgcn", "gcc14nv": "gcc-14 nvptx", "gcc14": "gcc-14",
         "clang18nv": "clang-18 nvptx", "clang18": "clang-18", "clang22": "clang-22", "amdclang": "amdclang-22", "acpp": "AdaptiveCpp"}
@@ -18,7 +18,7 @@ def dev(r):
         n = ((r.get("sysinfo") or {}).get("cpu") or {}).get("model", "host") + " (AdaptiveCpp host)"
     return n.replace("AMD Ryzen Threadripper 2950X 16-Core Processor", "TR 2950X").replace("Intel(R) Xeon(R) CPU E5-2643 v2 @ 3.50GHz", "Xeon E5-2643 v2").replace("NVIDIA GeForce GTX 1080 Ti", "GTX 1080 Ti").replace("AMD Radeon RX 7900 XTX", "RX 7900 XTX")
 best = {}
-for d in sys.argv[1:] or ["results/ws-amd/2026-09-05", "results/ws-nvidia/2026-09-05"]:
+for d in sys.argv[1:] or ["results/ws-amd/2026-09-05", "results/ws-nvidia/2026-09-05", "results/hpc-a30/2026-09-17"]:
     for f in glob.glob(os.path.join(d, "peaks*", "peak.jsonl")):
         sweep = os.path.basename(os.path.dirname(f))
         for line in open(f):

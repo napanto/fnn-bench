@@ -184,24 +184,29 @@ samples for cup and mnist, on its 124 training samples for monk (E2 and E5 alike
 shows the launch overhead of each programming model); batch 4096 is the
 throughput regime. The FLOP model is the forward GEMM only, 2B*sum(n_l n_{l+1}).
 
-**Known defect of the inference rows (to be fixed, rows to be re-measured).** The
-timed region of an inference row is the Python `predict` call, and the pybind11
-binding copies the NumPy input into a `std::vector` before entering the library
-(the training rows exclude that copy: `epoch_wall_ns` starts inside the call).
-Measured on the RX 7900 XTX with AdaptiveCpp in float, C++ driver
-(`bench/train_bench --infer`, no copy) against the harness, same shape, back to
-back: mnist shape on 60000 samples (188 MB copied per call) 97-99 ms against
-173-198 ms per pass; the 65536-sample width-1024 shape (67 MB) 168-174 ms
-against 181-193 ms. The copy is identical for the three libraries (same binding
-code), so it does not favour one programming model, but it inflates the mnist
-throughput rows (batch 4096) by up to 2x in float and copies twice the bytes in
-double; the latency rows (batch 1, at most 13 MB per call against hundreds of
-milliseconds) and the monk/cup rows (under 0.2 MB) are within 3 %. The headline
-tables are not affected (they key on `steady_epoch_s`, which inference rows do not
-carry). The fix is zero-copy bindings (pointer overloads of `train`/`predict`),
-a per-call wall clock recorded by the library for `predict` so that both modes
-share the measurement boundary, the harness reading it as the inference
-`steady_epoch_s`, and the E2/E5 inference rows re-run and superseded.
+**Measurement boundary (fixed on 2026-09-17).** Until syclnn 0.2.0 / cudann 0.1.0 /
+ompnn 0.1.0 the pybind11 bindings copied the NumPy input into a `std::vector`
+before entering the library, so an inference row (the Python `predict` call)
+timed that copy while a training row did not (`epoch_wall_ns` starts inside the
+call). Measured on the RX 7900 XTX with AdaptiveCpp in float, C++ driver
+(`bench/train_bench --infer`) against the harness: mnist shape on 60000 samples
+(188 MB per call) 97-99 ms against 173-198 ms per pass, the 65536-sample
+width-1024 shape (67 MB) 168-174 ms against 181-193 ms; identical for the
+three libraries, so it compressed their ratios rather than favouring one, up to
+2x on the mnist throughput rows (batch 4096), within 3 % on the latency rows
+and on monk/cup. Since syclnn 0.2.1, cudann 0.1.1 and ompnn 0.1.1 the bindings
+hand the (C-contiguous, same-dtype) NumPy buffer to raw-pointer overloads of
+`train`/`predict` and the library records `predict_wall_ns`, the host wall
+clock of every `predict()` call. An inference row now carries
+`steady_epoch_s` = median of `predict_wall_ns` over the `repeat` x `epochs`
+timed calls (the number the figures and tables use, same boundary as the
+training rows' per-epoch clock: inside the library, after the buffer hand-over)
+and, as before, `median_epoch_s` = the Python-side call time, which still
+includes the output array's construction and the interpreter overhead. The
+pre-fix rows of both workstations are in `superseded.jsonl` and were
+re-measured on 2026-09-17 with the same drivers and the same host clock policy
+(`scripts/ws-amd-infer-rerun.sh`, `scripts/run-ws-nvidia.sh infer-rerun`);
+hpc-a30 was measured with the fixed libraries from the start.
 
 ### GPU utilisation and power
 
@@ -396,6 +401,24 @@ launch-bound monk/cup rows (epochs under 10 ms) differ by 15 % (median) and
 up to 150 % between sweeps (sub-millisecond epochs), the larger workloads by
 3 % (median) and at most 22 %. Differences below the spread of the row family in
 question are not results.
+
+### CPU rows on hpc-a30 (the department node)
+
+The node's CPU rows run under the same policy with the node's numbers: 32
+physical cores (2 x EPYC 7301, 16 cores each, 8 NUMA nodes; the 64 hardware
+threads are not used), `OMP_NUM_THREADS=32` and `DPCPP_CPU_NUM_CUS=32`
+(the images default to 16, ws-amd's core count), gcc/MKL rows bound
+(`OMP_PROC_BIND=close OMP_PLACES=cores`), LLVM rows unbound, the AdaptiveCpp
+host device on 32 threads. Every block runs in an exclusive SLURM job on the
+node (`gpu-excl`, one job at a time, 30-minute limit: `scripts/run-hpc.sh`
+chains jobs and `fnnbench sweep` resumes where the previous job was cut off),
+so no other user's work shares the cores or the GPU. The node exposes no
+cpufreq interface (clocks as set by the firmware; recorded per row by the CPU
+monitor) and the A30's clocks cannot be locked without root; the rows carry
+the GPU monitor as everywhere else. nvc++ rows (OpenMP `-mp=gpu` and
+`-mp=multicore`) use the node's NVIDIA HPC SDK 26.5 bind-mounted into the
+fnn-cuda sandbox (same OpenBLAS, Python and harness as the other OpenMP
+variants; `makelocalrc` for the container's gcc-13).
 
 ### CPU rows at a fixed clock (the ws-amd host froze at 18:22 on 2026-09-05)
 

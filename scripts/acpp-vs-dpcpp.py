@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """DPC++ vs AdaptiveCpp table (docs/optional.md, item 2) from the third-pass rows.
 
-    python scripts/acpp-vs-dpcpp.py results/ws-amd/2026-09-05 results/ws-nvidia/2026-09-05
+    python scripts/acpp-vs-dpcpp.py results/ws-amd/2026-09-05 results/ws-nvidia/2026-09-05 results/hpc-a30/2026-09-17
 
 One line per (device, SYCL implementation): steady epoch in ms for the reference float
 training rows with the vendor BLAS (default options) and with the hand-written tiled BLAS,
@@ -109,7 +109,7 @@ if __name__ == "__main__":
         import io, contextlib
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            main(args or ["results/ws-amd/2026-09-05", "results/ws-nvidia/2026-09-05"])
+            main(args or ["results/ws-amd/2026-09-05", "results/ws-nvidia/2026-09-05", "results/hpc-a30/2026-09-17"])
         doc = open(target).read()
         start, end = "<!-- DPCPP-VS-ACPP-TABLE -->", "<!-- /DPCPP-VS-ACPP-TABLE -->"
         body = doc[doc.index(start) + len(start):doc.index(end)]
@@ -118,4 +118,4 @@ if __name__ == "__main__":
         open(target, "w").write(doc)
         print(f"updated {target}")
     else:
-        main(args or ["results/ws-amd/2026-09-05", "results/ws-nvidia/2026-09-05"])
+        main(args or ["results/ws-amd/2026-09-05", "results/ws-nvidia/2026-09-05", "results/hpc-a30/2026-09-17"])

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Headline tables from a results directory (pass-3 layout, one sweep per subdirectory).
 
-    PYTHONPATH=bench python scripts/headline.py results/ws-amd/2026-09-05 [results/ws-nvidia/2026-09-05 ...]
+    PYTHONPATH=bench python scripts/headline.py results/ws-amd/2026-09-05 [results/ws-nvidia/2026-09-05 results/hpc-a30/2026-09-17 ...]
 
 Prints, as Markdown:
   1. the default-configuration steady epoch per (machine, device, backend, toolchain) for the

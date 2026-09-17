@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Collect and plot the results of both machines into results/analysis/ (run inside an environment
+# Collect and plot the results of every machine into results/analysis/ (run inside an environment
 # with fnnbench + matplotlib, e.g. the fnn-rocm distrobox venv):
 #   distrobox enter fnn-rocm -- bash -lc 'export PATH=$HOME/.local/opt/fnn-rocm/venv/bin:$PATH; fnn-bench/scripts/analyze.sh'
 set -euo pipefail
 command -v fnnbench >/dev/null 2>&1 || export PATH=$HOME/.local/opt/fnn-rocm/venv/bin:$PATH   # the harness lives in the fnn-rocm venv when run from the host
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 cd "$HERE"
-for m in ws-amd ws-nvidia; do
+for m in ws-amd ws-nvidia hpc-a30; do
     for d in results/$m/*/; do
         date=$(basename "$d")
         case $date in peaks*|perf*|rocprof*|*smoke*|zluda*) continue ;; esac
