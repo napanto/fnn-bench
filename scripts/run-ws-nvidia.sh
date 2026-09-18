@@ -222,6 +222,11 @@ EOF"
     fetch
 }
 
+push_results() { # the local (canonical) rows of $DATE to ws-nvidia, e.g. after superseding a backend's rows
+    ssh "$HOST" "mkdir -p $REMOTE/fnn-bench/results/ws-nvidia/$DATE"
+    rsync -a --exclude '*.nsys-rep' --exclude '*.sqlite' "$HERE/results/ws-nvidia/$DATE/" "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/$DATE/"
+}
+
 fetch() {
     rsync -a "$HOST:$REMOTE/fnn-bench/results/ws-nvidia/" "$HERE/results/ws-nvidia/"
 }
@@ -240,6 +245,7 @@ omp-clang18) omp_clang18 ;;
 sycl-fix) sycl_fix ;;
 omp-gcc14nv) omp_gcc14nv ;;
 infer-rerun) infer_rerun ;;
+push-results) push_results ;;
 all) sync; build_all; tests; matrix; fetch ;;
-*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda|matrix-omp|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|infer-rerun|all"; exit 1 ;;
+*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda|matrix-omp|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|infer-rerun|push-results|all"; exit 1 ;;
 esac

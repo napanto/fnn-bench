@@ -11,6 +11,8 @@
 #                              # then the block's extras (peaks, nsys traces) in one more job
 #   run-hpc.sh status          # pending rows per block (dry run, on the front-end) + the queue
 #   run-hpc.sh fetch           # copy results/hpc-a30/ back
+#   run-hpc.sh push-results    # the local rows to the cluster (after superseding rows for a re-measurement)
+#   run-hpc.sh nsys            # the Nsight Systems traces (one job); HPC_NO_EXTRAS=1 matrix ... skips the peaks jobs
 #   blocks: sycl-gpu cuda omp-gpu acpp-gpu sycl-cpu sycl-generic omp-cpu acpp-cpu
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd)
@@ -49,6 +51,7 @@ matrix() {
     for b in ${*:-$ALL}; do
         local prev="" n=${HPC_NJOBS:-${NJOBS[$b]:-4}}   # HPC_NJOBS overrides the table (re-runs of a block)
         for i in $(seq 1 $n); do prev=$(submit hpc-$b $b "$prev"); done
+        if [ -n "${HPC_NO_EXTRAS:-}" ]; then echo "$b: $n chained jobs (last $prev), no extras"; continue; fi
         local ex; ex=$(submit hpc-$b-extras $b-extras "$prev")
         echo "$b: $n chained jobs (last $prev), extras job $ex"
     done
@@ -59,10 +62,15 @@ status() {
     ssh "$HOST" "squeue -u \$USER -o '%.8i %.10P %.22j %.8T %.10M %.6D %R' | head -40"
 }
 fetch() { mkdir -p "$HERE/results/hpc-a30"; rsync -a "$HOST:$REMOTE/fnn-bench/results/hpc-a30/" "$HERE/results/hpc-a30/"; }
+push_results() { # the local (canonical) rows to the cluster, e.g. after superseding a backend's rows for a re-measurement
+    ssh "$HOST" "mkdir -p $REMOTE/fnn-bench/results/hpc-a30/$DATE"
+    rsync -a --exclude '*.nsys-rep' --exclude '*.sqlite' "$HERE/results/hpc-a30/$DATE/" "$HOST:$REMOTE/fnn-bench/results/hpc-a30/$DATE/"
+}
+nsys_job() { echo "nsys -> job $(submit hpc-nsys nsys)"; }
 
 case ${1:-} in
 sync) sync ;; build) build ;; tests) tests ;; matrix) shift; matrix "$@" ;; extras) shift; extras "$@" ;;
-status) status ;; fetch) fetch ;;
+status) status ;; fetch) fetch ;; push-results) push_results ;; nsys) nsys_job ;;
 all) sync; build; tests; matrix ;;
-*) echo "usage: $0 sync|build|tests|matrix [blocks]|extras [blocks]|status|fetch|all" >&2; exit 1 ;;
+*) echo "usage: $0 sync|build|tests|matrix [blocks]|extras [blocks]|nsys|status|fetch|push-results|all" >&2; exit 1 ;;
 esac

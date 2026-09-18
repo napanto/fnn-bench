@@ -435,7 +435,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {
@@ -446,7 +446,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {
@@ -457,7 +457,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {
@@ -954,7 +954,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {
@@ -965,7 +965,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {
@@ -976,7 +976,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {

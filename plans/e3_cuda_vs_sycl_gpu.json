@@ -1,5 +1,5 @@
 {
- "note": "E3: CUDA (cudann) vs SYCL (syclnn) on the same GPU, memory/stream/graph ablations",
+ "note": "E3: CUDA (cudann) vs SYCL (syclnn) on the same GPU, memory/stream/graph ablations Since syclnn 0.2.2 / cudann 0.1.2 the default is pinned_host=false: the pinned rows (training and the batch-4096 inference rows) are the ablation.",
  "defaults": {
   "device": "gpu",
   "epochs": 5,
@@ -444,7 +444,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {
@@ -455,7 +455,7 @@
    "epochs": 5,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {
@@ -466,7 +466,7 @@
    "epochs": 3,
    "repeat": 3,
    "options": {
-    "pinned_host": false
+    "pinned_host": true
    }
   },
   {
@@ -493,6 +493,110 @@
     "sync_ops": true
    },
    "batch": 256
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "pinned_host": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "pinned_host": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "pinned_host": true
+   }
+  },
+  {
+   "backend": "syclnn",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "pinned_host": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "pinned_host": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist-512-256",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "pinned_host": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "float",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "pinned_host": true
+   }
+  },
+  {
+   "backend": "cudann",
+   "device": "gpu",
+   "workload": "mnist",
+   "dtype": "double",
+   "mode": "infer",
+   "batch": 4096,
+   "epochs": 5,
+   "repeat": 5,
+   "options": {
+    "pinned_host": true
+   }
   }
  ]
 }
