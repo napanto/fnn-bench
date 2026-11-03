@@ -7,29 +7,17 @@ University of Pisa, 2026): the NumPy oracle and the shared parity test-suite,
 the benchmark harness, the container images, the experiment plans, the raw
 results and the analysis.
 
-```
-testkit/      fnn-testkit: float64 reference implementation + pytest suite run against every backend
-bench/        fnnbench: run / sweep / collect / replay / peak / plot, FLOP model, system capture, JSONL rows
-containers/   fnn-cuda, fnn-sycl, fnn-sycl-generic, fnn-acpp-cuda (AdaptiveCpp on CUDA), fnn-rocm (the AMD stack) Containerfiles;
-              fnn-sycl-portable is kept as the record of the DPC++-on-AMD attempt (with scripts/dpcpp-hip-toolchain.sh);
-              every image carries FNN_IMAGE / FNN_IMAGE_BUILT, which fnnbench records in each row
-plans/        the experiments as JSON plans for `fnnbench sweep` (E1-E7 and the W4 sweep, defined in docs/methodology.md; e5_breakdown is the only profiled plan)
-scripts/      rocm-toolchain.sh (AdaptiveCpp + oneMath for the RX 7900 XTX), matrix-ws-amd.sh (the
-              ws-amd matrix), run-ws-nvidia.sh (the ws-nvidia matrix over ssh + podman CDI),
-              ws-nvidia-acpp.sh / ws-nvidia-portable-acpp.sh (AdaptiveCpp on CUDA, one-binary portability),
-              ws-amd-{cpu,gpu}-fixed-clock.sh + thermal-guard.sh (the ws-amd rows at a fixed host clock),
-              run-hpc.sh + hpc-blocks.sh (the hpc-a30 matrix: SLURM job chains, sandbox images + apptainer),
-              ws-amd-infer-rerun.sh / run-ws-nvidia.sh infer-rerun (the inference rows re-measured with the zero-copy bindings),
-              analyze.sh, headline.py, peaks-table.py, acpp-vs-dpcpp.py (tables from the rows),
-              supersede-stale.py, zluda-crosscheck.sh, rocprof-crosscheck.sh, perf-crosscheck.sh,
-              nsys-crosscheck.py, dpcpp-hip-toolchain.sh (the DPC++-on-AMD attempt),
-              publish-amd-variants.sh (the AMD tags of the library images, built on the fnn-rocm base)
-docs/         toolchains.md (compiler x device matrix and the facts learned), methodology.md
-              (protocol, metrics, caveats, the profiler and CPU fix-ups), optional.md (optional experiments:
-              tiled GEMM, DPC++ vs AdaptiveCpp, one-binary portability, ZLUDA)
-results/      submodule -> fnn-results: the raw JSONL rows per machine/date (+ peaks, rocprof/perf/nsys
-              cross-checks; superseded.jsonl = replaced rows) and results/analysis/ (CSVs, figures, headline tables)
-```
+## Layout
+
+| Directory | Contents |
+|---|---|
+| `testkit/` | `fnn-testkit`: the float64 NumPy reference implementation and the pytest parity suite run against every backend |
+| `bench/` | `fnnbench`, the benchmark harness (`run`, `sweep`, `collect`, `replay`, `peak`, `plot`): FLOP model, system capture, one JSONL row per measurement |
+| `plans/` | the experiments E1-E7 and the W4 sweep as JSON plans for `fnnbench sweep` (defined in `docs/methodology.md`) |
+| `containers/` | the toolchain images: `fnn-cuda`, `fnn-sycl`, `fnn-sycl-generic`, `fnn-acpp-cuda` (AdaptiveCpp on CUDA), `fnn-rocm` (the AMD stack) |
+| `scripts/` | the measurement drivers of each machine, toolchain set-up, table generators and profiler cross-checks (see [Scripts](#scripts)) |
+| `docs/` | `methodology.md` (protocol, metrics, caveats), `toolchains.md` (compiler × device matrix), `optional.md` (optional experiments) |
+| `results/` | submodule → [fnn-results](https://github.com/napanto/fnn-results): the raw rows per machine and pass, and `results/analysis/` (CSVs, figures, headline tables) |
 
 ## Machines
 
@@ -80,6 +68,18 @@ bounded oracle check, the FLOP model), `docs/toolchains.md` for which
 compiler/device combinations are validated and `docs/optional.md` for the
 optional experiments (hand-written GEMM, DPC++ vs AdaptiveCpp, portability,
 ZLUDA).
+
+## Scripts
+
+| Purpose | Scripts |
+|---|---|
+| Measurement matrix, one driver per machine | `matrix-ws-amd.sh`; `run-ws-nvidia.sh` (over ssh + podman CDI); `run-hpc.sh` + `hpc-blocks.sh` (SLURM job chains, sandbox images run with apptainer) |
+| ws-amd at a fixed host clock | `ws-amd-cpu-fixed-clock.sh`, `ws-amd-gpu-fixed-clock.sh`, `thermal-guard.sh` |
+| Re-measurements | `ws-amd-infer-rerun.sh`, `run-ws-nvidia.sh infer-rerun`; `supersede-stale.py`, `supersede-backends.py` (move replaced rows to `superseded.jsonl`) |
+| AdaptiveCpp on CUDA, one-binary portability | `ws-nvidia-acpp.sh`, `ws-nvidia-portable-acpp.sh` |
+| Toolchains and images | `rocm-toolchain.sh` (AdaptiveCpp + oneMath for the RX 7900 XTX), `dpcpp-hip-toolchain.sh` (the DPC++-on-AMD attempt, kept with `containers/fnn-sycl-portable.Containerfile`), `publish-amd-variants.sh` (the AMD tags of the library images) |
+| Tables and figures | `analyze.sh`, `headline.py`, `peaks-table.py`, `acpp-vs-dpcpp.py` |
+| Profiler and runtime cross-checks | `nsys-crosscheck.py`, `rocprof-crosscheck.sh`, `perf-crosscheck.sh`, `zluda-crosscheck.sh` |
 
 ## Open items
 
