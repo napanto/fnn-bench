@@ -5,7 +5,7 @@
 # within 20 s of any 16-thread load, so the CPU rows measured on 2026-09-05 ran at whatever clock
 # kept the die at 68 C (a backend-dependent, uncontrolled clock), and the host froze at 18:22
 # under the generic SYCL BLAS sweep. At 2.8 GHz with boost off the same load holds Tctl 75 C
-# (docs/methodology.md, "CPU rows at a fixed clock").
+# (docs/methodology.md, "Measurement conditions per machine").
 #
 # Requires the cap in force (volatile, re-apply after a reboot):
 #   sudo sh -c 'cpupower frequency-set -u 2.8GHz && echo 0 > /sys/devices/system/cpu/cpufreq/boost'

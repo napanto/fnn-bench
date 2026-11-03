@@ -53,13 +53,13 @@ fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --out results/ws-nvidia/$(d
 scripts/matrix-ws-amd.sh                                        # ws-amd: all environments, sequentially
 scripts/run-ws-nvidia.sh all                                    # ws-nvidia: sync, build, parity, matrix, fetch (NVIDIA_HOST, NVIDIA_DIR)
 HPC_HOST=<front-end> scripts/run-hpc.sh all                     # hpc-a30: sync, wheels, parity jobs, matrix job chains (then status / fetch)
-scripts/analyze.sh                                              # both machines -> results/analysis/<machine>-<date>.csv, results/analysis/figures/<machine>-<date>/
+scripts/analyze.sh                                              # the reported passes -> results/analysis/<machine>-<date>.csv, results/analysis/figures/<machine>-<date>/
 PYTHONPATH=bench python scripts/headline.py results/ws-amd/2026-09-05   # Markdown: defaults per toolchain, tiled/vendor ratios, run-to-run spread (needs numpy)
 ```
 
-The rows the report uses are the third pass, `results/*/2026-09-05` in fnn-results (timing
-rows unprofiled, oracle check on a separate instance, every confounder found
-on the way fixed or isolated: `docs/methodology.md`). Rows replaced by a
+The rows the report uses are `results/ws-amd/2026-09-05`, `results/ws-nvidia/2026-09-05` and
+`results/hpc-a30/2026-09-17` in fnn-results (timing rows unprofiled, oracle check on a
+separate instance, the measurement conditions in `docs/methodology.md`). Rows replaced by a
 re-measurement live in `superseded.jsonl` next to the live file and are
 skipped by every reader.
 
@@ -83,14 +83,6 @@ ZLUDA).
 
 ## Open items
 
-- ~~Fix the inference timing boundary and re-run the inference rows~~ **Done on 2026-09-17**
-  (syclnn 0.2.1, cudann 0.1.1, ompnn 0.1.1): the bindings pass the NumPy buffers in place
-  (raw-pointer overloads of `train`/`predict`), the library records `predict_wall_ns` per
-  call and the harness takes the inference `steady_epoch_s` from it, so both modes share the
-  measurement boundary. The pre-fix rows had timed a host copy of the input inside `predict`
-  (mnist throughput rows up to 2x in float; latency rows and monk/cup within 3 %); they are in
-  `superseded.jsonl`, re-measured on 2026-09-17 on both workstations, and hpc-a30 was measured
-  with the fix from the start (`docs/methodology.md`, Inference rows).
 - Run the AMD tags of the library images (`syclnn:acpp-rocm`, `cudann:hip`, `ompnn:rocm`) from the
   registry on the RX 7900 XTX and pass the parity suite there: they have only been checked at build
   time (`docs/toolchains.md`, published images).

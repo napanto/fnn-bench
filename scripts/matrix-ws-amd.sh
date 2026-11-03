@@ -93,7 +93,7 @@ omp_cpu() {
             rm -rf /work/fnn-bench/.wheels/omp-\$1
             pip install -q --no-deps --target /work/fnn-bench/.wheels/omp-\$1 --config-settings=build-dir=/tmp/ompnn-\$1 . 2>&1 | grep -E 'error:' || true
             # gcc (libgomp) runs best bound to cores; LLVM's libomp serves OpenBLAS's GOMP calls too, and
-            # bound it collapses (4.0 s vs 0.81 s unbound at mnist-512-256 b256): docs/methodology.md, CPU fix-ups
+            # bound it collapses (4.0 s vs 0.81 s unbound at mnist-512-256 b256): docs/methodology.md, CPU thread policy
             case \$1 in clang*) export OMP_PROC_BIND=false; unset OMP_PLACES ;; *) export OMP_PROC_BIND=close OMP_PLACES=cores ;; esac
             export PYTHONPATH=/work/fnn-bench/.wheels/omp-\$1 MKL_THREADING_LAYER=GNU
             (cd /work/fnn-bench && fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-amd/$DATE/omp-cpu-\$1 && fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-amd/$DATE/peaks-omp-\$1)

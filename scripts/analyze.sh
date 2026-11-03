@@ -6,10 +6,14 @@ set -euo pipefail
 command -v fnnbench >/dev/null 2>&1 || export PATH=$HOME/.local/opt/fnn-rocm/venv/bin:$PATH   # the harness lives in the fnn-rocm venv when run from the host
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 cd "$HERE"
+# The passes the study reports; ANALYZE_ALL=1 also redoes the earlier passes (2026-09-03/04, measured
+# with the per-launch profiler on), whose raw rows stay in results/ without an analysis.
+REPORTED="ws-amd/2026-09-05 ws-nvidia/2026-09-05 hpc-a30/2026-09-17"
 for m in ws-amd ws-nvidia hpc-a30; do
     for d in results/$m/*/; do
         date=$(basename "$d")
         case $date in peaks*|perf*|rocprof*|*smoke*|zluda*) continue ;; esac
+        [ "${ANALYZE_ALL:-0}" = 1 ] || [[ " $REPORTED " == *" $m/$date "* ]] || continue
         [ -n "$(find "$d" -name '*.jsonl' -not -name superseded.jsonl | head -1)" ] || continue
         echo "== $m $date"
         fnnbench collect "$d" -o "results/analysis/$m-$date.csv"

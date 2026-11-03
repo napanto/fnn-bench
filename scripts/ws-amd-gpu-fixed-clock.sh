@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Re-measure every GPU-device row of ws-amd's third pass with the host CPU at the fixed 2.8 GHz
 # (boost off), so the CPU-device and GPU-device rows share one host clock: the reference
-# workloads are launch-bound (docs/methodology.md, "the two regimes") and their absolute times
+# workloads are launch-bound (the per-operation runtime cost decides) and their absolute times
 # depend on the submitting thread's clock. Covers the ROCm block (syclnn/AdaptiveCpp + cudann/HIP:
 # E2 gpu, E3, E6 gpu, W4, E7, E5 inference/breakdown, GEMM peaks), the OpenMP offload block
 # (amdclang++, gcc-14 amdgcn), the AdaptiveCpp portability GPU rows, the GEMM size probe and

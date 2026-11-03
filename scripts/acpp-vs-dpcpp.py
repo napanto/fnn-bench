@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DPC++ vs AdaptiveCpp table (docs/optional.md, item 2) from the third-pass rows.
+"""DPC++ vs AdaptiveCpp table (docs/optional.md, item 2) from the rows of the reported passes.
 
     python scripts/acpp-vs-dpcpp.py results/ws-amd/2026-09-05 results/ws-nvidia/2026-09-05 results/hpc-a30/2026-09-17
 

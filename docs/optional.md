@@ -1,170 +1,48 @@
 # Optional experiments
 
-The four optional experiments of the study, what was run and what came out. Numbers
-are steady epochs (median per-epoch wall time excluding the first epoch of
-each call, unprofiled, third pass 2026-09-05 unless stated; ws-amd CPU rows at
-the fixed 2.8 GHz of 2026-09-06); the rows are in
-`results/<machine>/2026-09-05/` and `results/ws-amd/zluda/`.
+The four optional experiments of the study: what was run, how, and where the rows are. The results
+are discussed in the report. Rows of the third pass are in `results/<machine>/2026-09-05/`
+(hpc-a30: `results/hpc-a30/2026-09-17/`).
 
 ## 1. Hand-written tiled GEMM in the three models (E7)
 
-Done as `Options.blas = "tiled"` in all three libraries: the same 16x16
-local/shared-memory tiled GEMM (op(A) tile stored transposed, one work-item
-per C element, sequential k accumulation in a register), a row-per-work-item
-GEMV and reductions for asum/nrm2. Protocol, kernel-equivalence notes and
-the gcc-offload exception are in `docs/methodology.md` (E7 caveats) and
-`docs/toolchains.md` (Hand-written BLAS). The tiled/vendor ratios per device
-and toolchain are in `results/analysis/headline-<machine>-<date>.md` and the
-`tiled-*.png` figures.
+`Options.blas = "tiled"` in all three libraries: the same 16x16 local/shared-memory tiled GEMM
+(op(A) tile stored transposed, one work-item per C element, sequential k accumulation in a
+register), a row-per-work-item GEMV and reductions for asum/nrm2. Plan `plans/e7_tiled_gemm.json`;
+kernel-equivalence notes and the gcc-offload exception in `docs/methodology.md` (OpenMP and
+hand-written kernel rows) and `docs/toolchains.md` (Hand-written BLAS). The tiled/vendor ratios per
+device and toolchain are in `results/analysis/headline-<machine>-<date>.md` and the `tiled-*`
+figures.
 
-## 2. DPC++ vs AdaptiveCpp on the same GPU
+## 2. DPC++ vs AdaptiveCpp on the same device
 
-- **RX 7900 XTX**: AdaptiveCpp only. DPC++ on AMD needs the HIP adapter and
-  the amdgcn libspirv, which the intel/llvm 7.1.0 release tarball does not
-  ship and which no longer builds from source against ROCm 7.2's LLVM-22
-  device libraries (`scripts/dpcpp-hip-toolchain.sh`, kept as the
-  record of the attempt; `docs/toolchains.md`).
-- **GTX 1080 Ti**: both. The AdaptiveCpp wheel (`containers/fnn-acpp-cuda.Containerfile`:
-  AdaptiveCpp v25.10.0 generic SSCP, oneMath cuBLAS + Netlib) runs the same
-  E2/E3/E7 rows as the DPC++ wheel plus the E5 breakdown and the GEMM peaks
-  (`scripts/ws-nvidia-acpp.sh`, sweeps `sycl-gpu-acpp`, `peaks-acpp`). Results:
-  the "DPC++ vs AdaptiveCpp" table below (`scripts/acpp-vs-dpcpp.py`).
-- **CPU**: both, on ws-amd's Threadripper 2950X: DPC++ through the Intel
-  OpenCL CPU runtime (`sycl-cpu*`, 16 compute units by `DPCPP_CPU_NUM_CUS`),
-  AdaptiveCpp through its OpenMP host device (`sycl-cpu-acpp`, 16 threads).
-  See the same table.
+| device | DPC++ | AdaptiveCpp | rows |
+|---|---|---|---|
+| GTX 1080 Ti | intel/llvm 7.1.0, oneMath cuBLAS | v25.10.0 generic SSCP, oneMath cuBLAS + Netlib (`containers/fnn-acpp-cuda.Containerfile`, `scripts/ws-nvidia-acpp.sh`) | `sycl-gpu*`, `sycl-gpu-acpp`, `peaks-acpp` |
+| A30 | as above, `sm_80` wheel | as above | `sycl-gpu*`, `sycl-gpu-acpp` |
+| RX 7900 XTX | not possible: no HIP adapter and no amdgcn libspirv in the intel/llvm release (`docs/toolchains.md`) | ROCm backend, oneMath rocBLAS | `sycl-gpu*` |
+| CPUs (2950X, 2 x EPYC 7301) | OpenCL CPU device (`DPCPP_CPU_NUM_CUS` = cores) | OpenMP host device (`OMP_NUM_THREADS` = cores) | `sycl-cpu*`, `sycl-cpu-acpp` |
 
-<!-- DPCPP-VS-ACPP-TABLE -->
-Steady epoch in ms, float training rows, vendor BLAS / hand-written tiled
-BLAS (`scripts/acpp-vs-dpcpp.py --update docs/optional.md` rewrites this block
-from the rows; the DPC++ CPU rows run with `DPCPP_CPU_NUM_CUS=16` although the
-device keeps reporting 32 compute units, the AdaptiveCpp host rows with 16
-threads, ws-amd at the fixed 2.8 GHz):
-
-| device | SYCL implementation | units | monk b40 | cup b40 | mnist-512-256 b256 | mnist-512-256 b1024 |
-|---|---|---|---|---|---|---|
-| AMD EPYC 7301 16-Core Processor, OpenCL CPU | DPC++ | 32 CUs (device reports 64) | 1.7 / 2.1 | 19.6 / 20.2 | 1083.1 / 2167.5 | 570.4 / - |
-| AMD EPYC 7301 16-Core Processor, OpenMP host | AdaptiveCpp | 32 threads | 0.8 / 1.3 | 12.0 / 15.1 | 1429.7 / 1678.9 | 794.0 / - |
-| GTX 1080 Ti | AdaptiveCpp | 28 | 2.1 / 1.4 | 18.0 / 12.1 | 224.9 / 192.5 | 69.0 / - |
-| GTX 1080 Ti | DPC++ | 28 | 2.4 / 1.6 | 16.7 / 11.7 | 145.8 / 243.9 | 40.7 / - |
-| NVIDIA A30 | AdaptiveCpp | 56 | 1.6 / 1.0 | 15.3 / 8.6 | 167.9 / 135.1 | 56.9 / - |
-| NVIDIA A30 | DPC++ | 56 | 1.2 / 1.0 | 10.1 / 6.9 | 101.1 / 172.7 | 36.0 / - |
-| RX 7900 XTX | AdaptiveCpp | 48 | 2.7 / 1.7 | 23.3 / 9.1 | 245.6 / 110.4 | 67.1 / - |
-| TR 2950X, OpenCL CPU | DPC++ | 16 CUs (device reports 32) | 1.7 / 1.8 | 11.9 / 13.1 | 1002.8 / 3108.2 | 683.7 / - |
-| TR 2950X, OpenMP host | AdaptiveCpp | 16 threads | 1.0 / 2.1 | 19.4 / 9.0 | 1164.9 / 2916.9 | 807.2 / - |
-| Xeon E5-2643 v2, OpenMP host | AdaptiveCpp | 16 threads | 1.6 / 1.4 | 11.1 / 12.6 | 3821.2 / 3180.4 | - / - |
-
-vendor / tiled cells are steady epochs in ms; ratios above 1 mean AdaptiveCpp is slower:
-
-- TR 2950X: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.57x; monk b40 tiled: 1.15x; cup b40 vendor: 1.63x; cup b40 tiled: 0.69x; mnist-512-256 b256 vendor: 1.16x; mnist-512-256 b256 tiled: 0.94x; mnist-512-256 b1024 vendor: 1.18x
-- GTX 1080 Ti: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.85x; monk b40 tiled: 0.91x; cup b40 vendor: 1.08x; cup b40 tiled: 1.04x; mnist-512-256 b256 vendor: 1.54x; mnist-512-256 b256 tiled: 0.79x; mnist-512-256 b1024 vendor: 1.69x
-- AMD EPYC 7301 16-Core Processor: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 0.47x; monk b40 tiled: 0.63x; cup b40 vendor: 0.61x; cup b40 tiled: 0.75x; mnist-512-256 b256 vendor: 1.32x; mnist-512-256 b256 tiled: 0.77x; mnist-512-256 b1024 vendor: 1.39x
-- NVIDIA A30: AdaptiveCpp / DPC++ epoch ratio, monk b40 vendor: 1.39x; monk b40 tiled: 1.00x; cup b40 vendor: 1.52x; cup b40 tiled: 1.25x; mnist-512-256 b256 vendor: 1.66x; mnist-512-256 b256 tiled: 0.78x; mnist-512-256 b1024 vendor: 1.58x
-
-Same-GPU findings on the GTX 1080 Ti (both wheels built in their own image on
-ws-nvidia, both through oneMath's cuBLAS backend):
-
-- With cuBLAS, DPC++ is 1.4-1.5x faster at mnist-512-256 b256 (146 vs 210-224 ms)
-  and 1.7x at b1024; monk/cup are within the run-to-run spread. With the
-  tiled kernels the order flips (DPC++ 244 ms, AdaptiveCpp 192 ms): the
-  DPC++ tiled rows run on the out-of-order queue that the CUDA adapter
-  cannot combine with oneMath (`docs/toolchains.md`), the AdaptiveCpp ones on
-  a working out-of-order queue.
-- AdaptiveCpp's out-of-order queue is *correct* with cuBLAS (parity suites in
-  `results/ws-nvidia/2026-09-05/sycl-gpu-acpp/parity.txt`: 221 passed for
-  `queue=in_order`, `streams=1`, `blas_queue=dedicated`, `memory=shared`; 3
-  failures only for `memory=host`, zero-copy host USM, the same class of
-  failure as on the RX 7900 XTX), but not faster: its E6 rows give 178 ms
-  in-order against 224 ms out-of-order (1.26x, the same sign as on the RX
-  7900 XTX: 180 vs 240), `sync_ops=true` 235 ms (no overlap to lose), and the
-  bracketed `blas_queue=dedicated` 373 ms.
-- Per-operation cost, the launch-bound regime of the methodology: AdaptiveCpp
-  0.82-1.17 ms per batch of about 30 operations on both GPUs, DPC++
-  0.6 ms on the 1080 Ti, cudann 0.29-0.35 ms on the RX 7900 XTX and
-  0.18-0.50 ms on the GTX 1080 Ti. At width 4096 all three
-  converge (methodology, "the two regimes").
-- On the CPU the two implementations are different devices: DPC++ drives the
-  OpenCL CPU runtime (TBB workers, `DPCPP_CPU_NUM_CUS`), AdaptiveCpp its
-  OpenMP host device (`OMP_NUM_THREADS`); at mnist-512-256 b256 the
-  AdaptiveCpp host device is 16 % slower (1165 vs 1003 ms), with different
-  BLAS paths (MKLCPU / Netlib on DPC++, the generic SYCL BLAS on AdaptiveCpp).
-<!-- /DPCPP-VS-ACPP-TABLE -->
+`scripts/acpp-vs-dpcpp.py` prints the side-by-side table (steady epochs of the float training
+rows, vendor and tiled BLAS) from the rows.
 
 ## 3. Portability: one binary, four devices
 
-The *same* `_syclnn` shared object, identified by SHA-256, run on every device
-it can reach; the *same* `ompnn` source built by four compilers (the E4
-matrix); `cudann` on NVIDIA only, plus its HIPified build on AMD and, below,
-the unmodified NVIDIA wheel on AMD through ZLUDA.
+The *same* `_syclnn` shared object, identified by SHA-256, run on every device it can reach; the
+same `ompnn` source built by five compilers (the E4 matrix); `cudann` on NVIDIA only, plus its
+HIPified build on AMD and the unmodified NVIDIA wheel on AMD through ZLUDA (4.).
 
-| wheel (SHA-256 of `_syclnn*.so`) | built on / targets | device | mnist-512-256 b256 float | monk b40 | cup b40 | sweep dir |
-|---|---|---|---|---|---|---|
-| AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX (HIP, host at 2.8 GHz) | 228 ms (tiled 110 ms) | 2.5 ms (tiled 1.7) | 21.8 ms (tiled 9.1) | `results/ws-amd/2026-09-05/portable-acpp` |
-| same | | TR 2950X (OpenMP host device, 16 threads, 2.8 GHz) | 1173 ms (tiled 2917 ms) | 1.2 ms (tiled 2.1 ms) | 23.3 ms (tiled 9.0 ms) | same |
-| same | | GTX 1080 Ti (CUDA, ws-nvidia) | 210 ms (tiled 193 ms) | 2.1 ms (tiled 1.5) | 17.6 ms (tiled 11.5) | `results/ws-nvidia/2026-09-05/portable-acpp` (`scripts/ws-nvidia-portable-acpp.sh`; parity suite on the GPU: 111 passed, 7 skipped) |
-| same | | Xeon E5-2643 v2 (OpenMP host device, ws-nvidia; does-it-run row, 16 threads on 12 cores) | 3821 ms (tiled 3180 ms) | 1.6 ms (tiled 1.4) | 11.1 ms (tiled 12.6) | same |
-| DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia, two AOT targets | TR 2950X (OpenCL CPU, 16 compute units, 2.8 GHz) | 1047 ms (tiled 3108 ms) | 2.1 ms (tiled 1.8 ms) | 11.7 ms (tiled 13.1 ms) | `results/ws-amd/2026-09-05/portable-dpcpp` |
-| same | | GTX 1080 Ti | the `sycl-gpu` rows of ws-nvidia (same wheel) | | | `results/ws-nvidia/2026-09-05/sycl-gpu` |
-| same | | RX 7900 XTX | **cannot**: no HIP adapter in the DPC++ release; a fat binary with `amd_gpu_gfx1100` does not build (see 2.) | | | |
+| wheel (SHA-256 of `_syclnn*.so`) | built on / targets | devices | rows |
+|---|---|---|---|
+| AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX, TR 2950X (host device), GTX 1080 Ti, Xeon E5-2643 v2 (host device) | `results/ws-amd/2026-09-05/portable-acpp`, `results/ws-nvidia/2026-09-05/portable-acpp` (`scripts/ws-nvidia-portable-acpp.sh`) |
+| DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia, two AOT targets | TR 2950X (OpenCL CPU), GTX 1080 Ti; not the RX 7900 XTX (no HIP adapter) | `results/ws-amd/2026-09-05/portable-dpcpp`, `results/ws-nvidia/2026-09-05/sycl-gpu` |
 
-What the table shows: the AdaptiveCpp binary carries one generic IR and runs
-on two CPUs, on RDNA3 and on Pascal unchanged, at the speed of a wheel built
-on the target machine (210 ms against 209-224 ms for the AdaptiveCpp wheel
-built on ws-nvidia itself, `sycl-gpu-acpp`: the IR is JIT-compiled per device
-either way); the DPC++ binary carries one
-SPIR-V and one PTX/SASS image per target listed at build time (a second
-NVIDIA target, `sm_80`, made the wheel fail to load on Pascal: one CUDA
-target per wheel, `docs/toolchains.md`) and reaches exactly those. ompnn's
-source builds with gcc-14, clang-18, clang-22, amdclang++ and (host path)
-gcc+MKL; the offload variants differ by an order of magnitude in what they
-deliver (gcc: one thread per warp/wavefront). cudann needs `hipify-perl` and a
-second build for AMD.
+The full hashes are in `results/ws-amd/2026-09-05/portable-{acpp,dpcpp}.SHA256`.
 
 ## 4. ZLUDA: the unmodified CUDA wheel on the RX 7900 XTX
 
-`scripts/zluda-crosscheck.sh`; ZLUDA v7-preview.10 (`zluda-linux-9c8b43f2`),
-the `cudann` wheel built on ws-nvidia with nvcc 12.9 for sm_61+sm_80, CUDA 12.9's
-`libcudart.so.12` from the fnn-cuda image, ZLUDA's own `libcuda.so.1` and
-`libcublas.so.12` in front on `LD_LIBRARY_PATH`, inside the `fnn-rocm`
-distrobox (ROCm 7.2.4). Output: `results/ws-amd/zluda/README.md`, rows in
-`results/ws-amd/zluda/rows/`.
-
-Does it run:
-
-| feature | ZLUDA v7-preview.10 on gfx1100 |
-|---|---|
-| module load, device enumeration | yes: `AMD Radeon RX 7900 XTX [ZLUDA]`, "CUDA runtime 12.9", reported compute capability 8.5 |
-| the library's own kernels (element-wise, fused Adam, reductions, the tiled GEMM/GEMV) | yes, numerically correct (`check=ok` on every row with `blas=tiled`) |
-| cuBLAS `gemm` | yes (`bias_gemv=False` rows: the only cuBLAS calls left are GEMMs) |
-| cuBLAS `gemv` | **no**: `cublasSgemv` returns status 15 (`CUBLAS_STATUS_NOT_SUPPORTED`), so every default-configuration row fails at the bias-gradient GEMV |
-| cuBLAS `nrm2` | **no**: `cublasSnrm2` status 15 (the monk/cup rows with a weight-decay penalty) |
-| streams, events, the fork/join default (4 streams, out-of-order) | yes (the tiled rows use the default stream mode) |
-| CUDA graphs, managed/host memory, pinned host | not reachable: the parity suite constructs default-option networks first and stops at the GEMV |
-
-Speed (steady epoch, float, host at the fixed 2.8 GHz, 2026-09-07; the ZLUDA
-columns are the median of 3 repeats, the native columns the median over every
-third-pass sweep that measured the configuration on the same GPU: E3 default +
-E6 baseline + E7 `blas=auto` + the portability run for the vendor rows, E7 +
-the portability run for the tiled ones; the monk/cup rows differ by tens of
-percent between sweeps, see the methodology's run-to-run spread):
-
-| workload | cudann on ZLUDA, `blas=tiled` | cudann/HIP (hipify), `blas=tiled` | cudann on ZLUDA, cuBLAS gemm (`bias_gemv=False`) | cudann/HIP, rocBLAS | syclnn/AdaptiveCpp, `blas=tiled` | syclnn/AdaptiveCpp, rocBLAS |
-|---|---|---|---|---|---|---|
-| monk b40 | 0.70 ms | 0.60 ms | fails (nrm2) | 0.98 ms | 1.33 ms | 2.47 ms |
-| cup b40 | 4.12 ms | 5.77 ms | fails (nrm2) | 9.64 ms | 10.4 ms | 22.8 ms |
-| mnist-512-256 b256 | 81.5 ms | 85.8 ms | 74.6 ms | 72.6 ms | 112.6 ms | 240 ms |
-| mnist-512-256 b1024 | 50.2 ms | - | 28.8 ms | 20.8 ms | - | 68.0 ms |
-
-Reading: the CUDA binary's own kernels run on RDNA3 through ZLUDA at the
-speed of the HIPified source build (82 vs 86 ms with the same tiled GEMM; the
-PTX is JIT-compiled through ZLUDA's own back end), and ZLUDA's cuBLAS
-translation reaches 74.6 ms against 72.6 ms for rocBLAS called natively at
-b256 (3 % slower) and 28.8 against 20.8 ms at b1024 (39 % slower). What breaks is coverage of the BLAS
-API: two level-1/level-2 routines the library uses are not implemented in
-this preview, and a real application would hit them at once. Binary-level
-CUDA-on-AMD is therefore a demonstration, not a deployment path, in this
-version; source-level HIPify (one script, everything runs) and write-once
-SYCL (one binary, everything runs; on these launch-bound workloads 2.4-3.3x
-slower than the CUDA/HIP build with the vendor BLAS and 1.3-2.2x with the
-tiled one, 1.0-1.4x at width 4096 where the GEMMs dominate) are the two
-working routes.
+`scripts/zluda-crosscheck.sh`: ZLUDA v7-preview.10 (`zluda-linux-9c8b43f2`), the `cudann` wheel
+built on ws-nvidia with nvcc 12.9 for sm_61 + sm_80, CUDA 12.9's `libcudart.so.12` from the fnn-cuda
+image, ZLUDA's own `libcuda.so.1` and `libcublas.so.12` in front on `LD_LIBRARY_PATH`, inside the
+`fnn-rocm` environment (ROCm 7.2.4). Output: `results/ws-amd/zluda/README.md` (what runs, what does
+not, speed against the HIPified build), rows in `results/ws-amd/zluda/rows/`.

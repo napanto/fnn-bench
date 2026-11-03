@@ -22,7 +22,7 @@ NVHPC=/opt/nvidia/hpc_sdk/Linux_x86_64/26.5
 NVLIBS="$NVHPC/math_libs/13.2/lib64:$NVHPC/cuda/13.2/lib64:$NVHPC/compilers/lib"
 FB="python -m fnnbench.cli"
 # 32 physical cores (2 x 16, SMT off in the runtimes): every CPU runtime on the cores, like the
-# workstations (docs/methodology.md, "CPU rows: thread counts, affinity and the OpenBLAS variant")
+# workstations (docs/methodology.md, "CPU thread policy")
 CORES=32
 log() { printf '\n==== [%s] %s\n' "$(date +%T)" "$*"; }
 binds="-B /tmp"; [ -d /scratch ] && binds="$binds,/scratch"; [ -d /opt/nvidia ] && binds="$binds,/opt/nvidia"
