@@ -139,8 +139,11 @@ achieved GFLOP/s and a streaming bandwidth from the activation kernel
 - `pinned_host`: since syclnn 0.2.2 and cudann 0.1.2 the host data is copied
   directly from pageable memory (`false`, as in ompnn); `true` stages every
   `train()`/`predict()` call through pinned buffers allocated for that call and is
-  measured as an ablation (E3, E6, pinned inference rows). Rows of the two
-  libraries measured with the earlier default are in `superseded.jsonl`.
+  measured as an ablation (E3, E6, pinned inference rows). The syclnn and
+  cudann rows of hpc-a30 and ws-nvidia were re-measured with the new default
+  (the old rows are in `superseded.jsonl`). On ws-amd the re-measure is not
+  complete yet: its published syclnn and cudann rows are still those of the
+  earlier default (`pinned_host=true` in each row's `effective_options`).
 - `memory=shared` on the RX 7900 XTX (ROCm 7.2, no XNACK) is host-coherent
   memory, not page migration: the AMD "shared" rows measure zero-copy PCIe
   traffic, the NVIDIA ones managed-memory migration (no explicit prefetch in
