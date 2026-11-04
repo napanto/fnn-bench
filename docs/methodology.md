@@ -9,7 +9,7 @@ conditions it was measured. The analysis of the results is in the report.
 |---|---|---|---|---|
 | W1 `monk` | 17-4-1, tanh / sigmoid, Adam (lr 0.01), L2 1e-3 | MONK-1 train (124 samples) | 40 | the ML project's real configuration: launch-overhead regime |
 | W2 `cup` | 12-64-64-3, tanh / linear, Adam (lr 1e-3), L2 1e-4 | ML-CUP-like synthetic regression (1000 samples) | 40 | realistic small regression (the CUP data itself is course-private) |
-| W3 `mnist` / `mnist-512-256` | 784-1024-1024-10 / 784-512-256-10, ReLU / sigmoid, SGD + momentum 0.9 (lr 0.1) | MNIST (60 000 samples) | 64 / 256 / 1024 | recognisable, GEMM-bound from batch 256 |
+| W3 `mnist` / `mnist-512-256` | 784-1024-1024-10 / 784-512-256-10, ReLU / sigmoid, SGD + momentum 0.9 (lr 0.1) | MNIST (60 000 samples) | 64 / 256 / 1024 | recognisable; on the A30 the cost per batch stays the same from batch 64 to 256 (launch-bound) and grows at 1024, where the GEMMs start to dominate |
 | W4 `sweep-w{256,1024,4096}-d{2,4,8}-b{32,256,4096}` | 256-w×d-16, ReLU / linear, Adam | synthetic (65 536 samples; 16 384 on the CPU) | 32 / 256 / 4096 | scaling laws and roofline coverage |
 | W5 `infer` | W1-W3 forward only | as above | 1 (latency) and 4096 (throughput) | the inference half of the study |
 
@@ -139,9 +139,11 @@ achieved GFLOP/s and a streaming bandwidth from the activation kernel
 ## Library options that change what a row measures
 
 - `pinned_host`: since syclnn 0.2.2 and cudann 0.1.2 the host data is copied
-  directly from pageable memory (`false`, as in ompnn); `true` stages every
-  `train()`/`predict()` call through pinned buffers allocated for that call and is
-  measured as an ablation (E3, E6, pinned inference rows). Every syclnn and
+  directly from pageable memory (`false`, as in ompnn); `true` stages the host
+  data through pinned buffers and is measured as an ablation (E3, E6, pinned
+  inference rows). syclnn allocates those buffers in every `train()`/`predict()`
+  call; cudann allocates them per `predict()` call and keeps the training ones as
+  members, re-allocated only when a call needs more room. Every syclnn and
   cudann row of the three passes was re-measured with the new default (the old
   rows are in `superseded.jsonl`), the portability rows included (they now use
   the 0.2.2 wheels; the hashes are in `results/ws-amd/2026-09-05/portable-*.SHA256`).
