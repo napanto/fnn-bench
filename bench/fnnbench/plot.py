@@ -19,6 +19,9 @@ from __future__ import annotations
 
 import json
 import math
+import hashlib
+import re
+import statistics
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable
@@ -46,10 +49,7 @@ METRIC = "steady"  # "steady": steady_epoch_s when the row has it, else median_e
 
 
 def _epoch_s(row: dict[str, Any]) -> float:
-    r = row["results"]
-    if METRIC == "steady" and r.get("steady_epoch_s"):
-        return float(r["steady_epoch_s"])
-    return float(r["median_epoch_s"])
+    return results.epoch_s(row, METRIC)
 
 
 
@@ -83,8 +83,24 @@ def _label(row: dict[str, Any]) -> str:
             break
     else:
         comp = comp.split(" ")[0] if comp else ""
+    if row["backend"] == "syclnn":
+        comp = _implementation(row)
     blas = row.get("blas", "")
     return f"{row['backend']}/{comp}/{blas} @ {short}"
+
+
+def _implementation(row):
+    build = row.get("build_info") or {}
+    impl = build.get("sycl_implementation", "")
+    if "AdaptiveCpp" in impl:
+        return "AdaptiveCpp"
+    if "DPC++" in impl:
+        return "DPC++"
+    return build.get("compiler", "unknown").split(" /", 1)[0]
+
+
+def _slug(value):
+    return re.sub(r"[^a-z0-9]+", "-", str(value).lower().replace("++", "pp")).strip("-")
 
 
 def _opt_label(opts_json: str) -> str:
@@ -105,9 +121,7 @@ def _save(plt, fig, out: Path, name: str) -> None:
 
 
 def _good(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    from . import results as _results
-    return _results.dedupe(r for r in rows if "results" in r and (r.get("check") or {}).get("ok", True)
-                           and r["results"].get("losses_finite", True))
+    return results.aggregate(rows)
 
 
 def plot_throughput(plt, rows, out):
@@ -159,71 +173,167 @@ def plot_breakdown(plt, rows, out):
                 continue
             ax.bar(range(len(rs)), vals, bottom=bottom, label=ph, color=PHASE_COLOR[ph])
             bottom = [b + v for b, v in zip(bottom, vals)]
-        walls = [_epoch_s(r) * 1e3 for r in rs]
-        ax.plot(range(len(rs)), walls, "k_", markersize=14, label="wall / epoch")
+        # Both bars and this reference average every epoch in the profiled calls.
+        walls = [r["results"]["profile_per_epoch_ms"].get("wall_ns", float("nan")) for r in rs]
+        ax.plot(range(len(rs)), walls, "k_", markersize=14, label="internal call wall / all epochs")
         ax.set_xticks(range(len(rs)))
         ax.set_xticklabels(labels, rotation=60, ha="right", fontsize=6)
         ax.set_ylabel("ms per epoch")
-        ax.set_title(f"per-phase device time - {wl} ({dt}, {mode})")
+        ax.set_title(f"internal profiler phase attribution - {wl} ({dt}, {mode})\nphase sums are not a wall-time partition")
         ax.legend(ncol=2)
         _save(plt, fig, out, f"breakdown-{wl}-{dt}-{mode}")
 
 
-def plot_roofline(plt, rows, peaks, out):
-    if not peaks:
-        return
-    fig, ax = plt.subplots(figsize=(6.5, 4.2))
-    dev_peaks = defaultdict(dict)
-    for p in peaks:
-        name = (p.get("device") or {}).get("name", "?")
-        dev_peaks[name][p["dtype"]] = (p.get("gemm_gflops"), p.get("act_bandwidth_gbs"))
-    xs = [0.1, 1000.0]
-    for name, byd in dev_peaks.items():
-        for dt, (gf, bw) in byd.items():
-            if not gf or not bw:
-                continue
-            ax.plot([x for x in xs], [min(gf, x * bw) for x in xs], "--", lw=1, label=f"peak {name.split('(')[0].strip()[:24]} {dt}")
-    for r in rows:
-        if r.get("mode", "train") != "train" or r.get("threads"):
+def _device(row):
+    dev = row.get("device") or {}
+    if dev.get("type") == "cpu":
+        return ((row.get("sysinfo") or {}).get("cpu") or {}).get("model") or dev.get("name", "?")
+    return dev.get("name", "?")
+
+
+def _peak_blas(row):
+    blas = str(row.get("blas", "auto")).lower()
+    if blas == "auto":
+        dev = row.get("device") or {}
+        if dev.get("type") == "gpu":
+            blas = "cublas" if "nvidia" in _device(row).lower() or dev.get("backend") == "cuda" else "rocblas"
+        else:
+            blas = (row.get("build_info") or {}).get("cblas", "mklcpu")
+    label = {"cublas": "cuBLAS", "rocblas": "rocBLAS", "mklcpu": "MKL", "mkl": "MKL",
+             "netlib": "OpenBLAS (Netlib)", "openblas": "OpenBLAS", "tiled": "tiled", "omp": "OpenMP loops"}.get(blas, blas)
+    for lib in (row.get("sysinfo") or {}).get("libs") or []:
+        match = re.search(r"lib(?:cublas|rocblas)\.so\.(.+)$", lib)
+        if match and blas in lib.lower():
+            return label + " " + match[1]
+    return label
+
+
+def _select_peaks(peaks):
+    """Median repeated probes at each size, then best GEMM size per reference.
+
+    Vendor/tiled, backend, implementation, compiler flags and versions all have
+    separate identities. The associated bandwidth stays with its GEMM probe.
+    """
+    groups = defaultdict(lambda: defaultdict(list))
+    for p in results.dedupe(peaks):
+        if not all(isinstance(p.get(k), (int, float)) and math.isfinite(p[k]) and p[k] > 0
+                   for k in ("gemm_gflops", "act_bandwidth_gbs")):
             continue
-        ax.scatter(r["results"]["intensity_flop_per_byte"], _gflops_gemm(r), s=14,
-                   color=BACKEND_COLOR.get(r["backend"]), marker="o" if r["dtype"] == "float" else "s", alpha=0.7)
-    for be, c in BACKEND_COLOR.items():
-        ax.scatter([], [], color=c, label=be)
-    ax.scatter([], [], color="k", marker="o", label="float")
-    ax.scatter([], [], color="k", marker="s", label="double")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel("arithmetic intensity of the step's GEMMs [FLOP/byte]")
-    ax.set_ylabel("achieved GEMM GFLOP/s (per epoch wall)")
-    ax.set_title("roofline placement of every training row")
-    ax.legend(fontsize=6, loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
-    _save(plt, fig, out, "roofline")
+        kind = "tiled" if p.get("blas") in ("tiled", "handwritten", "omp") else "vendor"
+        key = (_device(p), p["dtype"], kind, p.get("backend"), _implementation(p),
+               _peak_blas(p), results.dumps(p.get("build_info")))
+        groups[key][p.get("n")].append(p)
+    selected = []
+    for key, sizes in sorted(groups.items()):
+        candidates = []
+        for n, rs in sizes.items():
+            p = dict(rs[0])
+            p.update(gemm_gflops=statistics.median(r["gemm_gflops"] for r in rs),
+                     act_bandwidth_gbs=statistics.median(r["act_bandwidth_gbs"] for r in rs),
+                     reference_kind=key[2], reference_count=len(rs))
+            candidates.append(p)
+        selected.append(max(candidates, key=lambda p: (p["gemm_gflops"], p.get("n") or 0)))
+    return selected
+
+
+def _roofline_points(peak, bandwidth, xmin=0.1, xmax=1000.0):
+    ridge = peak / bandwidth
+    xs = [min(xmin, ridge / 10), ridge, max(xmax, ridge * 10)]
+    return xs, [min(peak, x * bandwidth) for x in xs]
+
+
+def plot_roofline(plt, rows, peaks, out):
+    refs = defaultdict(list)
+    for p in _select_peaks(peaks):
+        refs[(_device(p), p["dtype"])].append(p)
+    for (dev, dt), ps in sorted(refs.items()):
+        fig, ax = plt.subplots(figsize=(8.0, 4.6))
+        for p in ps:
+            xs, ys = _roofline_points(p["gemm_gflops"], p["act_bandwidth_gbs"])
+            label = f"{_peak_blas(p)} / {p['backend']} {_implementation(p)} (n={p.get('n')})"
+            ax.plot(xs, ys, ":" if p["reference_kind"] == "tiled" else "--", lw=1.2, label=label)
+        series = defaultdict(list)
+        for r in rows:
+            if (_device(r), r["dtype"]) != (dev, dt) or r.get("mode", "train") != "train" or r.get("threads"):
+                continue
+            if r["workload"].startswith("sweep-"):
+                series[_label(r)].append(r)
+        for label, rs in sorted(series.items()):
+            ax.scatter([r["results"]["intensity_flop_per_byte"] for r in rs], [_gflops_gemm(r) for r in rs],
+                       s=16, alpha=0.65, label=f"application W4: {label}", color=BACKEND_COLOR.get(rs[0]["backend"]))
+        ax.set_xscale("log"); ax.set_yscale("log")
+        ax.set_xlabel("modeled minimum GEMM traffic intensity [FLOP/byte]")
+        ax.set_ylabel("application GEMM-equivalent GFLOP/s (epoch wall)")
+        ax.set_title(f"Application W4 reference rooflines: {dev}, {dt}\nmeasured GEMM peak + effective activation bandwidth (not DRAM counters)")
+        ax.legend(fontsize=6, loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0.0)
+        _save(plt, fig, out, f"roofline-{_slug(dev)}-{dt}")
 
 
 def plot_ablation(plt, rows, out):
     for backend in ("syclnn", "cudann"):
-        groups = defaultdict(dict)
+        groups = defaultdict(list)
         for r in rows:
             if r["backend"] != backend or r.get("threads"):
                 continue
-            key = (_label(r), r["workload"], r["dtype"], r["batch"])
-            opts = {k: v for k, v in r.get("options", {}).items() if k != "profile"}
-            groups[key][json.dumps(opts, sort_keys=True)] = _epoch_s(r)
-        for key, variants in groups.items():
-            base = variants.get("{}")
-            if not base or len(variants) < 3:
-                continue
-            names = [k for k in variants if k != "{}"]
-            rel = [variants[k] / base for k in names]
-            fig, ax = plt.subplots(figsize=(max(6, 0.5 * len(names) + 2), 3.8))
-            ax.bar(range(len(names)), rel, color=BACKEND_COLOR[backend])
-            ax.axhline(1.0, color="k", lw=0.8)
-            ax.set_xticks(range(len(names)))
-            ax.set_xticklabels([_opt_label(n) for n in names], rotation=45, ha="right", fontsize=7)
-            ax.set_ylabel("epoch time / default")
-            ax.set_title(f"{backend} ablations - {key[1]} ({key[2]}, b={key[3]}) on {key[0].split('@')[1].strip()}")
-            _save(plt, fig, out, f"ablation-{backend}-{key[1]}-{key[2]}-{key[0].split('@')[1].strip().replace(' ', '')}")
+            key = (results.environment_key(r), r["workload"], r["dtype"], r["batch"], r.get("mode", "train"),
+                   r.get("n_samples"), r.get("warmup"))
+            groups[key].append(r)
+        for key, rs in groups.items():
+            bases = [r for r in rs if not {k: v for k, v in r.get("options", {}).items() if k != "profile"}]
+            protocol = lambda r: (r.get("epochs"), r.get("repeat"))
+            for base_row in bases:
+                variants = []
+                for r in rs:
+                    opts = {k: v for k, v in r.get("options", {}).items() if k != "profile"}
+                    if not opts:
+                        continue
+                    # Some historical E6 series have only a 5/5 baseline and 3/3
+                    # variants. Keep that comparison labelled; never pool protocols.
+                    matching = [b for b in bases if protocol(b) == protocol(r)]
+                    if matching and protocol(base_row) != protocol(r):
+                        continue
+                    changed = set(opts) | ({"queue"} if "blas" in opts else set())
+                    unchanged = lambda row: {k: v for k, v in (row.get("effective_options") or {}).items() if k not in changed}
+                    if unchanged(r) == unchanged(base_row):
+                        variants.append((json.dumps(opts, sort_keys=True), r))
+                if len(variants) < 2:
+                    continue
+                names = [name for name, _ in variants]
+                rel = [_epoch_s(r) / _epoch_s(base_row) for _, r in variants]
+                fig, ax = plt.subplots(figsize=(max(6, 0.5 * len(names) + 2), 3.8))
+                ax.bar(range(len(names)), rel, color=BACKEND_COLOR[backend])
+                ax.axhline(1.0, color="k", lw=0.8)
+                ax.set_xticks(range(len(names)))
+                ax.set_xticklabels([_opt_label(n) + (f"\n{r.get('epochs')} epochs / {r.get('repeat')} repeats"
+                                     if protocol(r) != protocol(base_row) else "") for n, r in variants],
+                                    rotation=45, ha="right", fontsize=7)
+                ax.set_ylabel("whole predict time / default" if key[4] == "infer" else "epoch time / default")
+                impl, dev = _implementation(base_row), _device(base_row)
+                ax.set_title(f"{backend} {impl} ablations - {key[1]} ({key[2]}, B={key[3]}, {key[4]})\n{dev}; baseline {base_row.get('epochs')} epochs / {base_row.get('repeat')} repeats")
+                digest = hashlib.sha256(results.configuration_key(base_row).encode()).hexdigest()[:8]
+                _save(plt, fig, out, f"ablation-{backend}-{_slug(impl)}-{key[1]}-{key[2]}-b{key[3]}-{key[4]}-{_slug(dev)}-{digest}")
+
+
+def plot_inference(plt, rows, out):
+    groups = defaultdict(list)
+    for r in rows:
+        if r.get("mode") == "infer" and not r.get("threads"):
+            groups[(r["workload"], r["dtype"], r["batch"])].append(r)
+    for (wl, dt, batch), rs in sorted(groups.items()):
+        rs.sort(key=lambda r: (_label(r), results.configuration_key(r)))
+        fig, ax = plt.subplots(figsize=(max(7, len(rs) * 0.45), 4.5))
+        ax.bar(range(len(rs)), [_epoch_s(r)*1e3 for r in rs], color=[BACKEND_COLOR.get(r["backend"]) for r in rs],
+               label="whole predict call (median_epoch_s)")
+        ax.plot(range(len(rs)), [(r["results"].get("steady_epoch_s") or float("nan"))*1e3 for r in rs], "k_", ms=10,
+                label="library internal predict time (secondary)")
+        labels = [f"{_label(r)} v{(r.get('build_info') or {}).get('version', '?')}\nN={r['n_samples']} {_opt_label(json.dumps(r.get('options') or {}))}; "
+                  f"{r.get('epochs')}/{r.get('repeat')} passes/repeats; runs={r.get('aggregate_count', 1)}"
+                  for r in rs]
+        ax.set_xticks(range(len(rs))); ax.set_xticklabels(labels, rotation=60, ha="right", fontsize=6)
+        ax.set_yscale("log"); ax.set_ylabel("ms per complete predict call")
+        ax.set_title(f"Inference: {wl}, {dt}, B={batch}")
+        ax.legend(fontsize=7)
+        _save(plt, fig, out, f"inference-{wl}-{dt}-b{batch}")
 
 
 def plot_compilers(plt, rows, out):
@@ -388,6 +498,7 @@ def plot_all(paths: list[str], out: str) -> int:
         plot_breakdown(plt, prof_rows, outp)
         return 0
     plot_throughput(plt, rows, outp)
+    plot_inference(plt, rows, outp)
     plot_breakdown(plt, prof_rows, outp)
     plot_roofline(plt, rows, peaks, outp)
     plot_ablation(plt, rows, outp)

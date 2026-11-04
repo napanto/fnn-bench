@@ -1,173 +1,153 @@
 #!/usr/bin/env python3
-"""Headline tables from a results directory (pass-3 layout, one sweep per subdirectory).
+"""Headline medians of independent live rows, with configuration and sweep counts.
 
-    PYTHONPATH=bench python scripts/headline.py results/ws-amd/2026-09-05 [results/ws-nvidia/2026-09-05 results/hpc-a30/2026-09-17 ...]
+    PYTHONPATH=bench python scripts/headline.py results/hpc-a30/2026-09-17
 
-Prints, as Markdown:
-  1. the default-configuration steady epoch per (machine, device, backend, toolchain) for the
-     reference workloads (monk b40, cup b40, mnist-512-256 b256 / b1024, float);
-  2. the tiled-BLAS (E7) epoch next to the vendor-BLAS one, same grouping;
-  3. the run-to-run spread: identical visible configurations that were measured in more than one
-     sweep (E3 default row vs E7 `blas=auto` row vs E6 ablation baseline ...).
-
-The toolchain comes from the sweep directory name (the rows themselves only carry `build_info`),
-so the layout must be `<results>/<sweep>/<backend>.jsonl`.
+Superseded rows are archived explicitly; timestamps never silently discard a
+valid repeated sweep. Exact duplicate records are counted once. Different
+protocols, builds, loaded libraries, environments or effective options are kept
+separate. The configuration digest links each entry to its full conditions.
 """
 from __future__ import annotations
 
 import collections
-import glob
+import hashlib
 import json
-import os
 import statistics as st
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bench"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bench"))
 from fnnbench import results as R  # noqa: E402
 
-REF = [("monk", 40), ("cup", 40), ("mnist-512-256", 256), ("mnist-512-256", 1024)]
-
-TOOLCHAIN = {  # sweep-directory suffix -> label
-    "gcc14mkl": "gcc-14 + oneMKL", "gcc14amd": "gcc-14 amdgcn", "gcc14nv": "gcc-14 nvptx", "gcc14": "gcc-14",
-    "clang18nv": "clang-18 nvptx", "clang18": "clang-18", "clang22": "clang-22", "amdclang": "amdclang-22",
-    "acpp": "AdaptiveCpp", "dpcpp": "DPC++", "nvcppmc": "nvc++ multicore", "nvcpp": "nvc++ nvptx",
-}
-
-
-def toolchain(sweep: str, row: dict) -> str:
-    for suf, lab in TOOLCHAIN.items():
-        if sweep.endswith("-" + suf) or sweep == suf:
-            return lab
-    impl = (row.get("build_info") or {}).get("sycl_implementation") or ""
-    if "AdaptiveCpp" in impl:
-        return "AdaptiveCpp"
-    if row["backend"] == "syclnn":
-        return "DPC++"
-    if row["backend"] == "cudann":
-        comp = (row.get("build_info") or {}).get("compiler") or ""
-        return "hipcc" if "hip" in comp.lower() or "clang" in comp.lower() and "rocm" in comp.lower() else "nvcc"
-    return "?"
+REF = {("monk", 40), ("cup", 40), ("mnist-512-256", 256), ("mnist-512-256", 1024)}
 
 
 def load(dirs):
-    out = []
-    for d in dirs:
-        machine = d.rstrip("/").split("/")[-2] if "/" in d.rstrip("/") else d
-        for f in glob.glob(os.path.join(d, "*", "*.jsonl")):
-            base = os.path.basename(f)
-            if base in ("superseded.jsonl", "peak.jsonl"):
+    rows = []
+    for directory in dirs:
+        root = Path(directory)
+        for row in R.read([root]):
+            if not R.valid(row):
                 continue
-            sweep = os.path.basename(os.path.dirname(f))
-            for line in open(f):
-                if not line.strip():
-                    continue
-                r = json.loads(line)
-                if r.get("error") or not (r.get("results") or {}).get("steady_epoch_s"):
-                    continue
-                r["_sweep"], r["_machine"] = sweep, machine
-                out.append(r)
-    return out
+            row["_machine"] = root.parent.name
+            row["_sweep"] = Path(row["_source"]).parent.name
+            rows.append(row)
+    return R.dedupe(rows)
 
 
-def _short(n):
-    return n.replace("AMD Ryzen Threadripper 2950X 16-Core Processor", "TR 2950X").replace(
-        "Intel(R) Xeon(R) CPU E5-2643 v2 @ 3.50GHz", "Xeon E5-2643v2").replace("NVIDIA GeForce GTX 1080 Ti", "1080 Ti").replace(
-        "AMD Radeon RX 7900 XTX", "7900 XTX").strip()
+def toolchain(row):
+    build = row.get("build_info") or {}
+    return build.get("sycl_implementation") or build.get("compiler") or "not recorded"
 
 
-def dev(r):
-    n = r["device"]["name"].strip()
-    if n == "AdaptiveCpp OpenMP host device":  # the host CPU: name it from sysinfo
-        model = ((r.get("sysinfo") or {}).get("cpu") or {}).get("model") or "host CPU"
-        return f"{_short(model)} (acpp host, {r.get('threads_effective') or '?'} threads)"
-    return _short(n)
+def dev(row):
+    name = (row.get("device") or {}).get("name", "?")
+    if name == "AdaptiveCpp OpenMP host device":
+        name = ((row.get("sysinfo") or {}).get("cpu") or {}).get("model", "host CPU") + " (AdaptiveCpp host)"
+    for old, new in (("AMD Ryzen Threadripper 2950X 16-Core Processor", "TR 2950X"),
+                     ("Intel(R) Xeon(R) CPU E5-2643 v2 @ 3.50GHz", "Xeon E5-2643v2"),
+                     ("NVIDIA GeForce GTX 1080 Ti", "GTX 1080 Ti"), ("AMD Radeon RX 7900 XTX", "RX 7900 XTX")):
+        name = name.replace(old, new)
+    return name.strip()
 
 
-def ms(v):
-    return f"{st.median(v):.1f}"
+def tag(row):
+    return hashlib.sha256(R.configuration_key(row).encode()).hexdigest()[:10]
+
+
+def groups(rows):
+    grouped = collections.defaultdict(list)
+    for row in rows:
+        grouped[R.configuration_key(row)].append(row)
+    return sorted(grouped.values(), key=lambda rs: (rs[0]["_machine"], dev(rs[0]), rs[0]["backend"],
+                                                   toolchain(rs[0]), rs[0]["workload"], rs[0]["batch"], tag(rs[0])))
+
+
+def default(row):
+    opts = {k: v for k, v in (row.get("options") or {}).items() if k != "blas" and not (k == "profile" and not v)}
+    return not opts and not row.get("threads")
+
+
+def cell(value):
+    return str(value).replace("|", "\\|").replace("\n", " ")
+
+
+def table(headers, rows):
+    print("| " + " | ".join(headers) + " |")
+    print("|" + "---|" * len(headers))
+    for row in rows:
+        print("| " + " | ".join(cell(v) for v in row) + " |")
+
+
+def median_ms(values):
+    values = [v for v in values if v is not None]
+    return f"{st.median(values) * 1e3:.3f}" if values else "not recorded"
+
+
+def timing_table(selected, infer=False):
+    output = []
+    for rs in groups(selected):
+        r = rs[0]
+        times = [R.epoch_s(x) for x in rs]
+        within = [x["results"].get("iqr_epoch_s" if infer else "steady_iqr_s") for x in rs]
+        internal = [x["results"].get("steady_epoch_s") for x in rs]
+        output.append([tag(r), r["_machine"], dev(r), r["backend"], toolchain(r), r.get("blas"),
+                       (r.get("build_info") or {}).get("version", "?"), f"{r['workload']} b{r['batch']} {r['dtype']}",
+                       r["n_samples"], f"{r.get('epochs')} / {r.get('repeat')}", len(rs),
+                       len({x["_sweep"] for x in rs}), median_ms(times),
+                       f"{min(times)*1e3:.3f}–{max(times)*1e3:.3f}", median_ms(within)]
+                      + ([median_ms(internal)] if infer else []))
+    table(["config", "machine", "device", "backend", "toolchain", "BLAS", "version", "workload", "N",
+           "epochs / repeats", "runs", "sweeps", "whole predict ms" if infer else "steady epoch ms",
+           "process range ms", "median within-process call IQR ms" if infer else "median within-process steady IQR ms"]
+          + (["library internal predict ms (secondary)"] if infer else []), output)
 
 
 def main(dirs):
-    raw = [r for r in load(dirs) if r.get("mode") == "train" and r["dtype"] == "float"]
-    rows = R.dedupe(raw)
-    # 1. defaults
-    tab = collections.defaultdict(lambda: collections.defaultdict(list))
-    for r in rows:
-        o = {k: v for k, v in (r.get("options") or {}).items()}
-        if o.get("blas") in ("auto", "mklcpu", "openblas", "mkl", "rocblas", "cublas", "hipblas", "netlib"):
-            o.pop("blas")
-        if o or r.get("threads"):
+    rows = load(dirs)
+    rows = [r for r in rows if not (r.get("effective_options") or r.get("options") or {}).get("profile")]
+    train = [r for r in rows if r.get("mode", "train") == "train" and r["dtype"] == "float"
+             and (r["workload"], r["batch"]) in REF and default(r)]
+    infer = [r for r in rows if r.get("mode") == "infer" and not r.get("threads")]
+    print("# Headline timings\n")
+    print("Each entry is the median of the per-process medians of valid live rows; runs and distinct sweep "
+          "counts are shown. Identical copies count once. Re-measurements replace rows only through explicit "
+          "supersession (the archived superseded.jsonl is excluded), never by choosing the latest timestamp. "
+          "Configuration groups retain effective options, library versions, compiler/flags, loaded libraries, "
+          "thread/NUMA conditions and the epochs/repeats/warm-up protocol. check.ok=false, nonfinite losses "
+          "and invalid timing rows use the same rejection rule as plots.\n")
+    print("Training uses the median of steady_epochs_s when available, then steady_epoch_s, with call-level "
+          "time as a labelled fallback for old rows. Within-process IQR is not between-process uncertainty; "
+          "old rows without steady_iqr_s are marked not recorded. Inference uses the whole predict call.\n")
+    print("## Default / vendor training, float\n")
+    timing_table([r for r in train if str(r.get("blas")) not in ("tiled", "handwritten", "omp")])
+    print("\n## Hand-written BLAS training, float\n")
+    timing_table([r for r in train if str(r.get("blas")) in ("tiled", "handwritten", "omp")])
+    print("\n## Inference (whole-call time; internal clock shown separately)\n")
+    timing_table(infer, infer=True)
+    print("\n## Repeated sweeps of the same complete configuration\n")
+    spread = []
+    for rs in groups([r for r in rows if r.get("mode", "train") == "train"]):
+        sweeps = collections.defaultdict(list)
+        for r in rs:
+            sweeps[r["_sweep"]].append(R.epoch_s(r))
+        if len(sweeps) < 2:
             continue
-        if (r["workload"], r["batch"]) not in REF:
-            continue
-        tab[(r["_machine"], dev(r), r["backend"], toolchain(r["_sweep"], r), str(r.get("blas")))][(r["workload"], r["batch"])].append(
-            r["results"]["steady_epoch_s"] * 1e3)
-    print("### Default configuration, steady epoch (ms, median over repeats and duplicate sweeps), float\n")
-    print("| machine | device | backend | toolchain | BLAS | " + " | ".join(f"{w} b{b}" for w, b in REF) + " |")
-    print("|---|---|---|---|---|" + "---|" * len(REF))
-    for k in sorted(tab):
-        cells = [ms(tab[k][wb]) if tab[k].get(wb) else "-" for wb in REF]
-        print("| " + " | ".join(k) + " | " + " | ".join(cells) + " |")
-    # 2. tiled vs vendor
-    tt = collections.defaultdict(lambda: collections.defaultdict(list))
-    for r in rows:
-        o = r.get("options") or {}
-        if r.get("threads") or set(o) - {"blas"}:
-            continue
-        if (r["workload"], r["batch"]) not in REF:
-            continue
-        kind = "tiled" if o.get("blas") in ("tiled", "omp") else "vendor"
-        if o.get("blas") == "omp":
-            kind = "omp-loops"
-        tt[(r["_machine"], dev(r), r["backend"], toolchain(r["_sweep"], r))][(kind, r["workload"], r["batch"])].append(r["results"]["steady_epoch_s"] * 1e3)
-    print("\n### Hand-written tiled BLAS (E7) vs vendor BLAS, steady epoch ms and ratio tiled/vendor\n")
-    print("| machine | device | backend | toolchain | " + " | ".join(f"{w} b{b}" for w, b in REF) + " |")
-    print("|---|---|---|---|" + "---|" * len(REF))
-    for k in sorted(tt):
-        cells = []
-        for w, b in REF:
-            v, t = tt[k].get(("vendor", w, b)), tt[k].get(("tiled", w, b))
-            if v and t:
-                cells.append(f"{ms(v)} / {ms(t)} ({st.median(t) / st.median(v):.2f}x)")
-            elif t:
-                cells.append(f"- / {ms(t)}")
-            elif v:
-                cells.append(f"{ms(v)} / -")
-            else:
-                cells.append("-")
-        print("| " + " | ".join(k) + " | " + " | ".join(cells) + " |")
-    # 3. spread across sweeps for identical visible configurations
-    sp = collections.defaultdict(dict)
-    for r in raw:  # every row, before de-duplication: the spread between sweeps is the point
-        if r.get("threads"):
-            continue
-        o = dict(r.get("options") or {})
-        if o.get("blas") == "auto":
-            o.pop("blas")
-        key = (r["_machine"], dev(r), r["backend"], toolchain(r["_sweep"], r), r["workload"], r["batch"], json.dumps(o, sort_keys=True))
-        sp[key].setdefault(r["_sweep"], []).append(r["results"]["steady_epoch_s"] * 1e3)
-    print("\n### Same visible configuration measured in more than one sweep (run-to-run spread)\n")
-    print("Every configuration with rows in two or more sweeps, worst 25 shown (medians per sweep):\n")
-    print("| machine | device | backend | toolchain | workload | options | sweeps | min ms | max ms | spread |")
-    print("|---|---|---|---|---|---|---|---|---|---|")
-    worst = []
-    for k, d in sp.items():
-        if len(d) < 2:
-            continue
-        med = {sw: st.median(v) for sw, v in d.items()}
-        lo, hi = min(med.values()), max(med.values())
-        worst.append((hi / lo, k, d, lo, hi))
-    for ratio, k, d, lo, hi in sorted(worst, key=lambda t: -t[0])[:25]:
-        print(f"| {k[0]} | {k[1]} | {k[2]} | {k[3]} | {k[4]} b{k[5]} | {k[6] if k[6] != '{}' else 'default'} | {', '.join(sorted(d))} | {lo:.1f} | {hi:.1f} | {ratio - 1:+.1%} |")
-    if worst:
-        spreads = sorted(t[0] - 1 for t in worst)
-        print(f"\n{len(worst)} configurations measured in more than one sweep; median spread {st.median(spreads):.1%}, 90th percentile {spreads[int(0.9 * (len(spreads) - 1))]:.1%}, max {spreads[-1]:.1%}.")
-        big = [t for t in worst if t[1][4] in ("monk", "cup")]
-        small = [t for t in worst if t[1][4] not in ("monk", "cup")]
-        for name, group in (("monk/cup (launch-bound, sub-10 ms epochs)", big), ("other workloads", small)):
-            if group:
-                g = sorted(t[0] - 1 for t in group)
-                print(f"- {name}: {len(g)} configurations, median {st.median(g):.1%}, max {g[-1]:.1%}")
+        medians = {s: st.median(v) for s, v in sweeps.items()}
+        lo, hi = min(medians.values()), max(medians.values())
+        spread.append((hi / lo - 1, [tag(rs[0]), len(rs), len(sweeps), f"{lo*1e3:.3f}", f"{hi*1e3:.3f}",
+                                        f"{hi/lo-1:.1%}", ", ".join(sorted(sweeps))]))
+    table(["config", "runs", "sweeps", "min sweep median ms", "max sweep median ms", "spread", "directories"],
+          [values for _, values in sorted(spread, reverse=True)[:25]])
+    print("\n## Configuration provenance\n")
+    table(["config", "time source", "effective options", "compiler flags", "source rows"],
+          [[tag(rs[0]), "whole predict call" if rs[0].get("mode") == "infer" else
+            ("steady" if all(x["results"].get("steady_epoch_s") or x["results"].get("steady_epochs_s") for x in rs)
+             else "call-level fallback present"),
+            json.dumps(rs[0].get("effective_options") or rs[0].get("options") or {}, sort_keys=True),
+            (rs[0].get("build_info") or {}).get("flags", "not recorded"),
+            ", ".join(f"{x['_source']}:{x.get('_line', '?')}" for x in rs)] for rs in groups(train + infer)])
 
 
 if __name__ == "__main__":

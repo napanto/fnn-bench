@@ -21,14 +21,18 @@ PHASES = ("gemm", "act", "delta", "biasgrad", "update", "loss", "reg", "other")
 def phase_of(name: str) -> str:
     """Kernel name -> profiler phase (cudann's kernels and syclnn's mangled lambda names)."""
     n = name.lower()
+    # BLAS reduction/epilogue kernels implement GEMM too. Check the namespace
+    # before generic "reduction"/"delta" matches (e.g. cublasLt split-K).
+    if "gemv" in n:
+        return "biasgrad"
+    if "gemm" in n or "cublaslt" in n or "splitkreduce" in n:
+        return "gemm"
+    if "cublas" in n and not any(k in n for k in ("asum", "nrm2", "scal", "axpy")):
+        return "gemm"
     if "output_delta" in n or "ndrangereduction" in n or "reduction" in n or "loss" in n:
         return "loss"  # the fused output-delta + loss kernel (a sycl::reduction in syclnn)
     if "hidden_delta" in n or "delta" in n:
         return "delta"
-    if "gemv" in n:
-        return "biasgrad"  # the only GEMV is the bias-gradient (ones-vector) call
-    if "gemm" in n:
-        return "gemm"
     if "activ" in n or "forward_layer" in n:
         return "act"
     if "update" in n:
@@ -86,9 +90,10 @@ def main() -> None:
     batch = int(sys.argv[3]) if len(sys.argv) > 3 else 256
     dtype = sys.argv[4] if len(sys.argv) > 4 else "float"
     out = [f"# Profiler vs nsys, {workload} b={batch} {dtype}\n",
-           "Shares of device time per phase: the in-library profiler (event pairs around every launch, "
-           "per epoch, from the E3 row) against `nsys stats --report cuda_gpu_kern_sum` of a separate "
-           "one-epoch run (kernel time only, no copies). Kernel names classified by substring.\n"]
+           "Shares of attributed phase time: CUDA stream-event intervals and SYCL command-event timestamps "
+           "against `nsys stats --report cuda_gpu_kern_sum` of a separate whole-process trace "
+           "(check, warm-up and measured call; kernel time only, no copies). The intervals differ; "
+           "these shares are not a partition of wall time. Kernel names classified by substring.\n"]
     for backend in ("cudann", "syclnn"):
         csvs = list(root.glob(f"nsys-{backend}-*kernels*_cuda_gpu_kern_sum.csv"))
         if not csvs:
@@ -106,7 +111,7 @@ def main() -> None:
                        f"({total/batches:.3f} ms per batch), plus H2D {per.get('h2d_ns', 0):.1f} ms and D2H {per.get('d2h_ns', 0):.2f} ms "
                        f"per epoch; steady epoch {r['results'].get('steady_epoch_s', 0)*1e3:.1f} ms\n")
             out.append(f"- ratio profiler/nsys per batch: {(total/batches)/(ns_total/1e6/ns_batches):.2f}x "
-                       "(event pairs bracket the launch, nsys measures the kernel)\n")
+                       "(internal attribution and vendor kernel execution have different boundaries)\n")
         out.append("\n| phase | profiler % | nsys % |\n|---|---|---|\n")
         for p in PHASES:
             out.append(f"| {p} | {shares[p]:.1f} | {ns[p]:.1f} |\n" if pr else f"| {p} | - | {ns[p]:.1f} |\n")

@@ -50,7 +50,7 @@ def main() -> None:
             continue
         rows = [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
         keep, drop = [], []
-        newest = {id(r) for r in dedupe(rows)} if a.dupes else None
+        newest = {id(r) for r in dedupe(rows, supersede=True)} if a.dupes else None
         for r in rows:
             why = stale(r, set(a.backend))
             if not why and a.all:

@@ -220,16 +220,22 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
     # dataset upload) without the first epoch of each call, which carries the H2D
     # staging, lazy initialisation and (graph mode) the capture. the libraries record the per-epoch clock with or without the profiler.
     steady = None
+    steady_list = None   # the samples behind `steady`, kept so that its spread can be reported
     ew = prof_all.get("epoch_wall_ns") or []
     if cfg.mode == "train" and cfg.epochs > 1 and len(ew) == cfg.repeat * cfg.epochs:
-        inner = [ew[i] / 1e9 for i in range(len(ew)) if i % cfg.epochs != 0]
-        steady = float(statistics.median(inner))
+        steady_list = [ew[i] / 1e9 for i in range(len(ew)) if i % cfg.epochs != 0]
+        steady = float(statistics.median(steady_list))
     # inference rows: the library's own per-call wall clock (predict_wall_ns, libraries >= syclnn
     # 0.2.1 / cudann 0.1.1 / ompnn 0.1.1), which starts after the binding has handed the NumPy
     # buffer over (zero-copy) and so shares the measurement boundary of the training rows
     pw = prof_all.get("predict_wall_ns") or []
     if cfg.mode == "infer" and len(pw) == cfg.repeat * cfg.epochs:
-        steady = float(statistics.median([v / 1e9 for v in pw]))
+        steady_list = [v / 1e9 for v in pw]
+        steady = float(statistics.median(steady_list))
+    steady_iqr = None
+    if steady_list and len(steady_list) > 1:
+        s1, s3 = np.percentile(steady_list, [25, 75])
+        steady_iqr = float(s3 - s1)
     if cfg.mode == "train":
         step = fl.train_epoch(sizes, n, batch)
         intensity = fl.step_intensity(sizes, batch, itemsize)
@@ -281,6 +287,8 @@ def run(cfg: RunConfig, out: str | Path | None = None, verbose: bool = True) -> 
             "median_epoch_s": median,
             "iqr_epoch_s": float(q3 - q1),
             "steady_epoch_s": steady,
+            "steady_epochs_s": steady_list,
+            "steady_iqr_s": steady_iqr,
             "steady_samples_per_s": (n / steady) if steady else None,
             "samples_per_s": n / median,
             "steps_per_s": ((n + batch - 1) // batch) / median,
