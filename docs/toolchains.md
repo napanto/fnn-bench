@@ -113,12 +113,17 @@ of amdclang++ lives under `/opt/rocm/lib/llvm/lib` (rpath from
 `-print-file-name=libomp.so`). Ubuntu ships OpenBLAS twice
 (`openblas-pthread/`, `openblas-openmp/`) behind one alternatives symlink for
 `libopenblas.so.0`; linking against the OpenMP build's directory is not
-enough, the loader follows the symlink to the pthread build unless the module
-carries an rpath to the variant's directory (ompnn does; rows record the mapped
-libraries in `sysinfo.libs`). Each runtime uses the variant that matches its
-threading: the OpenMP build under ompnn (one thread pool), the pthread build
-under oneMath's Netlib backend on the OpenCL CPU device (no libgomp team next to
-the TBB workers): `docs/methodology.md`, CPU thread policy.
+enough. The module carries the variant's directory in its runtime search path,
+but `DT_RUNPATH` is searched after `LD_LIBRARY_PATH`. On hpc-a30 the latter
+includes `/lib/x86_64-linux-gnu`, whose alternatives link selects pthread
+OpenBLAS despite an OpenMP build-time link. The reported workstation ompnn
+rows map OpenMP OpenBLAS; the original A30 CPU rows map pthread OpenBLAS.
+The cluster script now explicitly selects the OpenMP directory at runtime for
+GNU/LLVM CPU wheels, and prepares `DT_RPATH` for their next build with
+`-Wl,--disable-new-dtags`. nvc++ multicore retains pthread OpenBLAS to avoid
+introducing libgomp alongside its own runtime. Read `sysinfo.libs` for the
+observed variant and version; thread limits do not measure active BLAS workers.
+See `docs/methodology.md`, CPU thread policy, and the generated conditions tables.
 
 ## Hand-written BLAS (E7, `blas=tiled`)
 

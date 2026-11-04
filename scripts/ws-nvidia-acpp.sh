@@ -9,7 +9,9 @@ HERE=$(cd "$(dirname "$0")/.." && pwd)
 HOST=${NVIDIA_HOST:-ws-nvidia}
 REMOTE=${NVIDIA_DIR:-$HOME/fnn}
 DATE=${DATE:-$(date +%F)}
-RUN="podman run --rm --memory=40g --device nvidia.com/gpu=all --security-opt=label=disable -v $REMOTE/syclnn:/work/syclnn -v $REMOTE/fnn-bench:/work/fnn-bench"
+# GPU rows on the GPU's node (guest node 1), as in run-ws-nvidia.sh
+NUMA_GPU=${NUMA_GPU-numactl --cpunodebind=1 --membind=1}
+RUN="$NUMA_GPU podman run --rm --memory=40g --device nvidia.com/gpu=all --security-opt=label=disable -v $REMOTE/syclnn:/work/syclnn -v $REMOTE/fnn-bench:/work/fnn-bench"
 # the image (AdaptiveCpp + oneMath cuBLAS built with acpp): build it here if a previous attempt failed
 rsync -a "$HERE/containers/" "$HOST:$REMOTE/fnn-bench/containers/"
 ssh "$HOST" "podman image exists localhost/fnn-acpp-cuda:dev || (cd $REMOTE/fnn-bench && podman build --memory=40g --build-arg JOBS=16 -f containers/fnn-acpp-cuda.Containerfile -t fnn-acpp-cuda:dev containers/ 2>&1 | tail -4)"

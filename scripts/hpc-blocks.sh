@@ -8,6 +8,8 @@
 #
 #   scripts/hpc-blocks.sh build-wheels | build-nvcpp | parity-<sycl|cuda|omp-gpu|acpp|cpu> |
 #                         <block> | <block>-extras | nsys | status
+# Extras: nsys-epoch | ncu-check | ncu-tiled <cuda|sycl|omp> | stat-confirm |
+#         sanitizer-check | sanitizer <tool> | stream. Each has its own result directory.
 #   blocks: sycl-gpu cuda omp-gpu acpp-gpu sycl-cpu sycl-generic omp-cpu acpp-cpu
 #
 # Environment: HPC_DIR (repos, default ~/fnn), HPC_SANDBOXES (default ~/sandboxes), APPTAINER, DATE.
@@ -28,16 +30,152 @@ log() { printf '\n==== [%s] %s\n' "$(date +%T)" "$*"; }
 binds="-B /tmp"; [ -d /scratch ] && binds="$binds,/scratch"; [ -d /opt/nvidia ] && binds="$binds,/opt/nvidia"
 nv=""; command -v nvidia-smi >/dev/null 2>&1 && nv="--nv"
 # run <image> <script>: bash inside the sandbox, in fnn-bench, with the reference cache and pylib
-run() { local img=$1; shift; $APPT exec $nv $binds "$SB/$img" bash -c "export FNN_REF_CACHE=$B/.cache/ref FNN_DATA_DIR=$HOME/.cache/fnn-testkit PYTHONPATH=$PL:\${PYTHONPATH:-}; cd $B; $*"; }
+run() { local img=$1; shift; $NUMA $APPT exec $nv $binds "$SB/$img" bash -c "export FNN_REF_CACHE=$B/.cache/ref FNN_DATA_DIR=$HOME/.cache/fnn-testkit PYTHONPATH=$PL:\${PYTHONPATH:-}; cd $B; $*"; }
 wheel() { echo "export PYTHONPATH=$PL:$W/hpc-$1"; }
 pip_target() { # pip_target <wheel-dir> <src-dir> <build-name>
-    echo "rm -rf $W/hpc-$1 && pip install -q --no-deps --target $W/hpc-$1 --config-settings=build-dir=/tmp/hpc-b-$3 $2 2>&1 | grep -E 'error|Error' ; ls $W/hpc-$1 >/dev/null 2>&1 && echo 'BUILD OK $1' || echo 'BUILD FAILED $1'"
+    local link=""
+    # Apptainer puts /lib/x86_64-linux-gnu on LD_LIBRARY_PATH. DT_RUNPATH loses
+    # to its alternatives link (pthread); DT_RPATH preserves the linked variant.
+    # The pass keeps pthread OpenBLAS for nvc++ multicore, whose own
+    # OpenMP runtime would otherwise coexist with OpenBLAS's libgomp.
+    [[ $1 = omp-* && $1 != omp-nvcpp* && $1 != omp-gcc14mkl ]] && link="--config-settings=cmake.define.CMAKE_MODULE_LINKER_FLAGS=-Wl,--disable-new-dtags"
+    echo "rm -rf $W/hpc-$1 && pip install -q --no-deps --target $W/hpc-$1 --config-settings=build-dir=/tmp/hpc-b-$3 $link $2 && echo 'BUILD OK $1' || { echo 'BUILD FAILED $1'; exit 1; }"
 }
 DRY=${DRY:-}   # DRY=--dry-run: only count pending rows (status)
 sw() { local plan=$1 out=$2; shift 2; $FB sweep --plan plans/$plan.json --out $RES/$out $DRY "$@"; }
 export -f sw 2>/dev/null || true
 
+extra_dir() { RES=results/hpc-a30/$1-$DATE; mkdir -p "$B/$RES"; }
+find_ncu() { find /opt/nvidia -type f -name ncu -executable -path '*x64*' 2>/dev/null | sort -V | tail -1; }
+extra_policy() {
+    local policy=$B/results/hpc-a30/NUMA-POLICY
+    [ -s "$policy" ] || policy=$B/$RES/NUMA-POLICY
+    [ -s "$policy" ] || { echo 'waiting for the NUMA-POLICY file'; return 1; }
+    NUMA=$(python3 "$B/scripts/gpu-numa-prefix.py" "$policy") || return 1
+    [ "$policy" = "$B/$RES/NUMA-POLICY" ] || cp "$policy" "$B/$RES/NUMA-POLICY"
+}
+kernel_roofline() {
+    local nc=results/hpc-a30/ncu-tiled-$DATE stream=results/hpc-a30/stream-$DATE
+    local figure=results/analysis/figures/hpc-a30-kernel-$DATE
+    [ -s "$B/$nc/kernels.json" ] && [ -s "$B/$stream/summary.json" ] || return 0
+    # Runs after measurement, in the exclusive allocation. Plot dependencies are
+    # isolated from pylib and the benchmark wheels; the last producer refreshes it.
+    if run fnn-cuda "export PYTHONPATH=$B/results/analysis/engineer-check-env-$DATE:$PL; python scripts/kernel-roofline.py --ncu $nc --stream $stream --out $figure" > "$B/$nc/roofline.log" 2>&1; then
+        for dir in "$nc" "$stream"; do
+            printf '\nPer-kernel roofline: [PNG](../../analysis/figures/hpc-a30-kernel-%s/kernel-roofline.png), separate from application W4.\n' "$DATE" >> "$B/$dir/README.md"
+        done
+    else
+        printf '\nPer-kernel figure not generated; see ncu-tiled-%s/roofline.log. Counter/STREAM tables remain available.\n' "$DATE" >> "$B/$stream/README.md"
+    fi
+}
+
+# Memory policy (docs/methodology.md, "Memory placement"): the CPU blocks run with interleaved memory;
+# the GPU blocks keep the default policy, since binding the process to the A30's node changed no GPU
+# row beyond the noise (results/hpc-a30/numa-pilot-2026-11-03, results/hpc-a30/NUMA-POLICY)
+NUMA=""
+case ${1:-} in sycl-cpu*|sycl-generic*|omp-cpu*|acpp-cpu*) NUMA="numactl --interleave=all" ;; esac
+# ompnn links the OpenMP-threaded OpenBLAS through its RUNPATH, but the sandbox's LD_LIBRARY_PATH
+# (/lib/x86_64-linux-gnu) is searched first and the alternatives symlink there is the pthread build:
+# put the OpenMP variant first, as it resolves on the workstations (the 2026-09-17 rows loaded pthread).
+# nvc++ multicore keeps the build the image resolves: the OpenMP variant would bring libgomp next to
+# nvc++'s own OpenMP runtime.
+ompblas() { case $1 in gcc14mkl|nvcppmc) ;; *) echo "export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/openblas-openmp:\${LD_LIBRARY_PATH:-};" ;; esac; }
+
 case ${1:-} in
+nsys-epoch)
+    extra_dir nsys-epoch; extra_policy || exit 1
+    NSYS=$(find /opt/nvidia -type f -name nsys -executable -path '*nsight-systems*x64*' 2>/dev/null | sort -V | tail -1)
+    [ -n "$NSYS" ] || { echo 'Nsight Systems unavailable'; exit 1; }
+    "$NSYS" --version > "$B/$RES/versions.txt" 2>&1
+    printf 'NUMA prefix: %s\n' "${NUMA:-none (adopted default)}" > "$B/$RES/commands.txt"
+    run fnn-cuda "g++-13 -O2 -shared -fPIC -I/usr/local/cuda-12.9/include scripts/nvtx-range.cpp -ldl -o $RES/nvtx-range.so" || exit 1
+    for cfg in 'fnn-cuda cuda cudann' 'fnn-sycl sycl syclnn' 'fnn-cuda omp-clang18nv ompnn'; do
+        set -- $cfg; img=$1; w=$2; be=$3
+        for profiling in off on; do
+            opt=""; [ "$profiling" = on ] && opt=--profile
+            tag=$be-$profiling
+            cmd="$NSYS profile --trace=cuda,nvtx --sample=none --cpuctxsw=none --capture-range=cudaProfilerApi --capture-range-end=stop --force-overwrite true -o $RES/$tag python scripts/nsys_epoch.py --backend $be --nvtx-lib $B/$RES/nvtx-range.so --out $RES/$tag.json $opt"
+            printf '%s\n' "$cmd" >> "$B/$RES/commands.txt"
+            run "$img" "$(wheel "$w"); $cmd" > "$B/$RES/$tag.log" 2>&1 || continue
+            run "$img" "$NSYS stats --report cuda_gpu_trace --format csv -o $RES/$tag-gpu $RES/$tag.nsys-rep
+                $NSYS stats --report cuda_api_sum --format csv -o $RES/$tag-api $RES/$tag.nsys-rep
+                $NSYS export --type sqlite --force-overwrite true -o $RES/$tag.sqlite $RES/$tag.nsys-rep" >> "$B/$RES/$tag.log" 2>&1
+        done
+    done
+    run fnn-cuda "python scripts/nsys-epoch-table.py $RES" ;;
+stat-confirm)
+    extra_dir stat-confirm; extra_policy || exit 1
+    run fnn-cuda "python --version; python -m pip show fnnbench fnn-testkit numpy" > "$B/$RES/versions.txt" 2>&1
+    for round in 1 2 3; do
+        order='cudann syclnn'; cup='default in-order graph'
+        [ "$round" = 2 ] && { order='syclnn cudann'; cup='graph in-order default'; }
+        for batch in 256 1024; do for be in $order; do
+            img=fnn-cuda; w=cuda; [ "$be" = syclnn ] && { img=fnn-sycl; w=sycl; }
+            run "$img" "$(wheel "$w"); python scripts/stat-confirm.py --run $be-mnist-b$batch --round $round --out $RES" || true
+        done; done
+        for opt in $cup; do
+            run fnn-cuda "$(wheel cuda); python scripts/stat-confirm.py --run cudann-cup-$opt --round $round --out $RES" || true
+        done
+    done
+    run fnn-cuda "python scripts/stat-confirm.py --out $RES" ;;
+sanitizer|sanitizer-check)  # sanitizer <tool>, one exclusive job each; check is a short shared job
+    extra_dir sanitizer
+    tool=${2:-memcheck}
+    smoke=""; [ "$1" = sanitizer-check ] && smoke=--smoke
+    san=/usr/local/cuda-12.9/compute-sanitizer/compute-sanitizer
+    [ ! -s "$B/$RES/sanitizer-path.txt" ] || san=$(cat "$B/$RES/sanitizer-path.txt")
+    run fnn-cuda "$(wheel cuda); export PYTHONDONTWRITEBYTECODE=1; test -x '$san' || { echo 'CUDA 12.9 compute-sanitizer unavailable; use scripts/fetch-sanitizer.py in this sandbox'; exit 1; }; python scripts/sanitizer-cases.py --tool $tool --sanitizer '$san' --out $RES $smoke" ;;
+stream)
+    extra_dir stream; extra_policy || exit 1
+    printf 'NUMA prefix: %s\nnvcc -O3 -std=c++17 -arch=sm_80 -ccbin g++-13 scripts/stream-probe.cu -o %s/stream-probe\n%s/stream-probe > %s/stream.csv\n' "${NUMA:-none (adopted default)}" "$RES" "$RES" "$RES" > "$B/$RES/commands.txt"
+    run fnn-cuda "nvcc --version; python --version; nvidia-smi --query-gpu=name,driver_version,clocks.sm,clocks.mem --format=csv" > "$B/$RES/versions.txt" 2>&1
+    run fnn-cuda "nvcc -O3 -std=c++17 -arch=sm_80 -ccbin g++-13 scripts/stream-probe.cu -o $RES/stream-probe && $RES/stream-probe > $RES/stream.csv && python scripts/stream-table.py $RES" || exit 1
+    kernel_roofline ;;
+ncu-tiled)  # ncu-tiled <cuda|sycl|omp>; one <=30-minute exclusive job per wheel
+    extra_dir ncu-tiled
+    grep -qx allowed "$B/$RES/access-status.txt" || { echo 'run ncu-check successfully first'; exit 1; }
+    NCU=$(cat "$B/$RES/ncu-path.txt")
+    case ${2:-cuda} in
+        cuda) img=fnn-cuda; w=cuda; be=cudann; label=cudann-nvcc; kinds='tiled auto' ;;
+        sycl) img=fnn-sycl; w=sycl; be=syclnn; label=syclnn-dpcpp; kinds=tiled ;;
+        omp) img=fnn-cuda; w=omp-clang18nv; be=ompnn; label=ompnn-clang18nv; kinds=tiled ;;
+        *) echo 'expected cuda, sycl or omp'; exit 2 ;;
+    esac
+    run fnn-cuda "find /usr/local /opt/nvidia -name compute-sanitizer -o -name 'libnvToolsExt.so*' 2>/dev/null > $RES/node-tools.txt"
+    for kind in $kinds; do
+        run "$img" "$(wheel "$w"); python scripts/ncu-experiments.py --ncu $NCU --backend $be --label $label --blas $kind --out $RES" || exit 1
+    done
+    run fnn-cuda "python scripts/ncu-table.py $RES" || exit 1
+    kernel_roofline ;;
+ncu-check)
+    extra_dir ncu-tiled
+    NCU=$(find_ncu)
+    {
+        printf '# Nsight Compute availability and counter access\n\n'
+        printf 'Command: `DATE=%s bash scripts/hpc-blocks.sh ncu-check` (gpu-shared, <=5 minutes).\n\n' "$DATE"
+        printf '| check | result |\n|---|---|\n'
+        printf '| node | %s |\n| ncu | %s |\n' "$(hostname)" "${NCU:-not found}"
+    } > "$B/$RES/README.md"
+    [ -n "$NCU" ] || { echo 'unavailable: ncu not found under /opt/nvidia' > "$B/$RES/access-status.txt"; exit 1; }
+    printf '%s\n' "$NCU" > "$B/$RES/ncu-path.txt"
+    "$NCU" --version > "$B/$RES/ncu-version.txt" 2>&1
+    run fnn-cuda "$(wheel cuda); timeout 180s $NCU --set basic --launch-count 1 --profile-from-start off --target-processes all --force-overwrite -o $RES/access-check python scripts/nsys_epoch.py --backend cudann --blas tiled --samples 256 --epochs 1 --out $RES/access-driver.json" > "$B/$RES/access-check.log" 2>&1
+    rc=$?
+    if grep -q ERR_NVGPUCTRPERM "$B/$RES/access-check.log"; then
+        echo 'denied: ERR_NVGPUCTRPERM; no privilege escalation or repeated counter attempts' > "$B/$RES/access-status.txt"
+    elif [ "$rc" = 0 ] && [ -s "$B/$RES/access-check.ncu-rep" ]; then
+        echo 'allowed' > "$B/$RES/access-status.txt"
+    else
+        echo "failed: exit $rc; inspect access-check.log" > "$B/$RES/access-status.txt"
+    fi
+    printf '| counter probe | %s |\n| tool version | %s |\n' "$(cat "$B/$RES/access-status.txt")" "$(tr '\n' ' ' < "$B/$RES/ncu-version.txt")" >> "$B/$RES/README.md"
+    exit "$rc" ;;
+build-omp-cpu)
+    # Coordinator-only rebuild: no pylib or GPU wheel is removed by this case.
+    for cfg in "gcc14 g++-14" "clang18 clang++-18" "clang22 clang++-22"; do
+        set -- $cfg
+        run fnn-cuda "export CXX=$2 OMPNN_TARGET=cpu OMPNN_OFFLOAD_ARCH= OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=16; $(pip_target omp-$1 $R/ompnn omp-$1)" || exit 1
+    done ;;
 build-wheels)
     log "wheels (front-end, compile only): syclnn DPC++ sm_80, generic, AdaptiveCpp; cudann sm_80; ompnn clang-18/gcc-14 nvptx + host compilers"
     run fnn-sycl "export CC=clang CXX=clang++ SYCLNN_TARGETS='spir64;nvidia_gpu_sm_80' SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=16; $(pip_target sycl $R/syclnn sycl)"
@@ -186,7 +324,7 @@ sycl-generic-extras)
 omp-cpu)
     for w in gcc14 clang22 clang18 gcc14mkl nvcppmc; do
         case $w in clang*) bind="OMP_PROC_BIND=false" ;; *) bind="OMP_PROC_BIND=close OMP_PLACES=cores" ;; esac
-        run fnn-cuda "$(wheel omp-$w); export PATH=$NVHPC/compilers/bin:\$PATH OMP_NUM_THREADS=$CORES $bind MKL_THREADING_LAYER=GNU; $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
+        run fnn-cuda "$(wheel omp-$w); $(ompblas $w) export PATH=$NVHPC/compilers/bin:\$PATH OMP_NUM_THREADS=$CORES $bind MKL_THREADING_LAYER=GNU; $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
             sw e4_omp_cpu omp-cpu-$w
             if [ $w = gcc14 ]; then
                 sw e7_tiled_gemm e7-tiled-omp-cpu-gcc14 --select device=cpu --select backend=ompnn
@@ -197,7 +335,7 @@ omp-cpu)
 omp-cpu-extras)
     for w in gcc14 clang22 clang18 gcc14mkl nvcppmc; do
         case $w in clang*) bind="OMP_PROC_BIND=false" ;; *) bind="OMP_PROC_BIND=close OMP_PLACES=cores" ;; esac
-        run fnn-cuda "$(wheel omp-$w); export PATH=$NVHPC/compilers/bin:\$PATH OMP_NUM_THREADS=$CORES $bind MKL_THREADING_LAYER=GNU; mkdir -p $RES; $FB peak --backend ompnn --device cpu --dtype float --size 4096 --out $RES/peaks-omp-$w"
+        run fnn-cuda "$(wheel omp-$w); $(ompblas $w) export PATH=$NVHPC/compilers/bin:\$PATH OMP_NUM_THREADS=$CORES $bind MKL_THREADING_LAYER=GNU; mkdir -p $RES; $FB peak --backend ompnn --device cpu --dtype float --size 4096 --out $RES/peaks-omp-$w"
     done ;;
 acpp-cpu)
     run fnn-acpp-cuda "$(wheel sycl-acpp); export OMP_NUM_THREADS=$CORES OMP_PROC_BIND=close OMP_PLACES=cores; $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
@@ -222,6 +360,22 @@ nsys)
     trace fnn-cuda cuda cudann cudann-mnist
     trace fnn-cuda omp-clang18nv ompnn ompnn-clang18nv-mnist
     trace fnn-cuda omp-nvcpp ompnn ompnn-nvcpp-mnist LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-} ;;
+# ---------------------------------------------------------------- NUMA pilot (DATE=numa-pilot-<date>)
+# Replays the rows in $RES/sel-*.jsonl (picked from the 2026-09-17 pass) under one memory policy, to
+# size the effect of page placement on node09 (8 NUMA nodes of 4 cores; the A30 hangs off one of them).
+numa-pilot-cpu)   # numa-pilot-cpu <first-touch|interleave> <round>
+    pol=$2; k=$3; pre=""; [ "$pol" = interleave ] && pre="numactl --interleave=all"
+    log "NUMA pilot, CPU rows, policy $pol, round $k"
+    run fnn-sycl "$(wheel sycl); export OMP_PROC_BIND=close OMP_PLACES=cores DPCPP_CPU_NUM_CUS=$CORES OMP_NUM_THREADS=$CORES; $pre $FB replay $RES/sel-dpcpp-syclnn.jsonl --out $RES/$pol-r$k/dpcpp"
+    run fnn-cuda "$(wheel omp-gcc14); export OMP_NUM_THREADS=$CORES OMP_PROC_BIND=close OMP_PLACES=cores MKL_THREADING_LAYER=GNU; $pre $FB replay $RES/sel-omp-gcc14-ompnn.jsonl --out $RES/$pol-r$k/omp-gcc14"
+    run fnn-acpp-cuda "$(wheel sycl-acpp); export OMP_NUM_THREADS=$CORES OMP_PROC_BIND=close OMP_PLACES=cores; $pre $FB replay $RES/sel-acpp-cpu-syclnn.jsonl --out $RES/$pol-r$k/acpp-cpu" 2>&1 | grep -v 'AdaptiveCpp Warning' ;;
+numa-pilot-gpu)   # default (unbound, as the pass) against the process bound to the A30's node, ABAB
+    gnode=$(cat /sys/bus/pci/drivers/nvidia/0000:*/numa_node 2>/dev/null | head -1); log "NUMA pilot, GPU rows; the A30 is on node $gnode"
+    for k in 1 2; do for pol in default gpu-node; do
+        pre=""; [ $pol = gpu-node ] && pre="numactl --cpunodebind=$gnode --membind=$gnode"
+        run fnn-cuda "$(wheel cuda); $pre $FB replay $RES/sel-gpu-cudann.jsonl --out $RES/$pol-r$k/gpu"
+        run fnn-sycl "$(wheel sycl); $pre $FB replay $RES/sel-gpu-syclnn.jsonl --out $RES/$pol-r$k/gpu"
+    done; done ;;
 status)
     for b in sycl-gpu cuda omp-gpu acpp-gpu sycl-cpu sycl-generic omp-cpu acpp-cpu; do
         echo "--- $b"; DRY=--dry-run "$0" $b 2>&1 | grep -E 'dry run:|Error|error' | sed 's/^/    /'

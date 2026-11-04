@@ -15,7 +15,12 @@ HOST=${NVIDIA_HOST:-ws-nvidia}
 REMOTE=${NVIDIA_DIR:-$HOME/fnn}
 DATE=${DATE:-$(date +%F)}
 GPU="--device nvidia.com/gpu=all --security-opt=label=disable"
-RUN="podman run --rm --memory=40g $GPU -v $REMOTE/syclnn:/work/syclnn -v $REMOTE/cudann:/work/cudann -v $REMOTE/ompnn:/work/ompnn -v $REMOTE/fnn-bench:/work/fnn-bench"
+# Memory placement (docs/methodology.md): the GTX 1080 Ti hangs off host socket 1 = guest NUMA node 1
+# (ws-nvidia's cells are pinned 1:1 with strict memory binding), so GPU rows run with the process and its
+# memory on node 1; the CPU rows override it inside the container with interleaved memory on both nodes
+NUMA_GPU=${NUMA_GPU-numactl --cpunodebind=1 --membind=1}
+NUMA_CPU="numactl --cpunodebind=0,1 --interleave=all"
+RUN="$NUMA_GPU podman run --rm --memory=40g $GPU -v $REMOTE/syclnn:/work/syclnn -v $REMOTE/cudann:/work/cudann -v $REMOTE/ompnn:/work/ompnn -v $REMOTE/fnn-bench:/work/fnn-bench"
 
 sync() {
     ssh "$HOST" mkdir -p "$REMOTE"
@@ -105,15 +110,17 @@ matrix_omp() {
         for w in clang18nv gcc14nv; do
             export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w
             fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-\$w
-            fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-\$w
+            # gcc offload runs the tiled kernel with one thread per warp: the 4096-wide row takes hours, as on the other machines it is omitted
+            e7sel=\"\"; [ \$w = gcc14nv ] && e7sel=\"--select workload=monk,cup,mnist-512-256,sweep-w256-d4-b256,sweep-w1024-d4-b256\"
+            fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn \$e7sel --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-\$w
             fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-\$w
             fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-breakdown-omp-gpu-\$w
             fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-\$w
         done
-        # 12 = physical cores (2 x 6; the image default 16 is ws-amd's); unbound: libomp + OpenBLAS-openmp collapse when bound
+        # 12 = physical cores (2 x 6; the image default 16 is the one of ws-amd); unbound: libomp + OpenBLAS-openmp collapse when bound
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22 OMP_NUM_THREADS=12 OMP_PROC_BIND=false; unset OMP_PLACES
-        fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22
-        fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-nvidia/$DATE/peaks-omp-clang22'"
+        $NUMA_CPU fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22
+        $NUMA_CPU fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-nvidia/$DATE/peaks-omp-clang22'"
 }
 
 matrix_cuda_omp() {
