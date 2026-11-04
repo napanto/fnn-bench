@@ -80,6 +80,9 @@ ZLUDA).
 | Toolchains and images | `rocm-toolchain.sh` (AdaptiveCpp + oneMath for the RX 7900 XTX), `dpcpp-hip-toolchain.sh` (the DPC++-on-AMD attempt, kept with `containers/fnn-sycl-portable.Containerfile`), `publish-amd-variants.sh` (the AMD tags of the library images) |
 | Tables and figures | `analyze.sh`, `headline.py`, `peaks-table.py`, `acpp-vs-dpcpp.py` |
 | Profiler and runtime cross-checks | `nsys-crosscheck.py`, `rocprof-crosscheck.sh`, `perf-crosscheck.sh`, `zluda-crosscheck.sh` |
+| Memory placement | `numa-pilot-ws-amd.sh`, `numa-pilot-compare.py` (the NUMA pilot), `ws-amd-cpu-numa.sh` (ws-amd CPU rows with interleaved memory); the policy of the other machines is in `hpc-blocks.sh` and `run-ws-nvidia.sh` |
+| Recorded conditions and analysis checks | `conditions-table.py` (environment, loaded BLAS, binding, flags per row family), `analysis-regressions.py` (tests of the aggregation, validity and plotting helpers) |
+| Extra experiments on the workstations (2026-11) | `ws-nvidia-extras.sh`, `ws-amd-extras.sh`, `ws-amd-stable-extras.sh`, `workstation-extras-control.py`; `nsys_epoch.py` + `nsys-epoch-table.py` (one delimited epoch in Nsight Systems), `stat-confirm.py` (independent processes), `sanitizer-cases.py` (compute-sanitizer), `stream-probe.cu` + `stream-table.py` (bandwidth), `rocprof-counters.py` + `rocprof-table.py` + `kernel-roofline.py` (GEMM counters, per-kernel roofline), `cublas-race-probe.cu`; results in `results/EXTRAS-2026-11.md` |
 
 ## Open items
 
