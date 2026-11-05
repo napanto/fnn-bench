@@ -10,7 +10,7 @@ P=$HOME/.local/opt/fnn-rocm;R=results/ws-amd/rocprof-stable-$DATE;OLD=results/ws
 TOOLS=results/ws-amd/extra-tools-$DATE
 mkdir -p "$R"
 export PATH=$P/venv/bin:$PATH PYTHONPATH=$B/bench:$B/testkit PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=16
-export FNN_DATA_DIR=$B/$TOOLS/data FNN_REF_CACHE=$B/$TOOLS/ref
+export FNN_MACHINE_ID=ws-amd FNN_DATA_DIR=$B/$TOOLS/data FNN_REF_CACHE=$B/$TOOLS/ref
 unset OMP_PROC_BIND OMP_PLACES
 if [ "$ACTION" = lds ]; then
     for cfg in 'cudann hipcc venv tiled' 'syclnn adaptivecpp venv tiled' 'ompnn amdclang venv-amdclang tiled' 'cudann hipcc venv auto'; do

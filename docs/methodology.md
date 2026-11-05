@@ -75,6 +75,11 @@ container image, filtered environment, mapped libraries, package versions, git
 SHA of the bench). `fnnbench replay <file> [--id]` re-runs any row;
 `fnnbench collect` flattens everything into one CSV.
 
+New captures use `FNN_MACHINE_ID` as the public host identifier (default `host`).
+Workstation extra-experiment scripts set it to `ws-amd` or `ws-nvidia`.
+CSV exports use the machine directory name when available. September raw rows
+retain their original provenance fields.
+
 ### Per-epoch times
 
 Every training row carries two per-epoch times (inference rows only the first):

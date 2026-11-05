@@ -8,7 +8,6 @@ import os
 import platform
 import re
 import shutil
-import socket
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,6 +17,10 @@ ENV_KEYS_PREFIXES = ("OMP_", "ONEAPI_", "SYCL_", "ACPP_", "HIP_", "CUDA_", "ROCR
                      "GOMP_", "KMP_", "LIBOMPTARGET", "FNN_", "NVIDIA_", "NVCOMPILER_", "DPCPP_", "LD_LIBRARY_PATH", "LD_PRELOAD", "HIPSYCL_",
 )
 
+
+def machine_id() -> str:
+    """Use an explicit public identifier instead of the system's private hostname."""
+    return os.environ.get("FNN_MACHINE_ID", "host")
 
 
 def loaded_libs() -> list[str]:
@@ -103,9 +106,11 @@ def gpu_info() -> dict[str, Any]:
 
 def container_info() -> dict[str, Any]:
     info: dict[str, Any] = {}
-    for key in ("FNN_IMAGE", "FNN_IMAGE_DIGEST", "container", "HOSTNAME"):
+    for key in ("FNN_IMAGE", "FNN_IMAGE_DIGEST", "container"):
         if key in os.environ:
             info[key] = os.environ[key]
+    if "HOSTNAME" in os.environ:
+        info["HOSTNAME"] = machine_id()
     env_file = _read("/run/.containerenv")
     if env_file is not None:
         info["containerenv"] = True
@@ -188,7 +193,7 @@ def _meminfo_total() -> int | None:
 def collect(repos: dict[str, str] | None = None) -> dict[str, Any]:
     info = {
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "hostname": socket.gethostname(),
+        "hostname": machine_id(),
         "kernel": platform.release(),
         "python": platform.python_version(),
         "cpu": cpu_info(),

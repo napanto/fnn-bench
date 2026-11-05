@@ -3,6 +3,7 @@
 import copy
 import importlib.util
 import math
+import os
 import csv
 import json
 import runpy
@@ -210,12 +211,46 @@ class AnalysisTests(unittest.TestCase):
                 self.assertEqual(r['duration_ns'],100000)
             self.assertIsNone(module['number']('NaN'))
 
-    def test_host_gate_precedes_remote_actions(self):
+    def test_workstation_gate_precedes_remote_actions(self):
         spec=importlib.util.spec_from_file_location('extra_control',Path(__file__).with_name('workstation-extras-control.py'))
         m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
         with patch.object(m.subprocess,'run',return_value=type('Result',(),{'returncode':0})()), patch.object(m,'ssh') as ssh:
             with self.assertRaises(RuntimeError): m.gate()
             ssh.assert_not_called()
+
+    def test_public_conditions_preserve_policy_without_service_inventory(self):
+        from extra_conditions import footer, public_bench_status, BACKGROUND_NOTE
+        status = ('private-server 2026-11-04T01:51:19+01:00 boot_id=private-id\n'
+                  'cpufreq: driver=intel_cpufreq no_turbo=1\n'
+                  '  policies: 24 governor=performance min=3500000 max=3500000\n'
+                  'kernel.numa_balancing=0 ksm.run=0\n'
+                  'private-guest: running (booted)  hugepage guard: inactive\n'
+                  'private-service running\n')
+        safe = public_bench_status(status)
+        self.assertNotIn('private-', safe)
+        self.assertIn('min=3500000 max=3500000', safe)
+        self.assertIn('kernel.numa_balancing=0', safe)
+        self.assertEqual(public_bench_status(safe), safe)
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent.parent/'results/analysis') as tmp:
+            p = Path(tmp)
+            (p/'bench-mode-status.txt').write_text(status)
+            (p/'background-host.txt').write_text('private-service private-image running\n')
+            text = footer(p)
+            self.assertNotIn('private-', text)
+            self.assertIn(BACKGROUND_NOTE, text)
+            self.assertIn('not dedicated to the benchmark', text)
+
+    def test_public_host_identifier_and_csv_export(self):
+        from fnnbench import sysinfo
+        with patch.dict(os.environ, {'HOSTNAME':'private-server'}, clear=True), patch.object(sysinfo, '_read', return_value=None):
+            self.assertEqual(sysinfo.machine_id(), 'host')
+            self.assertEqual(sysinfo.container_info()['HOSTNAME'], 'host')
+            os.environ['FNN_MACHINE_ID'] = 'ws-amd'
+            self.assertEqual(sysinfo.container_info()['HOSTNAME'], 'ws-amd')
+        r = row(sysinfo={'hostname':'private-server'})
+        self.assertEqual(R.flatten(r)['host'], 'host')
+        r['_machine'] = 'ws-amd'
+        self.assertEqual(R.flatten(r)['host'], 'ws-amd')
 
     def test_dynamic_lds_allocation_is_not_static_symbol_size(self):
         m=runpy.run_path(str(Path(__file__).with_name('rocprof-table.py')))

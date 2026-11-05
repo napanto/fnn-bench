@@ -35,7 +35,7 @@ HIPified build on AMD and the unmodified NVIDIA wheel on AMD through ZLUDA (4.).
 | wheel (SHA-256 of `_syclnn*.so`) | built on / targets | devices | rows |
 |---|---|---|---|
 | AdaptiveCpp generic SSCP, `c698b8a0...0374657` | ws-amd, one generic IR (JIT per device) | RX 7900 XTX, TR 2950X (host device), GTX 1080 Ti, Xeon E5-2643 v2 (host device) | `results/ws-amd/2026-09-05/portable-acpp`, `results/ws-nvidia/2026-09-05/portable-acpp` (`scripts/ws-nvidia-portable-acpp.sh`) |
-| DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia, two AOT targets | TR 2950X (OpenCL CPU), GTX 1080 Ti; not the RX 7900 XTX (no HIP adapter) | `results/ws-amd/2026-09-05/portable-dpcpp`, `results/ws-nvidia/2026-09-05/sycl-gpu` |
+| DPC++ `spir64` + `nvidia_gpu_sm_61`, `2a41db17...6945e99` | ws-nvidia; `spir64` is SPIR-V compiled by JIT at runtime, `nvidia_gpu_sm_61` is the CUDA AOT target | TR 2950X (OpenCL CPU), GTX 1080 Ti; not the RX 7900 XTX (no HIP adapter) | `results/ws-amd/2026-09-05/portable-dpcpp`, `results/ws-nvidia/2026-09-05/sycl-gpu` |
 
 The full hashes are in `results/ws-amd/2026-09-05/portable-{acpp,dpcpp}.SHA256`.
 

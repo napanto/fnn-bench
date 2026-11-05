@@ -172,7 +172,7 @@ def flatten(row: dict[str, Any]) -> dict[str, Any]:
         "id": row.get("id"),
         "tag": row.get("tag"),
         "timestamp": row.get("timestamp"),
-        "host": (row.get("sysinfo") or {}).get("hostname"),
+        "host": row.get("_machine") or ((row.get("sysinfo") or {}).get("env") or {}).get("FNN_MACHINE_ID", "host"),
         "backend": row.get("backend"),
         "version": (row.get("build_info") or {}).get("version"),
         "compiler": (row.get("build_info") or {}).get("compiler"),

@@ -18,6 +18,12 @@ Last update: 2026-11-03.
 | `fnn-rocm` distrobox (ws-amd) | Ubuntu 24.04 + ROCm 7.2.4 (a distrobox container on the host; the same recipe, `scripts/rocm-toolchain.sh`, as the image above: this is where the ws-amd rows were measured) | hipcc, amdclang++ 22 (ROCm), rocBLAS 5.2 / hipBLAS 3.2, rocprofv3, gcc-13/14 + `gcc-14-offload-amdgcn`, clang-18 + libomp-18 (`libomptarget-amdgpu-gfx1100.bc`), OpenBLAS; `~/.local/opt/fnn-rocm/`: **AdaptiveCpp 25.10.0** (LLVM 18, SSCP `generic` target, ROCm + OpenMP backends), oneMath v0.9 (rocBLAS + NETLIB), Python venv | 2026-09-03, `scripts/rocm-toolchain.sh` |
 | hpc-a30 sandboxes (`~/sandboxes/<image>`, `scripts/hpc-blocks.sh`) | the `ghcr.io/napanto/fnn-{cuda,sycl,sycl-generic,acpp-cuda}:2026-09` images converted on the front-end with `singularity build --sandbox` (the node has no container runtime) and run on the node with an unprivileged apptainer 1.5.3 (`apptainer exec --nv`, `.deb` extracted into the home; user namespaces, no setuid) | node: Ubuntu 22.04, driver 610.43.02 (CUDA 13.3 user-mode driver runs the CUDA 12.9 images), NVIDIA HPC SDK 26.5 at `/opt/nvidia` bind-mounted for the nvc++ variants | 2026-09-17 |
 
+The oneMath sources use release tag **v0.9**. That tag declares
+`project(oneMath VERSION 0.5.0)` and exports CMake package version **0.5.0** in
+`oneMathConfigVersion.cmake`. `syclnn.build_info().onemath` records that package
+version and its installation path when using `find_package(oneMath)`.
+This applies to both the DPC++ and AdaptiveCpp builds in these recipes.
+
 Build-safety: every image build runs with `podman build --memory=20g`, every
 compile with `-j8` (`CMAKE_BUILD_PARALLEL_LEVEL=8`).
 
@@ -91,7 +97,7 @@ parallel for simd` on `omp_target_alloc` memory + vendor BLAS interop
 
 | Compiler | Target | BLAS | Status | Notes |
 |---|---|---|---|---|
-| gcc 14.2 (`-foffload=disable`) | ws-amd CPU | OpenBLAS 0.3.26, OpenMP build (rpath, see below) | **OK** double + float | one intermittent double failure seen once in the fnn-cuda image (explained by the oneMath cuBLAS event race below) |
+| gcc 14.2 (`-foffload=disable`) | ws-amd CPU | OpenBLAS 0.3.26, OpenMP build (rpath, see below) | **OK** double + float | one intermittent double failure was observed in the fnn-cuda image; its cause remains unestablished. This host-only build uses OpenMP and OpenBLAS; the DPC++/oneMath cuBLAS event race concerns a separate GPU path |
 | gcc 14.2 | ws-amd CPU | oneMKL 2026.1 (`mkl_rt`) | **OK** double + float | `OMPNN_BLAS=mkl OMPNN_BLAS_ROOT=/opt/venv` |
 | clang 22.1 (apt.llvm.org) | ws-amd CPU | OpenBLAS | **OK** double + float | host-only build (no offload runtime shipped) |
 | clang 18.1 (Ubuntu) | ws-amd CPU | OpenBLAS | **OK** double + float | |

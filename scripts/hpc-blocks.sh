@@ -36,7 +36,7 @@ pip_target() { # pip_target <wheel-dir> <src-dir> <build-name>
     local link=""
     # Apptainer puts /lib/x86_64-linux-gnu on LD_LIBRARY_PATH. DT_RUNPATH loses
     # to its alternatives link (pthread); DT_RPATH preserves the linked variant.
-    # The pass keeps pthread OpenBLAS for nvc++ multicore, whose own
+    # nvc++ multicore keeps pthread OpenBLAS, whose own
     # OpenMP runtime would otherwise coexist with OpenBLAS's libgomp.
     [[ $1 = omp-* && $1 != omp-nvcpp* && $1 != omp-gcc14mkl ]] && link="--config-settings=cmake.define.CMAKE_MODULE_LINKER_FLAGS=-Wl,--disable-new-dtags"
     echo "rm -rf $W/hpc-$1 && pip install -q --no-deps --target $W/hpc-$1 --config-settings=build-dir=/tmp/hpc-b-$3 $link $2 && echo 'BUILD OK $1' || { echo 'BUILD FAILED $1'; exit 1; }"
@@ -50,7 +50,7 @@ find_ncu() { find /opt/nvidia -type f -name ncu -executable -path '*x64*' 2>/dev
 extra_policy() {
     local policy=$B/results/hpc-a30/NUMA-POLICY
     [ -s "$policy" ] || policy=$B/$RES/NUMA-POLICY
-    [ -s "$policy" ] || { echo 'waiting for the NUMA-POLICY file'; return 1; }
+    [ -s "$policy" ] || { echo 'waiting for NUMA-POLICY'; return 1; }
     NUMA=$(python3 "$B/scripts/gpu-numa-prefix.py" "$policy") || return 1
     [ "$policy" = "$B/$RES/NUMA-POLICY" ] || cp "$policy" "$B/$RES/NUMA-POLICY"
 }
@@ -171,7 +171,7 @@ ncu-check)
     printf '| counter probe | %s |\n| tool version | %s |\n' "$(cat "$B/$RES/access-status.txt")" "$(tr '\n' ' ' < "$B/$RES/ncu-version.txt")" >> "$B/$RES/README.md"
     exit "$rc" ;;
 build-omp-cpu)
-    # Coordinator-only rebuild: no pylib or GPU wheel is removed by this case.
+    # Rebuild only: no pylib or GPU wheel is removed by this case.
     for cfg in "gcc14 g++-14" "clang18 clang++-18" "clang22 clang++-22"; do
         set -- $cfg
         run fnn-cuda "export CXX=$2 OMPNN_TARGET=cpu OMPNN_OFFLOAD_ARCH= OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=16; $(pip_target omp-$1 $R/ompnn omp-$1)" || exit 1

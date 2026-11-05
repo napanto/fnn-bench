@@ -22,7 +22,7 @@ P=$HOME/.local/opt/fnn-rocm
 TOOLS=results/ws-amd/extra-tools-$DATE
 mkdir -p "$TOOLS/data" "$TOOLS/ref"
 export PATH=$P/venv/bin:$PATH PYTHONPATH=$B/bench:$B/testkit PYTHONDONTWRITEBYTECODE=1
-export FNN_DATA_DIR=$B/$TOOLS/data FNN_REF_CACHE=$B/$TOOLS/ref OMP_NUM_THREADS=16
+export FNN_MACHINE_ID=ws-amd FNN_DATA_DIR=$B/$TOOLS/data FNN_REF_CACHE=$B/$TOOLS/ref OMP_NUM_THREADS=16
 unset OMP_PROC_BIND OMP_PLACES
 R=results/ws-amd/rocprof-tiled-$DATE
 mkdir -p "$R"

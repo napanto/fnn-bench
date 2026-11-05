@@ -30,7 +30,7 @@ def main():
     for command in (['pgrep','-f','[w]s-amd-cpu-numa'],['pgrep','-x','fnnbench']):
         if subprocess.run(command,stdout=subprocess.DEVNULL).returncode==0: raise SystemExit('measurement gate active')
     if Path('/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq').read_text().strip()!='2800000' or Path('/sys/devices/system/cpu/cpufreq/boost').read_text().strip()!='0':
-        raise SystemExit('CPU cap/boost no longer match the authorised conditions')
+        raise SystemExit('CPU cap/boost no longer match the recorded conditions')
     cards=[p for p in Path('/sys/class/drm').glob('card*/device') if (p/'power_dpm_force_performance_level').exists()
            and (p/'vendor').exists() and (p/'vendor').read_text().strip()=='0x1002']
     card=max(cards,key=lambda p:int((p/'mem_info_vram_total').read_text()))

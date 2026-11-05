@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run on ws-nvidia only, after the launch gate and bench-mode-on.
+# Run on ws-nvidia only, after bench mode is on.
 # Every process uses node 1. Only this script's labelled fnn-extra containers are managed.
 set -uo pipefail
 B=$(cd "$(dirname "$0")/.." && pwd); AC=$(dirname "$B")
@@ -25,15 +25,15 @@ run() { # run image wheel command; repos are read-only except the benchmark work
         --memory=40g --device nvidia.com/gpu=all --security-opt=label=disable \
         -v "$AC/cudann:/work/cudann:ro" -v "$AC/syclnn:/work/syclnn:ro" -v "$AC/ompnn:/work/ompnn:ro" \
         -v "$B:/work/fnn-bench" -w /work/fnn-bench \
-        -e PYTHONDONTWRITEBYTECODE=1 -e PYTHONPATH="/work/fnn-bench/bench:/work/fnn-bench/testkit:/work/fnn-bench/.wheels/ws-nvidia-$wheel" \
+        -e FNN_MACHINE_ID=ws-nvidia -e PYTHONDONTWRITEBYTECODE=1 -e PYTHONPATH="/work/fnn-bench/bench:/work/fnn-bench/testkit:/work/fnn-bench/.wheels/ws-nvidia-$wheel" \
         -e FNN_REF_CACHE="/work/fnn-bench/$TOOLS/ref" -e FNN_DATA_DIR="/work/fnn-bench/$TOOLS/data" \
         "localhost/$image:dev" numactl --cpunodebind=1 --membind=1 bash -c "$*"
     local code=$?; ACTIVE=""; return "$code"
 }
 prepare() {
     local exp=$1; R=results/ws-nvidia/$exp-$DATE; mkdir -p "$B/$R"
-    podman ps --format '{{.Names}} {{.Image}} {{.Status}}' > "$B/$R/background-host.txt"
-    [ ! -f "$B/$TOOLS/bench-mode-status.txt" ] || cp "$B/$TOOLS/bench-mode-status.txt" "$B/$R/bench-mode-status.txt"
+    printf '%s\n' 'other services were running on the host and in the VM, as in every ws-nvidia pass; their CPU and GPU use is not controlled' 'The GPU was not dedicated to the benchmark.' > "$B/$R/background-host.txt"
+    [ ! -f "$B/$TOOLS/bench-mode-status.txt" ] || python3 -c 'import sys; sys.path.insert(0, "scripts"); from extra_conditions import public_bench_status; print(public_bench_status(open(sys.argv[1]).read()), end="")' "$B/$TOOLS/bench-mode-status.txt" > "$B/$R/bench-mode-status.txt"
     run fnn-cuda cuda "python scripts/extra_conditions.py $R --machine ws-nvidia --binding 'numactl --cpunodebind=1 --membind=1'" || return 1
     printf 'bash scripts/ws-nvidia-extras.sh %s %s\n' "$ACTION" "$DATE" > "$B/$R/commands.txt"
 }
