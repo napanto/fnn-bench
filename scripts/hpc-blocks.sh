@@ -11,6 +11,7 @@
 # Extras: nsys-epoch | ncu-check | ncu-tiled <cuda|sycl|omp> | stat-confirm |
 #         sanitizer-check | sanitizer <tool> | stream. Each has its own result directory.
 #   blocks: sycl-gpu cuda omp-gpu acpp-gpu sycl-cpu sycl-generic omp-cpu acpp-cpu
+#   hardware-thread points of the scaling series: sycl-cpu-threads-smt omp-cpu-threads-smt
 #
 # Environment: HPC_DIR (repos, default ~/fnn), HPC_SANDBOXES (default ~/sandboxes), APPTAINER, DATE.
 set -uo pipefail
@@ -338,6 +339,16 @@ omp-cpu)
                 sw e5_inference e5-infer-omp-cpu-gcc14 --select device=cpu --select backend=ompnn
                 sw e5_breakdown e5-breakdown-omp-cpu-gcc14 --select device=cpu --select backend=ompnn
             fi"
+    done ;;
+sycl-cpu-threads-smt)
+    # hardware threads (64 workers on 32 cores): only the scaling series, same variables as sycl-cpu
+    run fnn-sycl "$(wheel sycl); export OMP_PROC_BIND=close OMP_PLACES=cores DPCPP_CPU_NUM_CUS=$CORES OMP_NUM_THREADS=$CORES; $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
+        sw e1_cpu_threads_smt sycl-cpu-threads" ;;
+omp-cpu-threads-smt)
+    for w in gcc14 clang22 clang18 gcc14mkl nvcppmc; do
+        case $w in clang*) bind="OMP_PROC_BIND=false" ;; *) bind="OMP_PROC_BIND=close OMP_PLACES=cores" ;; esac
+        run fnn-cuda "$(wheel omp-$w); $(ompblas $w) export PATH=$NVHPC/compilers/bin:\$PATH OMP_NUM_THREADS=$CORES $bind MKL_THREADING_LAYER=GNU; $(declare -f sw); FB='$FB'; RES=$RES; DRY='$DRY'
+            sw e4_omp_cpu_threads_smt omp-cpu-$w"
     done ;;
 omp-cpu-extras)
     for w in gcc14 clang22 clang18 gcc14mkl nvcppmc; do

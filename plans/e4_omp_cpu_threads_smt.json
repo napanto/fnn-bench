@@ -1,0 +1,1 @@
+{"note": "E4 on hpc-a30 only: the thread-scaling series on the hardware threads (64 workers on 32 cores); run once per compiler venv", "defaults": {"backend": "ompnn"}, "runs": [{"workload": "mnist-512-256", "dtype": "float", "batch": 256, "epochs": 3, "repeat": 3, "threads": 64, "device": "cpu"}]}

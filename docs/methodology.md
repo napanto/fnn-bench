@@ -207,8 +207,9 @@ achieved GFLOP/s and a streaming bandwidth from the activation kernel
 
 - One worker per physical core: 16 on ws-amd, 12 on ws-nvidia, 32 on hpc-a30
   (`OMP_NUM_THREADS`, `MKL_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `DPCPP_CPU_NUM_CUS`; the
-  hardware threads are not used). The thread-scaling series (E1, E4) add the other counts. The
-  settings of each row are in `sysinfo.env`.
+  hardware threads are not used). The thread-scaling series (E1, E4) add the other counts, up to 32
+  on ws-amd and 64 on hpc-a30, which go onto the hardware threads. The settings of each row are in
+  `sysinfo.env`.
 - The DPC++ OpenCL CPU device takes its worker count from `DPCPP_CPU_NUM_CUS` (it ignores
   `OMP_NUM_THREADS` and keeps reporting the hardware thread count as `compute_units`); the
   harness sets it with the OpenMP variables.
@@ -257,7 +258,7 @@ nothing beyond the 6-50 % noise of that shared GPU.
 Policy since 2026-11-03:
 
 - **CPU rows**: `numactl --interleave=all` on every machine, with the thread binding above.
-  Every CPU row of the three passes was re-measured so (ws-amd 2026-11-05/06; hpc-a30 2026-11-03/04;
+  Every CPU row of the three passes was re-measured so (ws-amd 2026-11-05/06; hpc-a30 2026-11-03/04, its 64-worker points 2026-11-06;
   ws-nvidia 2026-11-06).
 - **GPU rows**: on ws-amd the process is already on the GPU's node (the master thread is bound
   to core 0); on hpc-a30 it stays unbound (binding CPU and memory to the A30's node changed
