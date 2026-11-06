@@ -8,7 +8,7 @@
 #
 #   scripts/hpc-blocks.sh build-wheels | build-nvcpp | parity-<sycl|cuda|omp-gpu|acpp|cpu> |
 #                         <block> | <block>-extras | nsys | status
-# Extras: nsys-epoch | ncu-check | ncu-tiled <cuda|sycl|omp> | stat-confirm |
+# Extras: nsys-epoch | nsys-gap | ncu-check | ncu-tiled <cuda|sycl|omp> | stat-confirm |
 #         sanitizer-check | sanitizer <tool> | stream. Each has its own result directory.
 #   blocks: sycl-gpu cuda omp-gpu acpp-gpu sycl-cpu sycl-generic omp-cpu acpp-cpu
 #   hardware-thread points of the scaling series: sycl-cpu-threads-smt omp-cpu-threads-smt
@@ -39,7 +39,7 @@ pip_target() { # pip_target <wheel-dir> <src-dir> <build-name>
     # to its alternatives link (pthread); DT_RPATH preserves the linked variant.
     # nvc++ multicore keeps pthread OpenBLAS, whose own
     # OpenMP runtime would otherwise coexist with OpenBLAS's libgomp.
-    [[ $1 = omp-* && $1 != omp-nvcpp* && $1 != omp-gcc14mkl ]] && link="--config-settings=cmake.define.CMAKE_MODULE_LINKER_FLAGS=-Wl,--disable-new-dtags"
+    [[ $1 = omp-* && $1 != omp-nvcpp* && $1 != omp-gcc14mkl && $1 != omp-clang18wait ]] && link="--config-settings=cmake.define.CMAKE_MODULE_LINKER_FLAGS=-Wl,--disable-new-dtags"
     echo "rm -rf $W/hpc-$1 && pip install -q --no-deps --target $W/hpc-$1 --config-settings=build-dir=/tmp/hpc-b-$3 $link $2 && echo 'BUILD OK $1' || { echo 'BUILD FAILED $1'; exit 1; }"
 }
 DRY=${DRY:-}   # DRY=--dry-run: only count pending rows (status)
@@ -104,6 +104,230 @@ nsys-epoch)
         done
     done
     run fnn-cuda "python scripts/nsys-epoch-table.py $RES" ;;
+nsys-gap)  # one delimited capture per execution path, to attribute the GPU idle time of an epoch
+    NS=${NS:-60000}; WARM=${WARM:-1}; extra_dir nsys-gap-n$NS-w$WARM; extra_policy || exit 1
+    NSYS=$(find /opt/nvidia -type f -name nsys -executable -path '*nsight-systems*x64*' 2>/dev/null | sort -V | tail -1)
+    [ -n "$NSYS" ] || { echo 'Nsight Systems unavailable'; exit 1; }
+    "$NSYS" --version > "$B/$RES/versions.txt" 2>&1
+    { echo "NUMA prefix: ${NUMA:-none (adopted default)}"; echo "perf_event_paranoid $(cat /proc/sys/kernel/perf_event_paranoid)"; echo "rtprio limit $(ulimit -r)"
+      sort /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor | uniq -c; numactl --hardware | head -3; nvidia-smi -q -d CLOCK,PERFORMANCE | sed -n 1,40p; } > "$B/$RES/node-state.txt" 2>&1
+    run fnn-cuda "g++-13 -O2 -shared -fPIC -I/usr/local/cuda-12.9/include scripts/nvtx-range.cpp -ldl -o $RES/nvtx-range.so" || exit 1
+    # image wheel backend tag trace extra-options library-path
+    while read -r img w be tag trace opt nvl; do
+        pre=""; [ "$nvl" = nv ] && pre="export LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-};"
+        o=""; [ "$opt" = - ] || o="--option $opt"
+        cmd="$NSYS profile --trace=$trace --sample=none --cpuctxsw=none --capture-range=cudaProfilerApi --capture-range-end=stop --force-overwrite true -o $RES/$tag python scripts/nsys_epoch.py --backend $be $o --samples $NS --warm-epochs $WARM --nvtx-lib $B/$RES/nvtx-range.so --out $RES/$tag.json"
+        printf '%s\n' "$cmd" >> "$B/$RES/commands.txt"
+        run "$img" "$pre $(wheel "$w"); $cmd" > "$B/$RES/$tag.log" 2>&1 || continue
+        run "$img" "$NSYS stats --report cuda_gpu_trace --format csv -o $RES/$tag-gpu $RES/$tag.nsys-rep
+            $NSYS stats --report cuda_api_sum --format csv -o $RES/$tag-api $RES/$tag.nsys-rep
+            $NSYS export --type sqlite --force-overwrite true -o $RES/$tag.sqlite $RES/$tag.nsys-rep" >> "$B/$RES/$tag.log" 2>&1
+    done <<'CAPTURES'
+fnn-cuda cuda cudann cudann-default cuda,nvtx - -
+fnn-cuda cuda cudann cudann-inorder cuda,nvtx queue=in_order -
+fnn-sycl sycl syclnn syclnn-default cuda,nvtx - -
+fnn-sycl sycl syclnn syclnn-osrt cuda,nvtx,osrt - -
+fnn-cuda omp-clang18nv ompnn ompnn-clang18 cuda,nvtx - -
+fnn-cuda omp-nvcpp ompnn ompnn-nvcpp cuda,nvtx - nv
+fnn-cuda omp-gcc14nv ompnn ompnn-gcc14 cuda,nvtx - -
+CAPTURES
+    ;;
+launch-probe-build)  # front-end, no GPU: CUDA, DPC++, clang and gcc probes; nvc++ needs the node (launch-probe)
+    extra_dir launch-probe; P=$B/scripts/launch-probe; O=$B/$RES
+    run fnn-cuda "cd $P && nvcc -O3 -std=c++17 -arch=sm_80 -ccbin g++-13 probe_cuda.cu -o $O/probe-cuda" && echo 'BUILD OK cuda'
+    run fnn-sycl "cd $P && clang++ -O3 -std=c++17 -fsycl -fsycl-targets=nvidia_gpu_sm_80 probe_sycl.cpp -o $O/probe-dpcpp" && echo 'BUILD OK dpcpp'
+    run fnn-cuda "cd $P && clang++-18 -O3 -std=c++17 -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_80 -DCOMPILER='\"clang18\"' probe_omp.cpp -o $O/probe-clang18" && echo 'BUILD OK clang18'
+    run fnn-cuda "cd $P && g++-14 -O3 -std=c++17 -fopenmp -foffload=nvptx-none -foffload-options=nvptx-none=-misa=sm_80 -fcf-protection=none -fno-stack-protector -DCOMPILER='\"gcc14\"' probe_omp.cpp -o $O/probe-gcc14" && echo 'BUILD OK gcc14'
+    run fnn-cuda "cd $P && nvcc -O3 -std=c++17 -arch=sm_80 -ccbin g++-13 probe2_cuda.cu -lcublas -o $O/probe2-cuda" && echo 'BUILD OK cuda2'
+    run fnn-sycl "cd $P && clang++ -O3 -std=c++17 -fsycl -fsycl-targets=nvidia_gpu_sm_80 -I/opt/onemath/include probe2_sycl.cpp -L/opt/onemath/lib -lonemath -Wl,-rpath,/opt/onemath/lib -o $O/probe2-dpcpp" && echo 'BUILD OK dpcpp2' ;;
+launch-probe)  # one exclusive job: three alternating process rounds of every probe
+    extra_dir launch-probe; O=$B/$RES; P=$B/scripts/launch-probe
+    [ -x "$O/probe-nvcpp" ] || run fnn-cuda "export PATH=$NVHPC/compilers/bin:\$PATH NVLOCALRC=$R/nvlocalrc/localrc; cd $P && nvc++ -O3 -std=c++17 -mp=gpu -gpu=cc80 -DCOMPILER='\"nvcpp\"' probe_omp.cpp -o $O/probe-nvcpp" >> "$O/build-nvcpp.log" 2>&1
+    nvidia-smi --query-gpu=clocks.gr,clocks.mem,pstate --format=csv > "$O/gpu-clocks.txt" 2>&1
+    nvl="export LD_LIBRARY_PATH=$NVHPC/compilers/lib:\${LD_LIBRARY_PATH:-};"
+    llvm="export LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:\${LD_LIBRARY_PATH:-};"
+    for round in 1 2 3; do
+        list='cuda dpcpp clang18 gcc14 nvcpp cuda2 dpcpp2'; [ $((round % 2)) = 0 ] && list='dpcpp2 cuda2 nvcpp gcc14 clang18 dpcpp cuda'
+        for w in $list; do
+            [ -s "$O/$w-r$round.csv" ] && continue
+            bin=probe-$w; case $w in cuda2) bin=probe2-cuda ;; dpcpp2) bin=probe2-dpcpp ;; esac
+            img=fnn-cuda; case $w in dpcpp*) img=fnn-sycl ;; esac
+            pre=""; [ "$w" = nvcpp ] && pre=$nvl; [ "$w" = clang18 ] && pre=$llvm
+            [ -x "$O/$bin" ] || continue
+            timeout -s KILL 150 $APPT exec $nv $binds "$SB/$img" bash -c "$pre OMP_TARGET_OFFLOAD=MANDATORY PROBE_R=9 $O/$bin" > "$O/$w-r$round.csv" 2> "$O/$w-r$round.err"
+        done
+    done
+    echo 'launch probe done' ;;
+gpu-placement)  # launch-bound rows by NUMA node of the submitting thread; the A30 sits on node 4
+    extra_dir gpu-placement; O=$B/$RES
+    numactl --hardware > "$O/numa.txt" 2>&1
+    nvidia-smi --query-gpu=clocks.gr,clocks.mem,pstate,pcie.link.gen.current,pcie.link.width.current --format=csv > "$O/gpu.txt" 2>&1
+    deadline=$(( $(date +%s) + ${MAX_S:-1320} ))
+    one() { # one <placement> <round> <image> <wheel> <backend> <tag> <workload> <samples>
+        local place=$1 k=$2 img=$3 w=$4 be=$5 tag=$6 wl=$7 ns=$8
+        local out=$RES/$place/$tag-$wl/round-$k
+        mkdir -p "$B/$out"
+        ls "$B/$out"/*.jsonl >/dev/null 2>&1 && return 0
+        [ "$(date +%s)" -ge "$deadline" ] && return 0
+        local pre=""; [ "$tag" = nvcpp ] && pre="export LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-};"
+        case $place in unbound*) NUMA="" ;; core*) NUMA="numactl --physcpubind=${place#core} --localalloc" ;; *) NUMA="numactl --cpunodebind=${place#node} --localalloc" ;; esac
+        local proto="--batch 40 --epochs 5 --repeat 5"; [ "$wl" = mnist-512-256 ] && proto="--batch 256 --epochs 3 --repeat 3"
+        run "$img" "$pre $(wheel "$w"); python -m fnnbench.cli run --backend $be --device gpu --dtype float --workload $wl $proto --warmup 1 --seed 1 --samples $ns --out $out & p=\$!; while kill -0 \$p 2>/dev/null; do ps -o psr= -p \$p; sleep 0.25; done > $out/psr.txt; wait \$p" > "$B/$out/run.log" 2>&1
+    }
+    for k in ${ROUNDS:-1 2 3}; do
+        places=${PLACES:-unbound node4 node0 node1 node2 node3 node5 node6 node7}
+        [ $((k % 2)) = 0 ] && places=$(echo "$places" | tr ' ' '\n' | tac | tr '\n' ' ')
+        for place in $places; do
+            for cfg in 'fnn-cuda cuda cudann cuda' 'fnn-sycl sycl syclnn dpcpp' 'fnn-cuda omp-clang18nv ompnn clang18' 'fnn-cuda omp-nvcpp ompnn nvcpp'; do
+                set -- $cfg
+                one "$place" "$k" "$1" "$2" "$3" "$4" cup 1000
+                one "$place" "$k" "$1" "$2" "$3" "$4" monk 124
+                [ -n "${WITH_MNIST:-}" ] && one "$place" "$k" "$1" "$2" "$3" "$4" mnist-512-256 60000
+            done
+        done
+    done
+    NUMA=""; echo "placement rows: $(find "$O" -name '*.jsonl' | wc -l)" ;;
+clock-state)  # does the A30's clock depend on what ran just before? Long runs with a clock log, then short rows after idle and after load
+    extra_dir clock-state; O=$B/$RES
+    nvidia-smi --query-gpu=timestamp,clocks.gr,clocks.mem,utilization.gpu,power.draw,temperature.gpu,pstate --format=csv,noheader -lms 100 > "$O/clocks.csv" &
+    logger=$!
+    nvl="export LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-};"
+    sleep 20
+    run fnn-cuda "$(wheel cuda); python scripts/clock_ramp.py --backend cudann --out $RES/ramp-cudann.json" > "$O/ramp-cudann.log" 2>&1
+    sleep 30
+    run fnn-sycl "$(wheel sycl); python scripts/clock_ramp.py --backend syclnn --out $RES/ramp-syclnn.json" > "$O/ramp-syclnn.log" 2>&1
+    sleep 30
+    run fnn-cuda "$nvl $(wheel omp-nvcpp); python scripts/clock_ramp.py --backend ompnn --out $RES/ramp-nvcpp.json" > "$O/ramp-nvcpp.log" 2>&1
+    rows() { # rows <state> <round>
+        local state=$1 round=$2 img w be tag out
+        while read -r img w be tag; do
+            out=$RES/$state/$tag/round-$round; mkdir -p "$B/$out"
+            run "$img" "$(wheel "$w"); date +%s.%N > $out/start.txt; python -m fnnbench.cli run --backend $be --device gpu --dtype float --workload monk --batch 40 --epochs 5 --repeat 5 --warmup 1 --seed 1 --samples 124 --out $out" > "$B/$out/run.log" 2>&1 < /dev/null
+        done <<'ROWS'
+fnn-cuda omp-clang18nv ompnn clang18
+fnn-cuda cuda cudann cuda
+fnn-sycl sycl syclnn dpcpp
+ROWS
+    }
+    for round in 1 2 3 4; do
+        sleep 40; rows after-idle "$round"
+        run fnn-cuda "$(wheel cuda); python scripts/clock_ramp.py --backend cudann --seconds 6 --out $RES/load-$round.json" >> "$O/load.log" 2>&1
+        rows after-load "$round"
+    done
+    kill $logger 2>/dev/null; echo 'clock state done' ;;
+build-aocl)  # front-end: AMD's BLIS (AOCL 5.3) as a CBLAS for the OpenMP host path
+    AO=$R/aocl; S=$R/aocl-src/blis
+    run fnn-cuda "cd $S && CC=gcc-13 ./configure --enable-cblas --enable-threading=openmp --prefix=$AO amdzen > $R/aocl-src/configure.log 2>&1 && make -j8 > $R/aocl-src/make.log 2>&1 && make install >> $R/aocl-src/make.log 2>&1" || { echo 'BUILD FAILED blis'; exit 1; }
+    mkdir -p "$R/aocl-cblas/lib" "$R/aocl-cblas/include"
+    ln -sf "$AO/lib/libblis-mt.so" "$R/aocl-cblas/lib/libcblas.so"; ln -sf "$AO/lib/libblis-mt.so" "$R/aocl-cblas/lib/libblas.so"; ln -sf "$AO/lib/libblis-mt.so" "$R/aocl-cblas/lib/libopenblas.so"
+    cp "$AO/include/blis/cblas.h" "$R/aocl-cblas/include/" 2>/dev/null || cp "$AO"/include/*/cblas.h "$R/aocl-cblas/include/"
+    run fnn-cuda "export CXX=g++-14 OMPNN_TARGET=cpu OMPNN_OFFLOAD_ARCH= OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=$R/aocl-cblas CMAKE_BUILD_PARALLEL_LEVEL=8; $(pip_target omp-gcc14aocl $R/ompnn omp-gcc14aocl)" ;;
+cpu-blas-amd)  # gcc OpenMP host path on three CBLAS libraries, interleaved pages, three fresh processes each
+    extra_dir cpu-blas-amd; O=$B/$RES
+    lscpu | grep -E 'Model name|Flags' | cut -c1-400 > "$O/cpu.txt"
+    run_row() { # run_row <wheel> <round> <workload> <batch> <samples> <extra env>
+        local w=$1 k=$2 wl=$3 bs=$4 ns=$5 out=$RES/$1/$3-b$4/round-$2; shift 5
+        mkdir -p "$B/$out"; ls "$B/$out"/*.jsonl >/dev/null 2>&1 && return 0
+        NUMA="numactl --interleave=all"
+        run fnn-cuda "$(wheel omp-$w); $(ompblas $w) export OMP_NUM_THREADS=$CORES OMP_PROC_BIND=close OMP_PLACES=cores MKL_THREADING_LAYER=GNU $*; python -m fnnbench.cli run --backend ompnn --device cpu --dtype float --workload $wl --batch $bs --epochs 3 --repeat 3 --warmup 1 --seed 1 --samples $ns --tag cpu-blas-amd --out $out" > "$B/$out/run.log" 2>&1 < /dev/null
+        NUMA=""
+    }
+    for k in 1 2 3; do
+        for w in gcc14 gcc14mkl gcc14aocl; do
+            e=""; [ "$w" = gcc14aocl ] && e="LD_LIBRARY_PATH=$R/aocl/lib:\${LD_LIBRARY_PATH:-} BLIS_ARCH_TYPE=zen"
+            [ "$w" = gcc14mkl ] && [ "$k" = 1 ] && e="MKL_VERBOSE=1"
+            run_row "$w" "$k" mnist-512-256 256 60000 $e
+            run_row "$w" "$k" cup 40 1000 $e
+        done
+    done
+    echo 'cpu blas done' ;;
+launch-probe-more)  # second pass of the probes: real matrix sizes, and the clauses of ompnn's kernels
+    extra_dir launch-probe; O=$B/$RES; P=$B/scripts/launch-probe; mkdir -p "$O/more"
+    run fnn-cuda "cd $P && clang++-18 -O3 -std=c++17 -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_80 -DCOMPILER='\"clang18\"' probe_omp.cpp -o $O/probe-clang18" > "$O/build2.log" 2>&1
+    run fnn-cuda "cd $P && g++-14 -O3 -std=c++17 -fopenmp -foffload=nvptx-none -foffload-options=nvptx-none=-misa=sm_80 -fcf-protection=none -fno-stack-protector -DCOMPILER='\"gcc14\"' probe_omp.cpp -o $O/probe-gcc14" >> "$O/build2.log" 2>&1
+    run fnn-cuda "export PATH=$NVHPC/compilers/bin:\$PATH NVLOCALRC=$R/nvlocalrc/localrc; cd $P && nvc++ -O3 -std=c++17 -mp=gpu -gpu=cc80 -DCOMPILER='\"nvcpp\"' probe_omp.cpp -o $O/probe-nvcpp" >> "$O/build2.log" 2>&1
+    nvl="export LD_LIBRARY_PATH=$NVHPC/compilers/lib:\${LD_LIBRARY_PATH:-};"; llvm="export LD_LIBRARY_PATH=/usr/lib/llvm-18/lib:\${LD_LIBRARY_PATH:-};"
+    for round in 1 2 3; do
+        for M in 64 256; do
+            timeout -s KILL 100 $APPT exec $nv $binds "$SB/fnn-cuda" bash -c "PROBE_M=$M PROBE_N=1000 PROBE_R=9 $O/probe2-cuda" > "$O/more/cuda2-m$M-r$round.csv" 2> /dev/null
+            timeout -s KILL 100 $APPT exec $nv $binds "$SB/fnn-sycl" bash -c "PROBE_M=$M PROBE_N=1000 PROBE_R=9 $O/probe2-dpcpp" > "$O/more/dpcpp2-m$M-r$round.csv" 2> /dev/null
+        done
+        for w in clang18 gcc14 nvcpp; do
+            pre=""; [ "$w" = nvcpp ] && pre=$nvl; [ "$w" = clang18 ] && pre=$llvm
+            n=500; [ "$w" = gcc14 ] && n=100
+            timeout -s KILL 100 $APPT exec $nv $binds "$SB/fnn-cuda" bash -c "$pre OMP_TARGET_OFFLOAD=MANDATORY PROBE_N=$n PROBE_R=5 $O/probe-$w" > "$O/more/$w-r$round.csv" 2> "$O/more/$w-r$round.err"
+        done
+    done
+    echo 'more probes done' ;;
+launch-probe3-build)  # front-end
+    extra_dir launch-probe; P=$B/scripts/launch-probe; O=$B/$RES
+    run fnn-cuda "cd $P && nvcc -O3 -std=c++17 -arch=sm_80 -ccbin g++-13 probe3_cuda.cu -o $O/probe3-cuda" && echo 'BUILD OK cuda3'
+    run fnn-sycl "cd $P && clang++ -O3 -std=c++17 -fsycl -fsycl-targets=nvidia_gpu_sm_80 probe3_sycl.cpp -o $O/probe3-dpcpp" && echo 'BUILD OK dpcpp3' ;;
+launch-probe3)  # one short job: launch cost with 12 arguments; gcc target regions against teams and threads
+    extra_dir launch-probe; O=$B/$RES; mkdir -p "$O/more3"
+    for round in 1 2 3; do
+        timeout -s KILL 60 $APPT exec $nv $binds "$SB/fnn-cuda" bash -c "PROBE_R=9 $O/probe3-cuda" > "$O/more3/cuda3-r$round.csv" 2>/dev/null
+        timeout -s KILL 60 $APPT exec $nv $binds "$SB/fnn-sycl" bash -c "PROBE_R=9 $O/probe3-dpcpp" > "$O/more3/dpcpp3-r$round.csv" 2>/dev/null
+    done
+    for teams in 1 8 56; do
+        for threads in 1 4 12; do
+            OMP=$(cat <<ENV
+OMP_TARGET_OFFLOAD=MANDATORY OMP_NUM_TEAMS=$teams OMP_TEAMS_THREAD_LIMIT=$threads OMP_NUM_THREADS=$threads PROBE_N=100 PROBE_R=4
+ENV
+)
+            timeout -s KILL 30 $APPT exec $nv $binds "$SB/fnn-cuda" bash -c "$OMP $O/probe-gcc14" > "$O/more3/gcc-teams$teams-threads$threads.txt" 2>&1
+        done
+    done
+    echo 'probe3 done' ;;
+launch-probe4-build)  # front-end
+    extra_dir launch-probe; P=$B/scripts/launch-probe; O=$B/$RES
+    run fnn-sycl "cd $P && clang++ -O3 -std=c++17 -fsycl -fsycl-targets=nvidia_gpu_sm_80 -I/usr/local/cuda-12.9/include -I/usr/local/cuda/include probe4_sycl.cpp -L/usr/local/cuda-12.9/lib64 -L/usr/local/cuda/lib64 -lcublas -lcuda -o $O/probe4-dpcpp" && echo 'BUILD OK dpcpp4' ;;
+launch-probe4)
+    extra_dir launch-probe; O=$B/$RES; mkdir -p "$O/more4"
+    for round in 1 2 3; do
+        timeout -s KILL 60 $APPT exec $nv $binds "$SB/fnn-sycl" bash -c "PROBE_R=9 $O/probe4-dpcpp" > "$O/more4/dpcpp4-r$round.csv" 2> "$O/more4/dpcpp4-r$round.err"
+    done
+    echo 'probe4 done' ;;
+clang-spin)  # is clang's slow mode libomptarget's blocking wait? One short job, fresh processes, arms alternated
+    extra_dir clang-spin; O=$B/$RES
+    ls -d /usr/local/cuda*/lib64 > "$O/env.txt" 2>&1
+    one() { # one <arm> <round> <workload> <samples> <batch> <seconds> <place>
+        local arm=$1 k=$2 wl=$3 ns=$4 b=$5 secs=$6 place=$7 x=""
+        [ "$arm" = spin ] && x=--spin
+        NUMA=""; [ "$place" = node4 ] && NUMA="numactl --cpunodebind=4 --localalloc"
+        run fnn-cuda "export LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:\${LD_LIBRARY_PATH:-}; $(wheel omp-clang18nv); python scripts/clock_ramp.py --backend ompnn --workload $wl --samples $ns --batch $b --seconds $secs $x --out $RES/$arm-$wl-$place-r$k.json" > "$O/$arm-$wl-$place-r$k.log" 2>&1 < /dev/null
+    }
+    for k in 1 2 3 4; do
+        arms='default spin'; [ $((k % 2)) = 0 ] && arms='spin default'
+        for arm in $arms; do
+            for place in unbound node4; do
+                one "$arm" "$k" monk 124 40 4 "$place"
+                one "$arm" "$k" cup 1000 40 4 "$place"
+            done
+            one "$arm" "$k" mnist-512-256 60000 256 8 unbound
+        done
+    done
+    NUMA=""; echo 'clang spin done' ;;
+build-ompnn-wait)  # front-end: ompnn 0.1.2 with clang-18 for NVIDIA, in its own wheel directory
+    run fnn-cuda "export CXX=clang++-18 OMPNN_TARGET=nvidia OMPNN_OFFLOAD_ARCH=sm_80 OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=8; $(pip_target omp-clang18wait $R/ompnn omp-clang18wait)" ;;
+clang-wait)  # steady-state rows of ompnn 0.1.2 with clang: Options::wait auto against spin, fresh processes, alternated
+    extra_dir clang-wait; O=$B/$RES
+    one() { # one <wait> <round> <workload> <batch> <epochs> <samples>
+        local out=$RES/$1/$3-b$4/round-$2; mkdir -p "$B/$out"
+        ls "$B/$out"/*.jsonl >/dev/null 2>&1 && return 0
+        run fnn-cuda "$(wheel omp-clang18wait); python -m fnnbench.cli run --backend ompnn --device gpu --dtype float --workload $3 --batch $4 --epochs $5 --repeat $5 --warmup 1 --seed 1 --samples $6 --option wait=$1 --out $out" > "$B/$out/run.log" 2>&1 < /dev/null
+    }
+    for k in 1 2 3; do
+        arms='auto spin'; [ $((k % 2)) = 0 ] && arms='spin auto'
+        for w in $arms; do
+            one "$w" "$k" monk 40 5 124
+            one "$w" "$k" cup 40 5 1000
+            one "$w" "$k" mnist-512-256 256 3 60000
+            one "$w" "$k" mnist-512-256 1024 3 60000
+            one "$w" "$k" mnist-512-256 64 3 60000
+        done
+    done
+    echo 'clang wait done' ;;
 stat-confirm)
     extra_dir stat-confirm; extra_policy || exit 1
     rounds=${STAT_ROUNDS:-3}   # odd rounds: CUDA first; even rounds: DPC++ first, CUP options reversed

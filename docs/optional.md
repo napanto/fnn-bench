@@ -46,3 +46,20 @@ built on ws-nvidia with nvcc 12.9 for sm_61 + sm_80, CUDA 12.9's `libcudart.so.1
 image, ZLUDA's own `libcuda.so.1` and `libcublas.so.12` in front on `LD_LIBRARY_PATH`, inside the
 `fnn-rocm` environment (ROCm 7.2.4). Output: `results/ws-amd/zluda/README.md` (what runs, what does
 not, speed against the HIPified build), rows in `results/ws-amd/zluda/rows/`.
+
+## 5. Where the time and the variance go (2026-11-06)
+
+Separate directories under `results/`, each with its scripts in `scripts/`. None of these rows enters the reported pass.
+
+| Question | Directory | Script |
+|---|---|---|
+| GPU busy and idle time of an epoch, per path | `hpc-a30/nsys-gap-*` | `hpc-blocks.sh nsys-gap`, `nsys-gap-table.py` |
+| Cost of one operation in each runtime | `hpc-a30/launch-probe-2026-11-06` | `scripts/launch-probe/` |
+| Host CPU time by library | `ws-nvidia/perf-host-2026-11-06` | `ws-nvidia-perf-night.sh` |
+| NUMA node and pinning of the submitting thread | `hpc-a30/gpu-placement-2026-11-06` | `hpc-blocks.sh gpu-placement` |
+| GPU clock against recent load | `hpc-a30/clock-state-2026-11-06` | `hpc-blocks.sh clock-state`, `clock_ramp.py` |
+| BLAS on the EPYC host, with AMD BLIS | `hpc-a30/cpu-blas-amd-2026-11-06` | `hpc-blocks.sh cpu-blas-amd` |
+| Variance of CUP on the ws-amd CPU, real-time priority, SMT siblings | `ws-amd/cup-threads-*`, `ws-amd/cup-interference-*` | `ws-amd-cup-threads.sh`, `ws-amd-cup-interference.sh`, `ws-amd-gpu-fifo.sh`, `cup_threads.py` |
+| Wait policy of clang's OpenMP runtime | `hpc-a30/clang-spin-2026-11-06`, `hpc-a30/clang-wait-2026-11-06`, `ws-nvidia/clang-spin-2026-11-06` | `hpc-blocks.sh clang-spin`, `hpc-blocks.sh clang-wait`, `ws-nvidia-clang-spin.sh` |
+
+The last row motivated `Options::wait` in ompnn 0.1.2. Its default keeps the runtime's policy, so the reported rows keep their meaning.

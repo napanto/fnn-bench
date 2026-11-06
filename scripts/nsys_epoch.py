@@ -79,6 +79,8 @@ def main():
     ap.add_argument('--samples', type=int, default=8192)
     ap.add_argument('--batch', type=int, default=256)
     ap.add_argument('--epochs', type=int, default=2)
+    ap.add_argument('--warm-epochs', type=int, default=1, help='epochs of the warm-up call before the capture')
+    ap.add_argument('--option', action='append', default=[], help='key=value network option, e.g. queue=in_order')
     ap.add_argument('--nvtx-lib')
     ap.add_argument('--runtime', choices=('cuda', 'hip'), default='cuda')
     ap.add_argument('--hip-marker-only', action='store_true', help='record the ROCTx range without pausing SDK contexts')
@@ -92,14 +94,15 @@ def main():
     w = workloads.get(a.workload)
     x, y = w.data()
     x, y = np.ascontiguousarray(x[:a.samples], dtype=np.float32), np.ascontiguousarray(y[:a.samples], dtype=np.float32)
-    net = be.NetworkAdapter(a.backend, w.spec, dtype='float', device='gpu', seed=1, profile=a.profile, blas=a.blas)
+    options = dict(o.split('=', 1) for o in a.option)
+    net = be.NetworkAdapter(a.backend, w.spec, dtype='float', device='gpu', seed=1, profile=a.profile, blas=a.blas, **options)
     if hip_marker and not a.hip_marker_only:
         # HSA creates the counter contexts lazily during network construction.
         # Refresh the paused set now so the warm-up itself is unprofiled.
         hip_marker.roctxProfilerResume(0)
         if hip_marker.roctxProfilerPause(0):
             raise RuntimeError('ROCTx pause after HSA initialisation failed')
-    net.train(x, y, a.batch, 1)
+    net.train(x, y, a.batch, a.warm_epochs)
     net.reset_profile()
     if a.runtime == 'cuda':
         rt, marker = cudart(), nvtx(a.nvtx_lib)
@@ -131,13 +134,13 @@ def main():
             if not a.hip_marker_only and marker.roctxProfilerPause(0):
                 raise RuntimeError('ROCTx global profiler pause failed')
     profile = net.profile or {}
-    options = {k: getattr(net.net.options, k) for k in dir(net.net.options) if not k.startswith('_')}
-    options = {k: v.name if hasattr(v, 'name') else v for k, v in options.items()
-               if isinstance(v, (str, int, float, bool)) or hasattr(v, 'name')}
+    effective = {k: getattr(net.net.options, k) for k in dir(net.net.options) if not k.startswith('_')}
+    effective = {k: v.name if hasattr(v, 'name') else v for k, v in effective.items()
+                 if isinstance(v, (str, int, float, bool)) or hasattr(v, 'name')}
     result = {'backend': a.backend, 'runtime': a.runtime, 'hip_marker_only': a.hip_marker_only,
               'build_info': be.build_info(a.backend), 'device': net.net.device,
               'workload': a.workload, 'samples': len(x), 'layers': list(w.spec.sizes), 'batch': a.batch,
-              'epochs': a.epochs, 'profile_enabled': a.profile, 'blas': a.blas, 'effective_options': options,
+              'epochs': a.epochs, 'profile_enabled': a.profile, 'blas': a.blas, 'options': options, 'effective_options': effective,
               'train_call_ns': end-begin, 'capture_marker': 'fnn.train.capture' if marker else None,
               'nvtx_range': 'fnn.train.capture' if marker and a.runtime == 'cuda' else None,
               'internal_profile': profile, 'losses': losses.tolist(), 'losses_finite': bool(np.isfinite(losses).all()),
