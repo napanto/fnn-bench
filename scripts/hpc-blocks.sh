@@ -105,13 +105,20 @@ nsys-epoch)
     run fnn-cuda "python scripts/nsys-epoch-table.py $RES" ;;
 stat-confirm)
     extra_dir stat-confirm; extra_policy || exit 1
+    rounds=${STAT_ROUNDS:-3}   # odd rounds: CUDA first; even rounds: DPC++ first, CUP options reversed
+    { printf 'SLURM job %s on %s, partition %s\n' "${SLURM_JOB_ID:-none}" "$(hostname)" "${SLURM_JOB_PARTITION:-none}"
+      printf 'NUMA prefix: %s\nrounds: %s\n' "${NUMA:-none (adopted default)}" "$rounds"; } > "$B/$RES/commands.txt"
+    { nvidia-smi --query-gpu=name,driver_version,clocks.sm,clocks.mem,utilization.gpu,memory.used --format=csv
+      nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv; } > "$B/$RES/gpu-start.txt" 2>&1
     run fnn-cuda "python --version; python -m pip show fnnbench fnn-testkit numpy" > "$B/$RES/versions.txt" 2>&1
-    for round in 1 2 3; do
+    for round in $(seq 1 "$rounds"); do
         order='cudann syclnn'; cup='default in-order graph'
-        [ "$round" = 2 ] && { order='syclnn cudann'; cup='graph in-order default'; }
+        [ $((round % 2)) = 0 ] && { order='syclnn cudann'; cup='graph in-order default'; }
         for batch in 256 1024; do for be in $order; do
             img=fnn-cuda; w=cuda; [ "$be" = syclnn ] && { img=fnn-sycl; w=sycl; }
             run "$img" "$(wheel "$w"); python scripts/stat-confirm.py --run $be-mnist-b$batch --round $round --out $RES" || true
+            # the matched pair of the headline: CUDA with one in-order stream, next to its default
+            [ "$be" = cudann ] && [ "$batch" = 256 ] && { run fnn-cuda "$(wheel cuda); python scripts/stat-confirm.py --run cudann-mnist-b256-in-order --round $round --out $RES" || true; }
         done; done
         for opt in $cup; do
             run fnn-cuda "$(wheel cuda); python scripts/stat-confirm.py --run cudann-cup-$opt --round $round --out $RES" || true

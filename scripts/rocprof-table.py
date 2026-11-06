@@ -184,7 +184,7 @@ def main():
         out.append(f"| {r['label']} | {r['blas']} | {' '.join(map(str,r['shape']))} | {fmt(groups)} | {fmt(r['workgroup'])} | {fmt(r['static_lds_bytes'])} | {fmt(r['lds_bytes'])} |\n")
     out += [f"\nThe main table selects the four requested shapes; all {len(rows)} main-GEMM records and their passes are in kernels.json. "
             "VALU utilisation/busy is not exposed on this gfx1100 setup. VALUInsts is the tool's average instruction count per work-item, not a utilisation percentage. All raw counters are retained in kernels.json and the CSVs. "
-            "Do not infer occupancy from a waves count alone. Kernel-7.3 timing regressions and background display activity "
+            "Do not infer occupancy from a waves count alone. Profiling overhead and the profiling power state "
             "limit timing interpretation; use this experiment primarily to compare counter patterns.\n"]
     out += ["\nOpenMP captures set OMP_TOOL=disabled to avoid an OMPT initialisation re-entry from OpenBLAS; "
             "hardware dispatch tracing/counting remains enabled. The compiled kernel and library are unchanged.\n"]

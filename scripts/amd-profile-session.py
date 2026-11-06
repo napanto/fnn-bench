@@ -55,7 +55,7 @@ def main():
         print(json.dumps(dict(api='amdgpu_cs_ctx_stable_pstate',uid=os.getuid(),previous=previous,
                               selected=control.read_text().strip(),drm_version=[major.value,minor.value])),flush=True)
         root=Path(__file__).resolve().parent.parent
-        cmd=['nice','-n','19','bash',str(root/'scripts/ws-amd-stable-extras.sh'),a.phase,a.date]
+        cmd=['bash',str(root/'scripts/ws-amd-stable-extras.sh'),a.phase,a.date]
         proc=subprocess.Popen(cmd,cwd=root,start_new_session=True);code=proc.wait()
     except KeyboardInterrupt:
         if proc is not None and proc.poll() is None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Workstation-only counters and HIP bandwidth. No pass row or host setting changes.
 # Invoke after the local measurement gate clears:
-#   nice -n 19 bash scripts/ws-amd-extras.sh check|counters|stream [YYYY-MM-DD]
+#   bash scripts/ws-amd-extras.sh check|counters|stream [YYYY-MM-DD]
 set -euo pipefail
 B=$(cd "$(dirname "$0")/.." && pwd)
 ACTION=${1:-check}; DATE=${2:-$(date +%F)}
@@ -15,7 +15,7 @@ if [ "${FNN_EXTRA_INSIDE:-0}" != 1 ]; then
     fi
     [ "$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq)" = 2800000 ] || { echo 'CPU cap changed; no experiment started'; exit 1; }
     [ "$(cat /sys/devices/system/cpu/cpufreq/boost)" = 0 ] || { echo 'Boost is not off; no experiment started'; exit 1; }
-    exec nice -n 19 distrobox enter fnn-rocm -- env FNN_EXTRA_INSIDE=1 numactl --cpunodebind=0 --membind=0 nice -n 19 bash "$B/scripts/ws-amd-extras.sh" "$ACTION" "$DATE"
+    exec distrobox enter fnn-rocm -- env FNN_EXTRA_INSIDE=1 numactl --cpunodebind=0 --membind=0 bash "$B/scripts/ws-amd-extras.sh" "$ACTION" "$DATE"
 fi
 cd "$B"
 P=$HOME/.local/opt/fnn-rocm
@@ -32,7 +32,7 @@ check)
     { rocprofv3 --version; hipcc --version; python --version; uname -r; } > "$R/versions.txt" 2>&1
     python scripts/extra_conditions.py "$R" --machine ws-amd --binding 'numactl --cpunodebind=0 --membind=0'
     find /opt/rocm -name counter_defs.yaml -o -name 'lib*roctx*.so*' > "$R/sdk-files.txt"
-    printf '%s\n' 'nice -n 19 bash scripts/ws-amd-extras.sh check' 'rocprofv3 --list-avail' > "$R/commands.txt"
+    printf '%s\n' 'bash scripts/ws-amd-extras.sh check' 'rocprofv3 --list-avail' > "$R/commands.txt"
     ;;
 counters)
     [ -s "$R/list-avail.txt" ] || { echo 'Run check and inspect available counters first'; exit 1; }

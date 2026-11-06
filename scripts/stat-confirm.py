@@ -19,6 +19,8 @@ from fnnbench import results as R
 CONFIGS={f'{be}-mnist-b{batch}':(be,'mnist-512-256',batch,{}) for be in ('cudann','syclnn') for batch in (256,1024)}
 CONFIGS.update({f'cudann-cup-{name}':('cudann','cup',40,opts) for name,opts in
                 [('default',{}),('in-order',{'queue':'in_order'}),('graph',{'queue':'graph'})]})
+# the matched pair of the A30 headline: CUDA with one in-order stream against DPC++ (in order by default)
+CONFIGS['cudann-mnist-b256-in-order']=('cudann','mnist-512-256',256,{'queue':'in_order'})
 
 
 def protocol(label,source):
@@ -55,9 +57,10 @@ def report(out):
     groups=defaultdict(list)
     for r in R.dedupe(R.read([out])):
         if R.valid(r): groups[(Path(r['_source']).parent.name,R.configuration_key(r))].append(r)
+    rounds=sorted({int(Path(r['_source']).parent.parent.name.split('-')[1]) for r in R.read([out]) if R.valid(r)}) or [1]
     text=['# Independent-process statistical confirmation\n\n',
-          'Three rounds, alternating '
-          'CUDA/DPC++ order for each MNIST batch; CUP option order reverses in round 2. Each entry is one '
+          f'{len(rounds)} rounds, alternating '
+          'CUDA/DPC++ order for each MNIST batch; CUP option order reverses in the even rounds. Each entry is one '
           'fresh `fnnbench run` process. Exact commands and original protocol source rows are in '
           'round-*/<configuration>/command.json. Epochs/repeats follow the pass: MNIST 3/3; '
           'CUP default 5/5, in-order and graph 5/3. Different conditions stay in separate rows.\n\n',
@@ -76,7 +79,8 @@ def report(out):
                     f" | {rs[0]['epochs']} / {rs[0]['repeat']} |\n")
         summary.append(dict(configuration=label,conditions=json.loads(key),process_medians_ms=times,
                             within_steady_iqr_s=iqrs,sources=[r['_source'] for r in rs]))
-    missing={label:3-sum(len(rs) for (name,key),rs in groups.items() if name==label) for label in CONFIGS}
+    present={name for (name,key) in groups}
+    missing={label:len(rounds)-sum(len(rs) for (name,key),rs in groups.items() if name==label) for label in CONFIGS if label in present}
     text.append('\nRemaining independent processes: '+json.dumps({k:v for k,v in missing.items() if v})+'\n')
     for name in ('versions.txt','NUMA-POLICY'):
         p=out/name
@@ -90,7 +94,7 @@ def main():
     ap.add_argument('--out',type=Path,required=True)
     ap.add_argument('--source',type=Path,default=Path('results/hpc-a30/2026-09-17/gpu-cuda-vs-sycl'))
     ap.add_argument('--run',choices=CONFIGS)
-    ap.add_argument('--round',type=int,choices=(1,2,3),default=1)
+    ap.add_argument('--round',type=int,choices=range(1,10),default=1)
     a=ap.parse_args(); a.out.mkdir(parents=True,exist_ok=True)
     if a.run: measure(a)
     report(a.out)

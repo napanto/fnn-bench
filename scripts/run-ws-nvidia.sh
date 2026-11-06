@@ -17,10 +17,23 @@ DATE=${DATE:-$(date +%F)}
 GPU="--device nvidia.com/gpu=all --security-opt=label=disable"
 # Memory placement (docs/methodology.md): the GTX 1080 Ti hangs off host socket 1 = guest NUMA node 1
 # (the VM's cells are pinned 1:1 with strict memory binding), so GPU rows run with the process and its
-# memory on node 1; the CPU rows override it inside the container with interleaved memory on both nodes
+# memory on node 1; the CPU rows run with interleaved memory on both nodes.
+# Binding fix (2026-11-05): until 2026-11-04 NUMA_GPU prefixed `podman run` itself. crun (1.28) resets
+# the container's CPU affinity, so only --membind=1 reached the benchmark (rows: membind 1,
+# cpus_allowed_list 0-23). NUMA_GPU is now applied INSIDE the container, in front of every GPU fnnbench /
+# nsys command; NUMA_GPU= (empty) still means unbound. The CPU path is unchanged: NUMA_CPU in front of
+# the CPU commands, in a container that is no longer started under the node-1 policy (crun had reset
+# the affinity anyway, and --interleave=all replaced the inherited memory policy).
 NUMA_GPU=${NUMA_GPU-numactl --cpunodebind=1 --membind=1}
 NUMA_CPU="numactl --cpunodebind=0,1 --interleave=all"
-RUN="$NUMA_GPU podman run --rm --memory=40g $GPU -v $REMOTE/syclnn:/work/syclnn -v $REMOTE/cudann:/work/cudann -v $REMOTE/ompnn:/work/ompnn -v $REMOTE/fnn-bench:/work/fnn-bench"
+# NSYS=0 skips the whole-run nsys traces at the end of matrix_sycl/matrix_cuda (they overwrite the
+# pass's .nsys-rep files); E7_GCC=0 skips the gcc-14 nvptx tiled rows (one process per row, ~3 h).
+NSYS=${NSYS:-1}
+E7_GCC=${E7_GCC:-1}
+# PODMAN_EXTRA: extra `podman run` flags, e.g. a --label that a night chain uses to find its containers
+RUN="podman run --rm --memory=40g ${PODMAN_EXTRA:-} $GPU -v $REMOTE/syclnn:/work/syclnn -v $REMOTE/cudann:/work/cudann -v $REMOTE/ompnn:/work/ompnn -v $REMOTE/fnn-bench:/work/fnn-bench"
+# NVIDIA_HOST=local runs every block on this machine (the night chain runs on ws-nvidia itself)
+if [ "$HOST" = local ]; then ssh() { shift; bash -c "$*"; }; fi
 
 sync() {
     ssh "$HOST" mkdir -p "$REMOTE"
@@ -79,48 +92,58 @@ matrix_sycl() {
     ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-sycl:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl
-        fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --out results/ws-nvidia/$DATE/sycl-gpu
-        fnnbench sweep --plan plans/e6_sycl_ablations.json --select device=gpu --out results/ws-nvidia/$DATE/sycl-gpu-ablations
-        fnnbench sweep --plan plans/w4_sweep_gpu.json --out results/ws-nvidia/$DATE/gpu-w4-sycl
-        fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=syclnn --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
-        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e7-tiled-gpu
-        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-infer-gpu
-        fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-breakdown-gpu
-        for dt in float double; do fnnbench peak --backend syclnn --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
-        fnnbench peak --backend syclnn --device gpu --dtype float --size 8192 --option blas=tiled --out results/ws-nvidia/$DATE/peaks-tiled
-        nsys profile -o results/ws-nvidia/$DATE/nsys-syclnn-mnist --force-overwrite true fnnbench run --backend syclnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192'"
+        $NUMA_GPU fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --out results/ws-nvidia/$DATE/sycl-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e6_sycl_ablations.json --select device=gpu --out results/ws-nvidia/$DATE/sycl-gpu-ablations
+        $NUMA_GPU fnnbench sweep --plan plans/w4_sweep_gpu.json --out results/ws-nvidia/$DATE/gpu-w4-sycl
+        $NUMA_GPU fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=syclnn --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
+        $NUMA_GPU fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e7-tiled-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-infer-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-breakdown-gpu
+        for dt in float double; do $NUMA_GPU fnnbench peak --backend syclnn --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
+        $NUMA_GPU fnnbench peak --backend syclnn --device gpu --dtype float --size 8192 --option blas=tiled --out results/ws-nvidia/$DATE/peaks-tiled
+        [ $NSYS = 0 ] || $NUMA_GPU nsys profile -o results/ws-nvidia/$DATE/nsys-syclnn-mnist --force-overwrite true fnnbench run --backend syclnn --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192'"
 }
 
 matrix_cuda() {
     ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-cuda
-        fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=cudann --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
-        fnnbench sweep --plan plans/w4_sweep_gpu.json --backend cudann --out results/ws-nvidia/$DATE/gpu-w4-cuda
-        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e7-tiled-gpu
-        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-infer-gpu
-        fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-breakdown-gpu
-        for dt in float double; do fnnbench peak --backend cudann --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
-        nsys profile -o results/ws-nvidia/$DATE/nsys-cudann-mnist --force-overwrite true fnnbench run --backend cudann --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192'"
+        $NUMA_GPU fnnbench sweep --plan plans/e3_cuda_vs_sycl_gpu.json --select backend=cudann --out results/ws-nvidia/$DATE/gpu-cuda-vs-sycl
+        $NUMA_GPU fnnbench sweep --plan plans/w4_sweep_gpu.json --backend cudann --out results/ws-nvidia/$DATE/gpu-w4-cuda
+        $NUMA_GPU fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e7-tiled-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-infer-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-breakdown-gpu
+        for dt in float double; do $NUMA_GPU fnnbench peak --backend cudann --device gpu --dtype \$dt --size 8192 --out results/ws-nvidia/$DATE/peaks; done
+        [ $NSYS = 0 ] || $NUMA_GPU nsys profile -o results/ws-nvidia/$DATE/nsys-cudann-mnist --force-overwrite true fnnbench run --backend cudann --device gpu --workload mnist-512-256 --batch 256 --dtype float --epochs 1 --repeat 1 --warmup 1 --option profile=True --samples 8192'"
 }
 
-matrix_omp() {
+matrix_omp_gpu() {
     ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         for w in clang18nv gcc14nv; do
             export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w
-            fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-\$w
+            $NUMA_GPU fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-\$w
             # gcc offload runs the tiled kernel with one thread per warp: the 4096-wide row takes hours, as on the other machines it is omitted
             e7sel=\"\"; [ \$w = gcc14nv ] && e7sel=\"--select workload=monk,cup,mnist-512-256,sweep-w256-d4-b256,sweep-w1024-d4-b256\"
-            fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn \$e7sel --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-\$w
-            fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-\$w
-            fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-breakdown-omp-gpu-\$w
-            fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-\$w
-        done
+            [ \$w = gcc14nv ] && [ $E7_GCC = 0 ] || $NUMA_GPU fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn \$e7sel --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-\$w
+            $NUMA_GPU fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-\$w
+            $NUMA_GPU fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-breakdown-omp-gpu-\$w
+            $NUMA_GPU fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-\$w
+        done'"
+}
+
+matrix_omp_cpu() {
+    ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
+        export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         # 12 = physical cores (2 x 6; the image default 16 is the one of ws-amd); unbound: libomp + OpenBLAS-openmp collapse when bound
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang22 OMP_NUM_THREADS=12 OMP_PROC_BIND=false; unset OMP_PLACES
         $NUMA_CPU fnnbench sweep --plan plans/e4_omp_cpu.json --out results/ws-nvidia/$DATE/omp-cpu-clang22
         $NUMA_CPU fnnbench peak --backend ompnn --device cpu --dtype float --size 4096 --out results/ws-nvidia/$DATE/peaks-omp-clang22'"
+}
+
+matrix_omp() {
+    matrix_omp_gpu || echo "matrix: ompnn GPU part failed"
+    matrix_omp_cpu || echo "matrix: ompnn CPU part failed"
 }
 
 matrix_cuda_omp() {
@@ -145,10 +168,10 @@ omp_clang18() {
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-clang18nv
         for o in \"--dtype double\" \"--dtype float\" \"--option blas=tiled --dtype double\" \"--option blas=tiled --dtype float\" \"--option blas=omp --dtype float\"; do printf \"ompnn clang18nv gpu %-34s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
         cd /work/fnn-bench
-        fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-clang18nv
-        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-clang18nv
-        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-clang18nv
-        fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-clang18nv'"
+        $NUMA_GPU fnnbench sweep --plan plans/e4_omp_gpu.json --out results/ws-nvidia/$DATE/omp-gpu-clang18nv
+        $NUMA_GPU fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-clang18nv
+        $NUMA_GPU fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-clang18nv
+        $NUMA_GPU fnnbench peak --backend ompnn --device gpu --dtype float --size 8192 --out results/ws-nvidia/$DATE/peaks-omp-clang18nv'"
     fetch
 }
 
@@ -176,7 +199,7 @@ omp_gcc14nv() {
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-gcc14nv
         for o in \"--option blas=tiled --dtype double\" \"--option blas=tiled --dtype float\" \"--dtype float\"; do printf \"ompnn gcc14nv gpu %-30s \" \"\$o\"; pytest -q --device gpu -p no:cacheprovider \$o 2>&1 | tail -1; done
         cd /work/fnn-bench
-        fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --select workload=monk,cup,mnist-512-256,sweep-w256-d4-b256,sweep-w1024-d4-b256 --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-gcc14nv'"
+        $NUMA_GPU fnnbench sweep --plan plans/e7_tiled_gemm.json --select device=gpu --select backend=ompnn --select workload=monk,cup,mnist-512-256,sweep-w256-d4-b256,sweep-w1024-d4-b256 --out results/ws-nvidia/$DATE/e7-tiled-omp-gpu-gcc14nv'"
     fetch
 }
 
@@ -205,18 +228,18 @@ EOF"
     ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-sycl:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl
-        fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu
-        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-infer-gpu
-        fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=syclnn --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-gpu'" || echo "infer_rerun: syclnn block failed"
+        $NUMA_GPU fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=syclnn --out results/ws-nvidia/$DATE/e5-infer-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=syclnn --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-gpu'" || echo "infer_rerun: syclnn block failed"
     ssh "$HOST" "$RUN -w /work/fnn-bench localhost/fnn-cuda:dev bash -c '
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-cuda
-        fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-infer-gpu
-        fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=cudann --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=cudann --out results/ws-nvidia/$DATE/e5-infer-gpu
+        $NUMA_GPU fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=cudann --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-gpu
         for w in clang18nv gcc14nv; do
             export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-omp-\$w
-            fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-\$w
-            fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=ompnn --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-omp-gpu-\$w
+            $NUMA_GPU fnnbench sweep --plan plans/e5_inference.json --select device=gpu --select backend=ompnn --out results/ws-nvidia/$DATE/e5-infer-omp-gpu-\$w
+            $NUMA_GPU fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=ompnn --select mode=infer --out results/ws-nvidia/$DATE/e5-breakdown-omp-gpu-\$w
         done'" || echo "infer_rerun: cudann/ompnn block failed"
     ssh "$HOST" "$RUN -w /work/syclnn localhost/fnn-acpp-cuda:dev bash -c '
         set -e; export CXX=/opt/acpp/bin/acpp CC=clang-18 SYCLNN_SYCL_IMPL=adaptivecpp SYCLNN_ONEMATH_ROOT=/opt/onemath-acpp CMAKE_PREFIX_PATH=/opt/acpp:/opt/onemath-acpp SYCLNN_CT_BACKENDS=netlib CMAKE_BUILD_PARALLEL_LEVEL=8 ACPP_TARGETS=generic
@@ -224,8 +247,8 @@ EOF"
         pip install -q --no-deps --target /work/fnn-bench/.wheels/ws-nvidia-sycl-acpp --config-settings=build-dir=/tmp/b-acpp .
         export FNN_REF_CACHE=/work/fnn-bench/.cache/ref; pip install -q --no-deps -e /work/fnn-bench/testkit -e /work/fnn-bench/bench
         export PYTHONPATH=/work/fnn-bench/.wheels/ws-nvidia-sycl-acpp; cd /work/fnn-bench
-        fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu-acpp
-        fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=syclnn --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu-acpp'" 2>&1 | grep -v 'AdaptiveCpp Warning' || echo "infer_rerun: acpp block failed"
+        $NUMA_GPU fnnbench sweep --plan plans/e2_sycl_cpu_gpu.json --select device=gpu --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu-acpp
+        $NUMA_GPU fnnbench sweep --plan plans/e5_breakdown.json --select device=gpu --select backend=syclnn --select mode=infer --out results/ws-nvidia/$DATE/sycl-gpu-acpp'" 2>&1 | grep -v 'AdaptiveCpp Warning' || echo "infer_rerun: acpp block failed"
     fetch
 }
 
@@ -246,6 +269,8 @@ matrix) matrix ;;
 matrix-cuda-omp) matrix_cuda_omp ;;
 matrix-cuda) matrix_cuda ;;
 matrix-omp) matrix_omp ;;
+matrix-omp-gpu) matrix_omp_gpu ;;
+matrix-omp-cpu) matrix_omp_cpu ;;
 matrix-sycl) matrix_sycl ;;
 fetch) fetch ;;
 omp-clang18) omp_clang18 ;;
@@ -254,5 +279,5 @@ omp-gcc14nv) omp_gcc14nv ;;
 infer-rerun) infer_rerun ;;
 push-results) push_results ;;
 all) sync; build_all; tests; matrix; fetch ;;
-*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda|matrix-omp|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|infer-rerun|push-results|all"; exit 1 ;;
+*) echo "usage: $0 sync|build|tests|matrix|matrix-sycl|matrix-cuda|matrix-omp|matrix-omp-gpu|matrix-omp-cpu|matrix-cuda-omp|fetch|omp-clang18|sycl-fix|omp-gcc14nv|infer-rerun|push-results|all"; exit 1 ;;
 esac

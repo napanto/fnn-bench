@@ -70,7 +70,7 @@ def snapshot(out, machine, binding):
     else:
         data["gpu_clocks"] = {str(p): read(p) for pattern in ("card*/device/pp_dpm_sclk", "card*/device/pp_dpm_mclk", "card*/device/power_dpm_force_performance_level") for p in Path("/sys/class/drm").glob(pattern)}
         data["gpu_hwmon"] = {str(p): read(p) for pattern in ("card*/device/hwmon/hwmon*/freq*_input", "card*/device/hwmon/hwmon*/temp*_input", "card*/device/hwmon/hwmon*/power*_average") for p in Path("/sys/class/drm").glob(pattern)}
-        data["limits"] = "Kernel 7.3.0 differs from the 7.2.3 pass; GPU timings on 7.3.0 were 20–50% slower and noisier. These experiments prioritise counters. Timings and bandwidth describe this run only, not a programming-model speedup against the pass. CPU cap/boost were left unchanged."
+        data["limits"] = "Same kernel, CPU cap and boost setting as the pass. These experiments prioritise counters. Timings and bandwidth describe this run only, not a programming-model speedup against the pass."
     out.mkdir(parents=True, exist_ok=True)
     (out / "conditions.json").write_text(json.dumps(data, indent=2)+"\n")
 

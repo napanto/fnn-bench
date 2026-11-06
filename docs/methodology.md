@@ -257,16 +257,16 @@ nothing beyond the 6-50 % noise of that shared GPU.
 Policy since 2026-11-03:
 
 - **CPU rows**: `numactl --interleave=all` on every machine, with the thread binding above.
-  Every CPU row of the three passes was re-measured so (ws-amd 2026-11-03; hpc-a30 2026-11-03/04;
-  ws-nvidia 2026-11-03).
+  Every CPU row of the three passes was re-measured so (ws-amd 2026-11-05/06; hpc-a30 2026-11-03/04;
+  ws-nvidia 2026-11-06).
 - **GPU rows**: on ws-amd the process is already on the GPU's node (the master thread is bound
   to core 0); on hpc-a30 it stays unbound (binding CPU and memory to the A30's node changed
-  nothing beyond the noise); on ws-nvidia the memory is bound to the GPU's node 1 and the host
-  threads are unbound. `numactl --cpunodebind=1 --membind=1` was applied outside `podman run`
-  there: the memory policy reaches the container, but crun (1.28) resets the CPU affinity of the
-  container process to all CPUs, so the rows record `membind: 1` with `cpus_allowed_list 0-23`.
-  A CPU binding has to be applied inside the container (`podman run ... numactl ... cmd`), as the
-  portability rows and the extra experiments do.
+  nothing beyond the noise); on ws-nvidia CPU and memory are bound to the GPU's node 1 with
+  `numactl --cpunodebind=1 --membind=1` inside the container. Until 2026-11-05 that command was
+  applied outside `podman run`: the memory policy reached the container, but crun (1.28) resets the
+  CPU affinity of the container process to all CPUs, so those rows recorded `membind: 1` with
+  `cpus_allowed_list 0-23`. Only the 15 gcc-14 tiled rows of E7 (`e7-tiled-omp-gpu-gcc14nv`) are
+  still from that session.
 - Each row records its policy in `sysinfo.numa.numactl_show`.
 
 ## Measurement conditions per machine
@@ -275,17 +275,20 @@ Policy since 2026-11-03:
   (`cpupower frequency-set -u 2.8GHz`; the 2950X reaches its thermal limit under any 16-thread
   load at stock settings), with `scripts/thermal-guard.sh` stopping the sweeps at Tctl 92 C. CPU
   rows carry `results.cpu_monitor` (temperatures and the mean core clock sampled every 200 ms)
-  and `sysinfo.cpu.scaling_max_khz` / `boost`. The GPU rows were measured on 2026-09-18 with host
-  kernel 7.2.3, the CPU rows on 2026-11-03 with kernel 7.3.0 (`sysinfo.kernel`); GPU rows measured
-  on 7.3.0 were 20-50 % slower and noisier, so the GPU rows of 7.2.3 are kept.
+  and `sysinfo.cpu.scaling_max_khz` / `boost`. Every row is on host kernel 7.2.3
+  (`sysinfo.kernel`): the GPU rows from 2026-09-18, the CPU rows from 2026-11-05/06, re-measured
+  after GPU rows on 7.3.0 came out 20-50 % slower and noisier. On 7.3.0 the STREAM-style triad falls
+  from 693 to 494 GB/s in automatic mode and from 696 to 52 GB/s under `profile_standard`, where the
+  memory clock snapshot reads 96 MHz instead of 1249 MHz. Kernel arguments, the isolated CPUs and
+  the other host settings are in `sysinfo` and in the conditions table of the report.
 - **ws-nvidia**: a VM (24 vCPUs, 2 sockets x 6 cores x 2 threads, host-passthrough CPU) on a
   2 x Xeon E5-2643 v2 host. Until 2026-11-02 the guest's hyperthread pairs were not real host
   siblings (12 unbound threads ran on about 9 physical cores) and the host ran at a constant
   3.6 GHz (all-core turbo). The pass was re-measured on 2026-11-03 after re-pinning the vCPUs (each
   guest pair is one physical core), with the host clock fixed at 3.5 GHz (turbo off),
   `numa_balancing` off in host and guest, guest memory on 4 KiB host pages, C-states limited to
-  POLL/C1. The GPU is not dedicated, and the round-to-round spread of short
-  GPU rows reaches 30-50 %; ws-nvidia shows trends, hpc-a30 is the reference.
+  POLL/C1. GPU and CPU rows were re-measured on 2026-11-06 with no other
+  process on the GPU; ws-nvidia shows trends, hpc-a30 is the reference.
 - **hpc-a30**: every block runs in an exclusive SLURM job on the node (`gpu-excl`, 30-minute
   limit; `fnnbench sweep` resumes where the previous job stopped), so no other work shares the
   cores or the GPU. The node is shared with the students of the courses: blocks are submitted one

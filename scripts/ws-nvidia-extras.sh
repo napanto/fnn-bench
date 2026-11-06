@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Run on ws-nvidia only, after bench mode is on.
 # Every process uses node 1. Only this script's labelled fnn-extra containers are managed.
+# STAT_SOURCE overrides the directory stat-confirm reads the pass protocols from (the night chain of
+# 2026-11-06 freezes a copy before it supersedes those rows).
 set -uo pipefail
 B=$(cd "$(dirname "$0")/.." && pwd); AC=$(dirname "$B")
 ACTION=${1:-}; DATE=${2:-$(date +%F)}
@@ -32,7 +34,8 @@ run() { # run image wheel command; repos are read-only except the benchmark work
 }
 prepare() {
     local exp=$1; R=results/ws-nvidia/$exp-$DATE; mkdir -p "$B/$R"
-    printf '%s\n' 'other services were running on the host and in the VM, as in every ws-nvidia pass; their CPU and GPU use is not controlled' 'The GPU was not dedicated to the benchmark.' > "$B/$R/background-host.txt"
+    # FNN_GPU_BACKGROUND: replaces the note below when the conditions differ
+    printf '%s\n' 'other services were running on the host and in the VM, as in every ws-nvidia pass; their CPU and GPU use is not controlled' "${FNN_GPU_BACKGROUND:-The GPU was not dedicated to the benchmark.}" > "$B/$R/background-host.txt"
     [ ! -f "$B/$TOOLS/bench-mode-status.txt" ] || python3 -c 'import sys; sys.path.insert(0, "scripts"); from extra_conditions import public_bench_status; print(public_bench_status(open(sys.argv[1]).read()), end="")' "$B/$TOOLS/bench-mode-status.txt" > "$B/$R/bench-mode-status.txt"
     run fnn-cuda cuda "python scripts/extra_conditions.py $R --machine ws-nvidia --binding 'numactl --cpunodebind=1 --membind=1'" || return 1
     printf 'bash scripts/ws-nvidia-extras.sh %s %s\n' "$ACTION" "$DATE" > "$B/$R/commands.txt"
@@ -107,10 +110,10 @@ stat-confirm)
         [ "$round" = 2 ] && { order='syclnn cudann'; cup='graph in-order default'; }
         for batch in 256 1024; do for be in $order; do
             img=fnn-cuda; wheel=cuda; [ "$be" = syclnn ] && { img=fnn-sycl; wheel=sycl; }
-            run "$img" "$wheel" "python scripts/stat-confirm.py --source results/ws-nvidia/2026-09-05/gpu-cuda-vs-sycl --run $be-mnist-b$batch --round $round --out $R" || true
+            run "$img" "$wheel" "python scripts/stat-confirm.py --source ${STAT_SOURCE:-results/ws-nvidia/2026-09-05/gpu-cuda-vs-sycl} --run $be-mnist-b$batch --round $round --out $R" || true
         done; done
         for opt in $cup; do
-            run fnn-cuda cuda "python scripts/stat-confirm.py --source results/ws-nvidia/2026-09-05/gpu-cuda-vs-sycl --run cudann-cup-$opt --round $round --out $R" || true
+            run fnn-cuda cuda "python scripts/stat-confirm.py --source ${STAT_SOURCE:-results/ws-nvidia/2026-09-05/gpu-cuda-vs-sycl} --run cudann-cup-$opt --round $round --out $R" || true
         done
     done
     run fnn-cuda cuda "python scripts/stat-confirm.py --out $R"

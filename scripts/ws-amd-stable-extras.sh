@@ -3,7 +3,7 @@
 set -euo pipefail
 B=$(cd "$(dirname "$0")/.." && pwd); ACTION=$1; DATE=$2
 if [ "${FNN_EXTRA_STABLE_INSIDE:-0}" != 1 ]; then
-    exec nice -n 19 distrobox enter fnn-rocm -- env FNN_EXTRA_STABLE_INSIDE=1 numactl --cpunodebind=0 --membind=0 nice -n 19 bash "$B/scripts/ws-amd-stable-extras.sh" "$ACTION" "$DATE"
+    exec distrobox enter fnn-rocm -- env FNN_EXTRA_STABLE_INSIDE=1 numactl --cpunodebind=0 --membind=0 bash "$B/scripts/ws-amd-stable-extras.sh" "$ACTION" "$DATE"
 fi
 cd "$B"
 P=$HOME/.local/opt/fnn-rocm;R=results/ws-amd/rocprof-stable-$DATE;OLD=results/ws-amd/rocprof-tiled-$DATE
