@@ -354,6 +354,81 @@ overlap-probe)  # one short job: do kernels of different streams overlap untrace
         done
     done
     echo 'overlap probe done' ;;
+wallprof-sweep)  # the same stacks as parameters vary: batch, CUP, width; and the stream probe with its arms reversed
+    extra_dir wallprof-sweep; O=$B/$RES; P=$B/scripts/launch-probe; extra_policy || exit 1
+    run fnn-cuda "gcc -O2 -shared -fPIC scripts/wallprof/wallprof.c -o $RES/wallprof.so && cd $P && nvcc -O3 -std=c++17 -arch=sm_80 -ccbin g++-13 probe5_cuda.cu -lcublas -o $O/probe5-cuda" || exit 1
+    nvidia-smi --query-gpu=timestamp,clocks.gr,clocks.mem --format=csv -l 1 > "$O/probe5-clocks.csv" 2>&1 &
+    smi=$!
+    for round in 1 2; do
+        run fnn-cuda "PROBE_R=9 PROBE_REVERSE=1 $O/probe5-cuda" > "$O/probe5-rev-r$round.csv" 2> "$O/probe5-rev-r$round.err"
+    done
+    kill $smi 2>/dev/null
+    one() { # one <image> <wheel> <backend> <tag> <workload> <samples> <batch> <warm> <epochs> <delay-ms> <round> [option]
+        local img=$1 w=$2 be=$3 tag=$4 wl=$5 ns=$6 bs=$7 warm=$8 ep=$9 dl=${10} k=${11} opt=""
+        [ -n "${12:-}" ] && opt="--option ${12}"
+        local out=$RES/$tag-r$k
+        [ -s "$B/$out.stacks.json" ] && return 0
+        run "$img" "$(wheel "$w"); python scripts/wallprof/wallprof_run.py --backend $be --workload $wl --samples $ns --batch $bs --warm $warm --epochs $ep --delay-ms $dl --lib $RES/wallprof.so --out $out.dump $opt && python scripts/wallprof/wallprof_report.py $out.dump"
+    }
+    for k in 1 2; do
+        #          tag      workload            samples batch warm CUDA DPC++ delay
+        while read -r tag wl ns bs warm ec ed dl; do
+            one fnn-cuda cuda cudann "cuda-$tag" "$wl" "$ns" "$bs" "$warm" "$ec" "$dl" "$k" queue=in_order
+            one fnn-sycl sycl syclnn "dpcpp-$tag" "$wl" "$ns" "$bs" "$warm" "$ed" "$dl" "$k"
+        done <<'CONDITIONS'
+mnist-b64 mnist-512-256 60000 64 6 50 20 1000
+mnist-b1024 mnist-512-256 60000 1024 40 350 150 1000
+cup cup 1000 40 200 1200 500 1000
+w256 sweep-w256-d4-b256 65536 256 12 100 40 1000
+w1024 sweep-w1024-d4-b256 65536 256 6 25 25 1000
+w4096 sweep-w4096-d4-b256 65536 256 2 3 3 2000
+CONDITIONS
+    done
+    echo 'wallprof sweep done' ;;
+build-sycl-discard)  # front-end: a scratch syclnn whose in-order queue discards events when SYCLNN_DISCARD is set
+    run fnn-sycl "export CC=clang CXX=clang++ SYCLNN_TARGETS='spir64;nvidia_gpu_sm_80' SYCLNN_ONEMATH_ROOT=/opt/onemath CMAKE_BUILD_PARALLEL_LEVEL=16; $(pip_target sycl-discard $R/syclnn-discard sycl-discard)" ;;
+discard-probe)  # one short job: what the profile suggests, with and without events, alternated
+    extra_dir discard-probe; O=$B/$RES; extra_policy || exit 1
+    run fnn-cuda "gcc -O2 -shared -fPIC scripts/wallprof/wallprof.c -o $RES/wallprof.so" || exit 1
+    one() { # one <tag> <round> <prefix> [option...]
+        local tag=$1 k=$2 pre=$3 opts=""; shift 3
+        for o in "$@"; do opts="$opts --option $o"; done
+        [ -s "$O/$tag-r$k.stacks.json" ] && return 0
+        run fnn-sycl "$(wheel sycl-discard); $pre python scripts/wallprof/wallprof_run.py --backend syclnn --epochs 100 --lib $RES/wallprof.so --out $RES/$tag-r$k.dump $opts && python scripts/wallprof/wallprof_report.py $RES/$tag-r$k.dump"
+    }
+    T="loss_reduction=false bias_gemv=false workgroup_size=256"
+    for k in 1 2 3; do
+        one events "$k" ""
+        one discard "$k" "SYCLNN_DISCARD=1"
+        one tuned "$k" "" $T
+        one tuned-discard "$k" "SYCLNN_DISCARD=1" $T
+    done
+    run fnn-sycl "$(wheel sycl-discard); SYCLNN_DISCARD=1 python -m fnnbench.cli run --backend syclnn --device gpu --dtype float --workload mnist-512-256 --batch 256 --epochs 3 --repeat 3 --warmup 1 --seed 1 --out $RES/check" > "$O/check.log" 2>&1
+    echo 'discard probe done' ;;
+tuned-rows)  # harness rows of what the profile suggests, numerically checked, fresh processes, alternated
+    extra_dir tuned; O=$B/$RES; extra_policy || exit 1
+    T="--option loss_reduction=False --option bias_gemv=False"
+    one() { # one <arm> <workload-tag> <round> <image> <wheel> <backend> <prefix> <run arguments>
+        local arm=$1 wl=$2 k=$3 img=$4 w=$5 be=$6 pre=$7; shift 7
+        local out=$RES/$arm/$wl/round-$k; mkdir -p "$B/$out"
+        ls "$B/$out"/*.jsonl >/dev/null 2>&1 && return 0
+        run "$img" "$(wheel "$w"); $pre python -m fnnbench.cli run --backend $be --device gpu --dtype float --seed 1 --warmup 1 $* --out $out" > "$B/$out/run.log" 2>&1 < /dev/null
+    }
+    M="--workload mnist-512-256 --batch 256 --epochs 3 --repeat 3 --samples 60000"
+    C="--workload cup --batch 40 --epochs 5 --repeat 5 --samples 1000"
+    for k in 1 2 3; do
+        one cuda-default mnist "$k" fnn-cuda cuda cudann "" $M --option queue=in_order
+        one dpcpp-default mnist "$k" fnn-sycl sycl syclnn "" $M
+        one cuda-tuned mnist "$k" fnn-cuda cuda cudann "" $M --option queue=in_order $T
+        one dpcpp-tuned mnist "$k" fnn-sycl sycl syclnn "" $M $T --option workgroup_size=256
+        one dpcpp-tuned-discard mnist "$k" fnn-sycl sycl-discard syclnn "SYCLNN_DISCARD=1" $M $T --option workgroup_size=256
+        [ "$k" = 3 ] && continue
+        one cuda-default cup "$k" fnn-cuda cuda cudann "" $C --option queue=in_order
+        one dpcpp-default cup "$k" fnn-sycl sycl syclnn "" $C
+        one cuda-tuned cup "$k" fnn-cuda cuda cudann "" $C --option queue=in_order $T
+        one dpcpp-tuned cup "$k" fnn-sycl sycl syclnn "" $C $T --option workgroup_size=256
+    done
+    echo 'tuned rows done' ;;
 clang-wait)  # steady-state rows of ompnn 0.1.2 with clang: Options::wait auto against spin, fresh processes, alternated
     extra_dir clang-wait; O=$B/$RES
     one() { # one <wait> <round> <workload> <batch> <epochs> <samples>

@@ -1,9 +1,10 @@
 // Do kernels on different streams overlap without a profiler? cuBLAS GEMMs of order M, in one stream
 // and on separate streams, freely and with the shape of the backward pass: one product, then two
-// products that depend only on it, then a join.
+// products that depend only on it, then a join. PROBE_REVERSE=1 measures the arms in reverse order.
 #include "common.hpp"
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
+#include <functional>
 #define CK(x) do { cudaError_t e_ = (x); if (e_) { std::fprintf(stderr, "%s\n", cudaGetErrorString(e_)); std::exit(1); } } while (0)
 #define CB(x) do { if ((x) != CUBLAS_STATUS_SUCCESS) { std::fprintf(stderr, "cublas\n"); std::exit(1); } } while (0)
 struct Product {
@@ -36,6 +37,9 @@ int main() {
         for (int k = 0; k < 3; ++k) p[k].on(s[0]);
         for (int w = 0; w < 20; ++w) for (auto &q : p) q.run();
         sync();
+        std::vector<std::function<void()>> arms;
+        arms.push_back([&] {
+            p[0].on(s[0]); p[1].on(s[0]); p[2].on(s[0]);
         for (int r = 0; r < R; ++r) {  // one product
             long long t0 = now_ns();
             for (int i = 0; i < N; ++i) p[0].run();
@@ -44,6 +48,9 @@ int main() {
             std::snprintf(name, sizeof name, "one-m%d", m);
             emit("cuda", name, r, N, t1 - t0, now_ns() - t0);
         }
+        });
+        arms.push_back([&] {
+            p[0].on(s[0]); p[1].on(s[0]); p[2].on(s[0]);
         for (int r = 0; r < R; ++r) {  // two products per step, one stream
             long long t0 = now_ns();
             for (int i = 0; i < N; ++i) { p[1].run(); p[2].run(); }
@@ -52,7 +59,9 @@ int main() {
             std::snprintf(name, sizeof name, "pair-one-stream-m%d", m);
             emit("cuda", name, r, N, t1 - t0, now_ns() - t0);
         }
-        p[1].on(s[1]); p[2].on(s[2]);
+        });
+        arms.push_back([&] {
+            p[0].on(s[0]); p[1].on(s[1]); p[2].on(s[2]);
         for (int r = 0; r < R; ++r) {  // two products per step, two free streams
             long long t0 = now_ns();
             for (int i = 0; i < N; ++i) { p[1].run(); p[2].run(); }
@@ -61,7 +70,9 @@ int main() {
             std::snprintf(name, sizeof name, "pair-two-streams-m%d", m);
             emit("cuda", name, r, N, t1 - t0, now_ns() - t0);
         }
-        p[1].on(s[0]); p[2].on(s[0]);
+        });
+        arms.push_back([&] {
+            p[0].on(s[0]); p[1].on(s[0]); p[2].on(s[0]);
         for (int r = 0; r < R; ++r) {  // backward shape, in order
             long long t0 = now_ns();
             for (int i = 0; i < N; ++i) { p[0].run(); p[1].run(); p[2].run(); }
@@ -70,7 +81,9 @@ int main() {
             std::snprintf(name, sizeof name, "fork-one-stream-m%d", m);
             emit("cuda", name, r, N, t1 - t0, now_ns() - t0);
         }
-        p[1].on(s[1]); p[2].on(s[2]);
+        });
+        arms.push_back([&] {
+            p[0].on(s[0]); p[1].on(s[1]); p[2].on(s[2]);
         for (int r = 0; r < R; ++r) {  // backward shape, the two branches on their own streams, joined by events
             long long t0 = now_ns();
             for (int i = 0; i < N; ++i) {
@@ -85,6 +98,9 @@ int main() {
             std::snprintf(name, sizeof name, "fork-three-streams-m%d", m);
             emit("cuda", name, r, N, t1 - t0, now_ns() - t0);
         }
+        });
+        if (env_int("PROBE_REVERSE", 0)) std::reverse(arms.begin(), arms.end());
+        for (auto &arm : arms) arm();
         for (auto &q : p) { CB(cublasDestroy(q.h)); CK(cudaFree(q.a)); CK(cudaFree(q.b)); CK(cudaFree(q.c)); }
     }
     return 0;

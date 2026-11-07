@@ -62,6 +62,10 @@ Separate directories under `results/`, each with its scripts in `scripts/`. None
 | Variance of CUP on the ws-amd CPU, real-time priority, SMT siblings | `ws-amd/cup-threads-*`, `ws-amd/cup-interference-*` | `ws-amd-cup-threads.sh`, `ws-amd-cup-interference.sh`, `ws-amd-gpu-fifo.sh`, `cup_threads.py` |
 | Wall time of the submitting thread by call stack, with no perf events | `hpc-a30/wallprof-2026-11-07`, `ws-nvidia/wallprof-2026-11-07` | `scripts/wallprof/`, `hpc-blocks.sh wallprof` |
 | Epoch against a measured host delay; overlap of kernels across streams without a profiler; gcc epoch against `thread_limit` | `hpc-a30/overlap-probe-2026-11-07` | `hpc-blocks.sh overlap-probe`, `scripts/launch-probe/probe5_cuda.cu` |
+| The 2 ms sampling across batch, CUP and width; the stream probe with its arms reversed | `hpc-a30/wallprof-sweep-2026-11-07` | `hpc-blocks.sh wallprof-sweep` |
+| Discarded events, on a scratch copy of syclnn | `hpc-a30/discard-probe-2026-11-07`, `ws-nvidia/discard-2026-11-07` | `scripts/syclnn-discard-events.py`, `hpc-blocks.sh build-sycl-discard`, `hpc-blocks.sh discard-probe` |
+| Checked rows of the options the wall profile suggests | `hpc-a30/tuned-2026-11-07` | `hpc-blocks.sh tuned-rows` |
+| Whether those options change the trained network, ten epochs, loss in double from the predictions | `ws-nvidia/compare-final-2026-11-07` | `scripts/wallprof/compare_final.py` |
 | Wait policy of clang's OpenMP runtime | `hpc-a30/clang-spin-2026-11-06`, `hpc-a30/clang-wait-2026-11-06`, `ws-nvidia/clang-spin-2026-11-06` | `hpc-blocks.sh clang-spin`, `hpc-blocks.sh clang-wait`, `ws-nvidia-clang-spin.sh` |
 
 The last row motivated `Options::wait` in ompnn 0.1.2. Its default keeps the runtime's policy, so the reported rows keep their meaning.
