@@ -8,7 +8,7 @@
 #
 #   scripts/hpc-blocks.sh build-wheels | build-nvcpp | parity-<sycl|cuda|omp-gpu|acpp|cpu> |
 #                         <block> | <block>-extras | nsys | status
-# Extras: nsys-epoch | nsys-gap | ncu-check | ncu-tiled <cuda|sycl|omp> | stat-confirm |
+# Extras: nsys-epoch | nsys-gap | wallprof | overlap-probe | ncu-check | ncu-tiled <cuda|sycl|omp> | stat-confirm |
 #         sanitizer-check | sanitizer <tool> | stream. Each has its own result directory.
 #   blocks: sycl-gpu cuda omp-gpu acpp-gpu sycl-cpu sycl-generic omp-cpu acpp-cpu
 #   hardware-thread points of the scaling series: sycl-cpu-threads-smt omp-cpu-threads-smt
@@ -310,6 +310,50 @@ clang-spin)  # is clang's slow mode libomptarget's blocking wait? One short job,
     NUMA=""; echo 'clang spin done' ;;
 build-ompnn-wait)  # front-end: ompnn 0.1.2 with clang-18 for NVIDIA, in its own wheel directory
     run fnn-cuda "export CXX=clang++-18 OMPNN_TARGET=nvidia OMPNN_OFFLOAD_ARCH=sm_80 OMPNN_BLAS=openblas OMPNN_BLAS_ROOT=/opt/openblas-openmp CMAKE_BUILD_PARALLEL_LEVEL=8; $(pip_target omp-clang18wait $R/ompnn omp-clang18wait)" ;;
+wallprof)  # wall-clock stacks of the submitting thread: where an epoch goes on the machine that forbids perf events
+    extra_dir wallprof; extra_policy || exit 1
+    run fnn-cuda "gcc -O2 -shared -fPIC scripts/wallprof/wallprof.c -o $RES/wallprof.so" || exit 1
+    one() { # one <image> <wheel> <backend> <tag> <epochs> <round> <library-path:nv|-> [option...]
+        local img=$1 w=$2 be=$3 tag=$4 ep=$5 k=$6 nvl=$7; shift 7
+        local out=$RES/$tag-r$k opts="" pre=""
+        [ -s "$B/$out.stacks.json" ] && return 0
+        [ "$nvl" = nv ] && pre="export LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-};"
+        for o in "$@"; do opts="$opts --option $o"; done
+        run "$img" "$pre $(wheel "$w"); python scripts/wallprof/wallprof_run.py --backend $be --epochs $ep --lib $RES/wallprof.so --out $out.dump $opts && python scripts/wallprof/wallprof_report.py $out.dump"
+    }
+    for k in 1 2 3; do
+        one fnn-cuda cuda cudann cuda-inorder 200 "$k" - queue=in_order
+        one fnn-sycl sycl syclnn dpcpp 100 "$k" -
+        one fnn-cuda omp-nvcpp ompnn nvcpp 70 "$k" nv
+        one fnn-cuda omp-clang18wait ompnn clang-spin 70 "$k" - wait=spin
+    done
+    ;;
+overlap-probe)  # one short job: do kernels of different streams overlap untraced; the gcc epoch against thread_limit
+    extra_dir overlap-probe; O=$B/$RES; P=$B/scripts/launch-probe; extra_policy || exit 1
+    nvidia-smi --query-gpu=clocks.gr,clocks.mem,pstate --format=csv > "$O/gpu-clocks.txt" 2>&1
+    run fnn-cuda "cd $P && nvcc -O3 -std=c++17 -arch=sm_80 -ccbin g++-13 probe5_cuda.cu -lcublas -o $O/probe5-cuda" || exit 1
+    for round in 1 2 3; do
+        run fnn-cuda "PROBE_R=9 $O/probe5-cuda" > "$O/probe5-r$round.csv" 2> "$O/probe5-r$round.err"
+    done
+    for round in 1 2 3; do
+        for wg in 256 64 8; do
+            out=$RES/gcc-tl$wg/round-$round; mkdir -p "$B/$out"
+            run fnn-cuda "$(wheel omp-gcc14nv); python -m fnnbench.cli run --backend ompnn --device gpu --dtype float --workload mnist-512-256 --batch 256 --epochs 3 --repeat 3 --warmup 1 --seed 1 --out $out --option workgroup_size=$wg" >> "$O/gcc.log" 2>&1
+        done
+    done
+    run fnn-cuda "gcc -O2 -shared -fPIC scripts/wallprof/wallprof.c -o $RES/wallprof.so" || exit 1
+    perturb() { # perturb <image> <wheel> <backend> <tag> <epochs> <period-us> <round> [option]
+        local img=$1 w=$2 be=$3 tag=$4 ep=$5 p=$6 k=$7 opt=""; [ -n "${8:-}" ] && opt="--option $8"
+        run "$img" "$(wheel "$w"); python scripts/wallprof/wallprof_run.py --backend $be --epochs $ep --delay-ms 300 --period-us $p --max-samples 400000 --discard --lib $RES/wallprof.so --out $RES/perturb/$tag-p$p-r$k.dump $opt" >> "$O/perturb.log" 2>&1
+    }
+    mkdir -p "$O/perturb"
+    for k in 1 2; do
+        for p in 2000 400 200 100; do
+            perturb fnn-cuda cuda cudann cuda-inorder 100 "$p" "$k" queue=in_order
+            perturb fnn-sycl sycl syclnn dpcpp 50 "$p" "$k"
+        done
+    done
+    echo 'overlap probe done' ;;
 clang-wait)  # steady-state rows of ompnn 0.1.2 with clang: Options::wait auto against spin, fresh processes, alternated
     extra_dir clang-wait; O=$B/$RES
     one() { # one <wait> <round> <workload> <batch> <epochs> <samples>

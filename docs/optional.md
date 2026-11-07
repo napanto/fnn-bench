@@ -47,7 +47,7 @@ image, ZLUDA's own `libcuda.so.1` and `libcublas.so.12` in front on `LD_LIBRARY_
 `fnn-rocm` environment (ROCm 7.2.4). Output: `results/ws-amd/zluda/README.md` (what runs, what does
 not, speed against the HIPified build), rows in `results/ws-amd/zluda/rows/`.
 
-## 5. Where the time and the variance go (2026-11-06)
+## 5. Where the time and the variance go (2026-11-06 and 07)
 
 Separate directories under `results/`, each with its scripts in `scripts/`. None of these rows enters the reported pass.
 
@@ -60,6 +60,10 @@ Separate directories under `results/`, each with its scripts in `scripts/`. None
 | GPU clock against recent load | `hpc-a30/clock-state-2026-11-06` | `hpc-blocks.sh clock-state`, `clock_ramp.py` |
 | BLAS on the EPYC host, with AMD BLIS | `hpc-a30/cpu-blas-amd-2026-11-06` | `hpc-blocks.sh cpu-blas-amd` |
 | Variance of CUP on the ws-amd CPU, real-time priority, SMT siblings | `ws-amd/cup-threads-*`, `ws-amd/cup-interference-*` | `ws-amd-cup-threads.sh`, `ws-amd-cup-interference.sh`, `ws-amd-gpu-fifo.sh`, `cup_threads.py` |
+| Wall time of the submitting thread by call stack, with no perf events | `hpc-a30/wallprof-2026-11-07`, `ws-nvidia/wallprof-2026-11-07` | `scripts/wallprof/`, `hpc-blocks.sh wallprof` |
+| Epoch against a measured host delay; overlap of kernels across streams without a profiler; gcc epoch against `thread_limit` | `hpc-a30/overlap-probe-2026-11-07` | `hpc-blocks.sh overlap-probe`, `scripts/launch-probe/probe5_cuda.cu` |
 | Wait policy of clang's OpenMP runtime | `hpc-a30/clang-spin-2026-11-06`, `hpc-a30/clang-wait-2026-11-06`, `ws-nvidia/clang-spin-2026-11-06` | `hpc-blocks.sh clang-spin`, `hpc-blocks.sh clang-wait`, `ws-nvidia-clang-spin.sh` |
 
 The last row motivated `Options::wait` in ompnn 0.1.2. Its default keeps the runtime's policy, so the reported rows keep their meaning.
+
+`wallprof` needs no privileges: a POSIX timer on the monotonic clock sends a signal to the thread under study, and the handler records its call stack. Each interval is drawn at random around the period, so samples do not lock to the batches. `wallprof_report.py` symbolises the stacks inside the image that ran them, and `wallprof_layers.py` assigns each sample to one layer. The sample dumps stay local; the symbolised stacks and `layers.json` are the record.
