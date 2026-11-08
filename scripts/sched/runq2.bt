@@ -1,0 +1,44 @@
+// Second version of runq.bt. Benchmark processes started as "v-<variant>-<round>"; every thread they
+// create inherits the tag. Per tag and role (1 main thread, 0 other threads):
+//  - run-queue wait from wakeup, from preemption (prev_state reported as 256, R+) or from a switch while
+//    running (prev_state 0) to the next switch-in; the reported prev_state values are counted to check this;
+//  - run time, and run time of slices that started while the SMT sibling CPU (c +/- 16 on this
+//    16-core part) was running another tagged thread;
+//  - migrations.
+// Aggregated in the kernel; only tags are printed. Duration: DURATION seconds, set when copied.
+tracepoint:sched:sched_process_exec /strncmp(comm, "v-", 2) == 0/ { @v[(int64)tid] = comm; @main[(int64)tid] = 1; }
+tracepoint:sched:sched_process_fork /@v[args.parent_pid] != ""/ { @v[args.child_pid] = @v[args.parent_pid]; }
+tracepoint:sched:sched_wakeup, tracepoint:sched:sched_wakeup_new /@v[args.pid] != ""/ { @qt[args.pid] = nsecs; }
+tracepoint:sched:sched_switch {
+    $c = (int64)cpu;
+    $sib = $c < 16 ? $c + 16 : $c - 16;
+    if (@v[args.prev_pid] != "") {
+        @states[args.prev_state] = count();
+        if (args.prev_state == 0 || args.prev_state == 256) {
+            @qt[args.prev_pid] = nsecs;
+            @involuntary[@v[args.prev_pid], @main[args.prev_pid]] = count();
+        }
+        if (@start[args.prev_pid] != 0) {
+            $d = (nsecs - @start[args.prev_pid]) / 1000;
+            @run_us[@v[args.prev_pid], @main[args.prev_pid]] = sum($d);
+            if (@sibbusy[args.prev_pid] == 1) { @run_sib_us[@v[args.prev_pid], @main[args.prev_pid]] = sum($d); }
+            delete(@start, args.prev_pid);
+            delete(@sibbusy, args.prev_pid);
+        }
+        delete(@oncpu, $c);
+    }
+    if (@v[args.next_pid] != "") {
+        if (@qt[args.next_pid] != 0) {
+            $w = (nsecs - @qt[args.next_pid]) / 1000;
+            @wait_us[@v[args.next_pid], @main[args.next_pid]] = stats($w);
+            delete(@qt, args.next_pid);
+        }
+        @start[args.next_pid] = nsecs;
+        @sibbusy[args.next_pid] = @oncpu[$sib] != 0 ? 1 : 2;
+        @oncpu[$c] = args.next_pid;
+        @switchin_sib[@v[args.next_pid], @main[args.next_pid], @oncpu[$sib] != 0 ? 1 : 0] = count();
+    }
+}
+tracepoint:sched:sched_migrate_task /@v[args.pid] != ""/ { @migrations[@v[args.pid], @main[args.pid]] = count(); }
+interval:s:DURATION { exit(); }
+END { clear(@v); clear(@main); clear(@qt); clear(@start); clear(@sibbusy); clear(@oncpu); }

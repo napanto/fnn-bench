@@ -587,6 +587,38 @@ stream-explain)  # day: why CUDA's streams help at batch 256-1024 and hurt at 64
         run fnn-cuda "$(wheel cuda); NSYS_NVTX_PROFILER_REGISTER_ONLY=0 $NSYS profile --trace=nvtx --sample=none --cpuctxsw=none --gpu-metrics-devices=0 --gpu-metrics-frequency=100000 --capture-range=nvtx --nvtx-capture=fnn.train.capture --force-overwrite true -o $RES/gm-$tag python scripts/nsys_epoch.py --backend cudann $o --samples 60000 --warm-epochs 1 --nvtx-lib $B/$RES/nvtx-range.so --out $RES/gm-$tag.json && $NSYS export --type sqlite --force-overwrite true -o $RES/gm-$tag.sqlite $RES/gm-$tag.nsys-rep" > "$O/gm-$tag.log" 2>&1
     done
     echo 'stream explain done' ;;
+explain-e)  # day: graph replay from one or four streams (no per-launch events on the host); cuBLAS host time per call when DPC++ does less runtime work with the same cuBLAS calls
+    extra_dir explain-e; O=$B/$RES; extra_policy || exit 1
+    run fnn-cuda "gcc -O2 -shared -fPIC scripts/wallprof/wallprof.c -o $RES/wallprof.so" || exit 1
+    one() { # one <arm> <workload-tag> <round> <run arguments>
+        local arm=$1 wl=$2 k=$3; shift 3
+        local out=$RES/$arm/$wl/round-$k; mkdir -p "$B/$out"
+        ls "$B/$out"/*.jsonl >/dev/null 2>&1 && return 0
+        run fnn-cuda "$(wheel cuda); python -m fnnbench.cli run --backend cudann --device gpu --dtype float --seed 1 --warmup 1 $* --out $out" > "$B/$out/run.log" 2>&1 < /dev/null
+    }
+    sone() { # sone <image> <wheel> <backend> <tag> <round> [option...]
+        local img=$1 w=$2 be=$3 tag=$4 k=$5 opts=""; shift 5
+        for x in "$@"; do opts="$opts --option $x"; done
+        [ -s "$O/$tag-r$k.stacks.json" ] && return 0
+        run "$img" "$(wheel "$w"); python scripts/wallprof/wallprof_run.py --backend $be --epochs 60 --lib $RES/wallprof.so --out $RES/$tag-r$k.dump $opts && python scripts/wallprof/wallprof_report.py $RES/$tag-r$k.dump" >> "$O/stacks.log" 2>&1
+    }
+    M="--workload mnist-512-256 --epochs 3 --repeat 3 --samples 60000"
+    C="--workload cup --batch 40 --epochs 5 --repeat 5 --samples 1000"
+    for k in 1 2 3; do
+        for b in 256 1024 64; do
+            one graph-s1 mnist-b$b "$k" $M --batch $b --option queue=graph --option streams=1
+            one graph-s4 mnist-b$b "$k" $M --batch $b --option queue=graph --option streams=4
+        done
+        one graph-s1 cup "$k" $C --option queue=graph --option streams=1
+        one graph-s4 cup "$k" $C --option queue=graph --option streams=4
+    done
+    for k in 1 2 3; do
+        sone fnn-cuda cuda cudann cuda-inorder "$k" queue=in_order
+        sone fnn-sycl sycl syclnn dpcpp-default "$k"
+        sone fnn-sycl sycl syclnn dpcpp-lw "$k" loss_reduction=false workgroup_size=256
+        sone fnn-sycl sycl syclnn dpcpp-tuned "$k" loss_reduction=false bias_gemv=false workgroup_size=256
+    done
+    echo 'explain-e done' ;;
 clang-wait)  # steady-state rows of ompnn 0.1.2 with clang: Options::wait auto against spin, fresh processes, alternated
     extra_dir clang-wait; O=$B/$RES
     one() { # one <wait> <round> <workload> <batch> <epochs> <samples>
