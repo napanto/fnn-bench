@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # ws-amd, CPU, CUP b40, DPC++: the scheduling behind the SCHED_FIFO cost. Fresh processes, alternated:
 # def16/fifo16 (16 workers, default policy or every thread at FIFO 98) and def12/fifo12 (12 workers);
-# def12c/fifo12c confine the process to CPUs 0-15, one hardware thread per core (16-31 are the SMT siblings).
+# def12c/fifo12c confine the process to CPUs 0-15, one hardware thread per core (16-31 are the SMT siblings);
+# def12s/fifo12s to CPUs 0-7 and 16-23: also sixteen CPUs, but eight cores with both hardware threads;
+# def12t/fifo12t to CPUs 0-23 (24 CPUs); def12i/fifo12i to CPUs 8-15 and 24-31 (node 1, isolated nohz_full cores).
 # python runs through a symlink named v-<variant>-r<round>, so scripts/sched/runq.bt (run as root
 # meanwhile) can attribute every thread. Same conditions as the CPU rows: 2.8 GHz cap, boost off,
 # interleaved pages, nice 0.
@@ -18,7 +20,7 @@ PODMAN="podman run --rm --memory=20g --ulimit rtprio=99:99 --security-opt label=
 ENV="export FNN_REF_CACHE=/work/fnn-bench/.cache/ref OMP_PROC_BIND=close OMP_PLACES=cores PYTHONPATH=/work/fnn-bench/.wheels/sycl-dpcpp:/work/fnn-bench/bench:/work/fnn-bench/testkit"
 one() { local v=$1 k=$2 pre="" n=16; local tag=v-$v-r$k out=$RES/$v/round-$k
     ls "$out"/*.jsonl >/dev/null 2>&1 && return 0; mkdir -p "$out"
-    case $v in fifo16) pre="chrt -f 98 " ;; def12) n=12 ;; fifo12) pre="chrt -f 98 "; n=12 ;; def12c) pre="taskset -c 0-15 "; n=12 ;; fifo12c) pre="taskset -c 0-15 chrt -f 98 "; n=12 ;; esac
+    case $v in fifo16) pre="chrt -f 98 " ;; def12) n=12 ;; fifo12) pre="chrt -f 98 "; n=12 ;; def12c) pre="taskset -c 0-15 "; n=12 ;; fifo12c) pre="taskset -c 0-15 chrt -f 98 "; n=12 ;; def12s) pre="taskset -c 0-7,16-23 "; n=12 ;; fifo12s) pre="taskset -c 0-7,16-23 chrt -f 98 "; n=12 ;; def12t) pre="taskset -c 0-23 "; n=12 ;; fifo12t) pre="taskset -c 0-23 chrt -f 98 "; n=12 ;; def12i) pre="taskset -c 8-15,24-31 "; n=12 ;; fifo12i) pre="taskset -c 8-15,24-31 chrt -f 98 "; n=12 ;; esac
     { date +%s.%N; cat /proc/uptime; } > "$out/start.txt"
     timeout -s KILL 300 $PODMAN --name fnnsched-$v-$k localhost/fnn-sycl:dev bash -c "$ENV DPCPP_CPU_NUM_CUS=$n OMP_NUM_THREADS=$n MKL_NUM_THREADS=$n; py=\$(command -v python); ln -sf \$py \$(dirname \$py)/$tag && $pre\$(dirname \$py)/$tag -m fnnbench.cli run --backend syclnn --device cpu --dtype float --workload cup --batch 40 --epochs 100 --repeat 3 --warmup 1 --seed 1 --samples 1000 --out $out" > "$out/run.log" 2>&1
     echo $? > "$out/exit.txt"; podman rm -f fnnsched-$v-$k >/dev/null 2>&1

@@ -2,7 +2,8 @@
 # ws-amd, RX 7900 XTX, HIP MNIST b256 with library streams: do the two speeds depend on power management?
 # Fresh processes alternate between power-management arms (VARS): high = power_dpm_force_performance_level
 # high (every clock fixed at its top level), auto, compute = manual level with the COMPUTE power profile,
-# nogfxoff = auto with GFXOFF disabled through debugfs. A root helper applies the level written to <ctl>/want and confirms it in <ctl>/have. During
+# nogfxoff = auto with GFXOFF disabled through debugfs; c2on/c2off = CPU idle state C2 enabled or disabled
+# on every CPU (the root helper writes cpuidle/state2/disable). A root helper applies the level written to <ctl>/want and confirms it in <ctl>/have. During
 # each process the current graphics, fabric (fclk) and SoC clock levels are logged every 50 ms.
 #   scripts/ws-amd-radeon-dpm.sh <ctl-dir> [rounds] [date]
 set -uo pipefail

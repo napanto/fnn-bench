@@ -1,0 +1,30 @@
+// Wake-up latency of every thread of benchmark processes started as "v-<variant>-<round>": from sched_wakeup
+// to the next switch-in, split by what occupied the target CPU at wakeup (0 idle, 1 a thread of the same
+// process, 2 any other task, 3 a real-time task). Per thread (tid): wakeups, total latency, thread name,
+// and the CPUs it ran on. Aggregated in the kernel; other tasks are counted, never named. DURATION seconds.
+tracepoint:sched:sched_process_exec /strncmp(comm, "v-", 2) == 0/ { @v[(int64)tid] = comm; }
+tracepoint:sched:sched_process_fork /@v[args.parent_pid] != ""/ { @v[args.child_pid] = @v[args.parent_pid]; }
+tracepoint:sched:sched_switch {
+    $c = (int64)cpu;
+    @oncpu[$c] = args.next_pid;
+    @onprio[$c] = args.next_prio;
+    if (@v[args.next_pid] != "") {
+        @tname[@v[args.next_pid], args.next_pid] = args.next_comm;
+        @ran[@v[args.next_pid], args.next_pid, $c] = count();
+        if (@qt[args.next_pid] != 0) {
+            $d = (nsecs - @qt[args.next_pid]) / 1000;
+            @lat_us[@v[args.next_pid], args.next_pid] = stats($d);
+            @lat_by_blocker_us[@v[args.next_pid], @blk[args.next_pid]] = stats($d);
+            @lat_hist_us[@v[args.next_pid]] = hist($d);
+            delete(@qt, args.next_pid); delete(@blk, args.next_pid);
+        }
+    }
+}
+tracepoint:sched:sched_wakeup /@v[args.pid] != ""/ {
+    $t = (int64)args.target_cpu;
+    $cur = @oncpu[$t];
+    @qt[args.pid] = nsecs;
+    @blk[args.pid] = $cur == 0 ? 0 : (@v[$cur] == @v[args.pid] ? 1 : (@onprio[$t] < 100 ? 3 : 2));
+}
+interval:s:DURATION { exit(); }
+END { clear(@v); clear(@oncpu); clear(@onprio); clear(@qt); clear(@blk); }

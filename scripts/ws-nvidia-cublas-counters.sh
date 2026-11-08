@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ws-nvidia: why do the same cuBLAS calls take more host time under DPC++? Hardware counters by library
 # (cycles, instructions, L1 instruction-cache and iTLB misses), CUDA in order against DPC++, alternated.
-# Ratios per library carry the claim; whole-process counts include initialisation.
+# Ratios per library carry the claim; whole-process counts include initialisation. LW=1 adds DPC++ with
+# atomic loss and groups of 256 (same cuBLAS calls, less runtime work).
 #   scripts/ws-nvidia-cublas-counters.sh [date]
 set -uo pipefail
 D=$HOME/fnn/fnn-bench; DATE=${1:-$(date +%F)}; RES=results/ws-nvidia/cublas-counters-$DATE; mkdir -p "$D/$RES"; cd "$D"
@@ -19,5 +20,6 @@ one() { # one <tag> <wheel> <backend> <round> [extra args]
 for k in 1 2 3; do
     one cuda ws-nvidia-cuda cudann "$k" --option queue=in_order
     one dpcpp ws-nvidia-sycl syclnn "$k"
+    [ -n "${LW:-}" ] && one dpcpp-lw ws-nvidia-sycl syclnn "$k" --option loss_reduction=false --option workgroup_size=256
 done
 echo "==== done $(date +%T)" >> "$RES/run.log"
