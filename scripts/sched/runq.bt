@@ -1,0 +1,26 @@
+// Scheduling of benchmark processes started as "v-<variant>-<round>" (python exec'd through a symlink
+// of that name): every thread they create inherits the tag. For each tag and role (main thread,
+// other threads): how long a runnable thread waited before it ran (wakeup or preemption to switch-in),
+// how often it was preempted while runnable and by what (a thread of the same run, a real-time thread
+// of anything else, a normal thread of anything else), and how often it migrated. Aggregated in the
+// kernel; only the tags are printed, never the names of other tasks. Duration: DURATION seconds, set when the file is copied.
+tracepoint:sched:sched_process_exec /strncmp(comm, "v-", 2) == 0/ { @v[(int64)tid] = comm; @main[(int64)tid] = 1; }
+tracepoint:sched:sched_process_fork /@v[args.parent_pid] != ""/ { @v[args.child_pid] = @v[args.parent_pid]; }
+tracepoint:sched:sched_wakeup, tracepoint:sched:sched_wakeup_new /@v[args.pid] != ""/ { @qt[args.pid] = nsecs; }
+tracepoint:sched:sched_switch {
+    if (@v[args.prev_pid] != "" && args.prev_state == 0) {
+        @qt[args.prev_pid] = nsecs;
+        $by = @v[args.next_pid] == @v[args.prev_pid] ? 0 : (args.next_prio < 100 ? 1 : 2);
+        @preempted[@v[args.prev_pid], @main[args.prev_pid], $by] = count();
+    }
+    if (@qt[args.next_pid] != 0) {
+        $d = (nsecs - @qt[args.next_pid]) / 1000;
+        @delay_us[@v[args.next_pid], @main[args.next_pid]] = stats($d);
+        @delay_total_us[@v[args.next_pid], @main[args.next_pid]] = sum($d);
+        @delay_hist_us[@v[args.next_pid], @main[args.next_pid]] = hist($d);
+        delete(@qt, args.next_pid);
+    }
+}
+tracepoint:sched:sched_migrate_task /@v[args.pid] != ""/ { @migrations[@v[args.pid], @main[args.pid]] = count(); }
+interval:s:DURATION { exit(); }
+END { clear(@v); clear(@main); clear(@qt); }

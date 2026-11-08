@@ -557,6 +557,36 @@ w4096-cublas auto --workload sweep-w4096-d4-b256 --batch 256 --samples 65536 --e
 w4096-tiled tiled --workload sweep-w4096-d4-b256 --batch 256 --samples 65536 --epochs 1 --warm-epochs 1
 CAPTURES
     echo 'explain-d done' ;;
+stream-explain)  # day: why CUDA's streams help at batch 256-1024 and hurt at 64 and on CUP: stream count, events on one stream, the dependent-kernel gap, GPU metrics if allowed
+    extra_dir stream-explain; O=$B/$RES; P=$B/scripts/launch-probe; extra_policy || exit 1
+    { nvidia-smi --query-gpu=clocks.gr,clocks.mem,pstate --format=csv; grep -i -E 'profil' /proc/driver/nvidia/params; } > "$O/node-state.txt" 2>&1
+    run fnn-cuda "cd $P && nvcc -O3 -std=c++17 -arch=sm_80 -ccbin g++-13 probe6_cuda.cu -o $O/probe6-cuda" || exit 1
+    for round in 1 2 3; do run fnn-cuda "PROBE_R=5 $O/probe6-cuda" > "$O/probe6-r$round.csv" 2> "$O/probe6-r$round.err"; done
+    one() { # one <arm> <workload-tag> <round> <run arguments>
+        local arm=$1 wl=$2 k=$3; shift 3
+        local out=$RES/$arm/$wl/round-$k; mkdir -p "$B/$out"
+        ls "$B/$out"/*.jsonl >/dev/null 2>&1 && return 0
+        run fnn-cuda "$(wheel cuda); python -m fnnbench.cli run --backend cudann --device gpu --dtype float --seed 1 --warmup 1 $* --out $out" > "$B/$out/run.log" 2>&1 < /dev/null
+    }
+    M="--workload mnist-512-256 --epochs 3 --repeat 3 --samples 60000"
+    C="--workload cup --batch 40 --epochs 5 --repeat 5 --samples 1000"
+    for k in 1 2 3; do
+        for b in 256 1024 64; do
+            one inorder mnist-b$b "$k" $M --batch $b --option queue=in_order
+            for n in 1 2 3 4; do one ooo-s$n mnist-b$b "$k" $M --batch $b --option streams=$n; done
+        done
+        one inorder cup "$k" $C --option queue=in_order
+        one ooo-s1 cup "$k" $C --option streams=1
+        one ooo-s4 cup "$k" $C --option streams=4
+    done
+    # GPU metrics sampled during one steady epoch, no per-kernel tracing; fails if the node restricts counters
+    NSYS=$(find /opt/nvidia -type f -name nsys -executable -path '*nsight-systems*x64*' 2>/dev/null | sort -V | tail -1)
+    run fnn-cuda "g++-13 -O2 -shared -fPIC -I/usr/local/cuda-12.9/include scripts/nvtx-range.cpp -ldl -o $RES/nvtx-range.so" || exit 0
+    for tag in inorder ooo-s4; do
+        o="--option queue=in_order"; [ $tag = ooo-s4 ] && o="--option streams=4"
+        run fnn-cuda "$(wheel cuda); NSYS_NVTX_PROFILER_REGISTER_ONLY=0 $NSYS profile --trace=nvtx --sample=none --cpuctxsw=none --gpu-metrics-devices=0 --gpu-metrics-frequency=100000 --capture-range=nvtx --nvtx-capture=fnn.train.capture --force-overwrite true -o $RES/gm-$tag python scripts/nsys_epoch.py --backend cudann $o --samples 60000 --warm-epochs 1 --nvtx-lib $B/$RES/nvtx-range.so --out $RES/gm-$tag.json && $NSYS export --type sqlite --force-overwrite true -o $RES/gm-$tag.sqlite $RES/gm-$tag.nsys-rep" > "$O/gm-$tag.log" 2>&1
+    done
+    echo 'stream explain done' ;;
 clang-wait)  # steady-state rows of ompnn 0.1.2 with clang: Options::wait auto against spin, fresh processes, alternated
     extra_dir clang-wait; O=$B/$RES
     one() { # one <wait> <round> <workload> <batch> <epochs> <samples>
