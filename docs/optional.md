@@ -95,6 +95,7 @@ Separate directories under `results/`, each with its scripts in `scripts/`. None
 | DPC++ CPU: every thread pinned one to one, with and without busy SMT pairs; sixteen-CPU sets; FIFO on 32 CPUs with C2 on and off (root helper) | `ws-amd/dpc-fifo-pin1-2026-11-08`, `dpc-fifo-sched-2026-11-08e`, `dpc-fifo-c2-2026-11-08` | `scripts/ws-amd-dpc-fifo-pin1.sh`, `scripts/ws-amd-dpc-fifo-sched.sh`, `scripts/ws-amd-dpc-fifo-c2.sh` |
 | Radeon MNIST confined to the core complex of the interrupt CPU or to node 1; DPC++ CPU FIFO on 24 CPUs and on the isolated node | `ws-amd/radeon-modes2-2026-11-08c`, `dpc-fifo-sched-2026-11-08f` | `scripts/ws-amd-radeon-modes2.sh`, `scripts/ws-amd-dpc-fifo-sched.sh` |
 | Radeon MNIST with the amdgpu interrupt moved to CPU 12 (root helper, `irq.log`): near it and on CPUs 4-7, 20-23 | `ws-amd/radeon-modes2-2026-11-08d` | `scripts/ws-amd-radeon-modes2.sh` |
+| Latency of one micro-batch served as one predict() call (samples = batch), batch 1 to 4096, CUDA, DPC++ and nvc++ | `hpc-a30/infer-curve-2026-11-08` | `hpc-blocks.sh infer-curve` |
 | Wait policy of clang's OpenMP runtime | `hpc-a30/clang-spin-2026-11-06`, `hpc-a30/clang-wait-2026-11-06`, `ws-nvidia/clang-spin-2026-11-06` | `hpc-blocks.sh clang-spin`, `hpc-blocks.sh clang-wait`, `ws-nvidia-clang-spin.sh` |
 
 The last row motivated `Options::wait` in ompnn 0.1.2. Its default keeps the runtime's policy, so the reported rows keep their meaning.

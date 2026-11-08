@@ -619,6 +619,25 @@ explain-e)  # day: graph replay from one or four streams (no per-launch events o
         sone fnn-sycl sycl syclnn dpcpp-tuned "$k" loss_reduction=false bias_gemv=false workgroup_size=256
     done
     echo 'explain-e done' ;;
+infer-curve)  # day: latency of one micro-batch served as a predict() call (samples = batch) as the batch grows, CUDA, DPC++ and nvc++
+    extra_dir infer-curve; O=$B/$RES; extra_policy || exit 1
+    nvidia-smi --query-gpu=clocks.gr,clocks.mem,pstate --format=csv > "$O/node-state.txt" 2>&1
+    one() { # one <tag> <batch> <round> <image> <wheel> <backend> [nv]
+        local tag=$1 b=$2 k=$3 img=$4 w=$5 be=$6 pre=""
+        [ "${7:-}" = nv ] && pre="export LD_LIBRARY_PATH=$NVLIBS:\${LD_LIBRARY_PATH:-};"
+        local out=$RES/$tag/b$b/round-$k; mkdir -p "$B/$out"
+        ls "$B/$out"/*.jsonl >/dev/null 2>&1 && return 0
+        local calls=20; [ "$b" -ge 1024 ] && calls=10
+        run "$img" "$pre $(wheel "$w"); python -m fnnbench.cli run --backend $be --device gpu --dtype float --workload mnist-512-256 --mode infer --batch $b --samples $b --epochs $calls --repeat 5 --warmup 1 --seed 1 --out $out" > "$B/$out/run.log" 2>&1 < /dev/null
+    }
+    for k in 1 2 3; do
+        for b in 1 4 16 64 256 1024 4096; do
+            one cuda "$b" "$k" fnn-cuda cuda cudann
+            one dpcpp "$b" "$k" fnn-sycl sycl syclnn
+            one nvcpp "$b" "$k" fnn-cuda omp-nvcpp ompnn nv
+        done
+    done
+    echo 'infer curve done' ;;
 clang-wait)  # steady-state rows of ompnn 0.1.2 with clang: Options::wait auto against spin, fresh processes, alternated
     extra_dir clang-wait; O=$B/$RES
     one() { # one <wait> <round> <workload> <batch> <epochs> <samples>
