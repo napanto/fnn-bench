@@ -66,6 +66,19 @@ Separate directories under `results/`, each with its scripts in `scripts/`. None
 | Discarded events, on a scratch copy of syclnn | `hpc-a30/discard-probe-2026-11-07`, `ws-nvidia/discard-2026-11-07` | `scripts/syclnn-discard-events.py`, `hpc-blocks.sh build-sycl-discard`, `hpc-blocks.sh discard-probe` |
 | Checked rows of the options the wall profile suggests | `hpc-a30/tuned-2026-11-07` | `hpc-blocks.sh tuned-rows` |
 | Whether those options change the trained network, ten epochs, loss in double from the predictions | `ws-nvidia/compare-final-2026-11-07` | `scripts/wallprof/compare_final.py` |
+| Each path's fastest tested configuration against the suggested SYCL options, one job (MNIST at three batches, CUP, AdaptiveCpp) | `hpc-a30/best-2026-11-08` | `hpc-blocks.sh best-rows` |
+| The suggested options on the GTX 1080 Ti | `ws-nvidia/tuned-2026-11-08` | `scripts/ws-nvidia-tuned.sh` |
+| Hardware counters inside cuBLAS, one-stream CUDA against DPC++ | `ws-nvidia/cublas-counters-2026-11-08` | `scripts/ws-nvidia-cublas-counters.sh` |
+| User-space counters of the sampling signal (inconclusive: noisy, whole-process counts) | `ws-nvidia/signal-counters-2026-11-08` | `scripts/ws-nvidia-signal-counters.sh` |
+| The stream probe on the GTX 1080 Ti | `ws-nvidia/overlap-probe-2026-11-08` | `scripts/ws-nvidia-overlap-probe.sh` |
+| Cost of one signal outside the handler; GPU traces with the options; AdaptiveCpp and tuned DPC++ stacks | `hpc-a30/explain-2026-11-08` | `hpc-blocks.sh explain-a`, `scripts/wallprof/sigcost.c` |
+| Whole-process CPU sampling (inconclusive: the runtimes' worker threads block the signal) | `hpc-a30/explain-cpu-2026-11-08` | `hpc-blocks.sh explain-b` |
+| oneMKL scaling of one batch's GEMMs; main-thread stacks of the CPU paths at 1 to 64 workers | `hpc-a30/explain-cpu2-2026-11-08` | `hpc-blocks.sh explain-c`, `scripts/wallprof/gemm_scaling.c` |
+| GPU traces of the hand-written tile against cuBLAS | `hpc-a30/explain-tile-2026-11-08` | `hpc-blocks.sh explain-d` |
+| Radeon modes against core-complex confinement, with clock levels | `ws-amd/cup-interference-2026-11-08/gpu` | `scripts/ws-amd-gpu-fifo.sh` (variants `ccx0`, `ccx1`, `ccx0core`, `DPMLOG=1`) |
+| Radeon MNIST modes: wall stacks of fast and slow processes; one or two HIP hardware queues | `ws-amd/radeon-wallprof-2026-11-08`, `ws-amd/cup-interference-2026-11-08/gpu/mnist-hwq*` | `scripts/ws-amd-radeon-wallprof.sh`, `scripts/ws-amd-gpu-fifo.sh` (variants `hwq1`, `hwq2`) |
+| What runs on CPU 0 while the main thread runs on its sibling; idle-state residency; main thread on the siblings of quiet cores | `ws-amd/cup-threads-sibcensus-2026-11-08`, `ws-amd/cup-threads-2026-11-08-sib*` | `scripts/cpu0-census.py`, `scripts/ws-amd-sibling-census.sh`, `scripts/ws-amd-cup-threads.sh` |
+| DPC++ CPU under FIFO, round robin, no OpenMP spin, 12 workers | `ws-amd/dpc-fifo-wallprof-2026-11-08`, `-08b`, `-08c` | `scripts/ws-amd-dpc-fifo-wallprof.sh` |
 | Wait policy of clang's OpenMP runtime | `hpc-a30/clang-spin-2026-11-06`, `hpc-a30/clang-wait-2026-11-06`, `ws-nvidia/clang-spin-2026-11-06` | `hpc-blocks.sh clang-spin`, `hpc-blocks.sh clang-wait`, `ws-nvidia-clang-spin.sh` |
 
 The last row motivated `Options::wait` in ompnn 0.1.2. Its default keeps the runtime's policy, so the reported rows keep their meaning.

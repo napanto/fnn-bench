@@ -94,7 +94,9 @@ def main():
     w = workloads.get(a.workload)
     x, y = w.data()
     x, y = np.ascontiguousarray(x[:a.samples], dtype=np.float32), np.ascontiguousarray(y[:a.samples], dtype=np.float32)
-    options = dict(o.split('=', 1) for o in a.option)
+    def value(text):
+        return {'true': True, 'false': False}.get(text.lower(), int(text) if text.isdigit() else text)
+    options = {k: value(v) for k, v in (o.split('=', 1) for o in a.option)}
     net = be.NetworkAdapter(a.backend, w.spec, dtype='float', device='gpu', seed=1, profile=a.profile, blas=a.blas, **options)
     if hip_marker and not a.hip_marker_only:
         # HSA creates the counter contexts lazily during network construction.

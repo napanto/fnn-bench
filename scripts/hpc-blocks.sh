@@ -429,6 +429,134 @@ tuned-rows)  # harness rows of what the profile suggests, numerically checked, f
         one dpcpp-tuned cup "$k" fnn-sycl sycl syclnn "" $C $T --option workgroup_size=256
     done
     echo 'tuned rows done' ;;
+best-rows)  # night: each path's fastest tested configuration against the suggested SYCL options, checked rows, alternated
+    extra_dir best; O=$B/$RES; extra_policy || exit 1
+    T="--option loss_reduction=False --option bias_gemv=False --option workgroup_size=256"
+    one() { # one <arm> <workload-tag> <round> <image> <wheel> <backend> <run arguments>
+        local arm=$1 wl=$2 k=$3 img=$4 w=$5 be=$6; shift 6
+        local out=$RES/$arm/$wl/round-$k; mkdir -p "$B/$out"
+        ls "$B/$out"/*.jsonl >/dev/null 2>&1 && return 0
+        run "$img" "$(wheel "$w"); python -m fnnbench.cli run --backend $be --device gpu --dtype float --seed 1 --warmup 1 $* --out $out" > "$B/$out/run.log" 2>&1 < /dev/null
+    }
+    M="--workload mnist-512-256 --epochs 3 --repeat 3 --samples 60000"
+    C="--workload cup --batch 40 --epochs 5 --repeat 5 --samples 1000"
+    for k in 1 2 3; do
+        one cuda-inorder mnist "$k" fnn-cuda cuda cudann $M --batch 256 --option queue=in_order
+        one cuda-streams mnist "$k" fnn-cuda cuda cudann $M --batch 256
+        one cuda-graph mnist "$k" fnn-cuda cuda cudann $M --batch 256 --option queue=graph
+        one dpcpp-default mnist "$k" fnn-sycl sycl syclnn $M --batch 256
+        one dpcpp-tuned mnist "$k" fnn-sycl sycl syclnn $M --batch 256 $T
+        one acpp-default mnist "$k" fnn-acpp-cuda sycl-acpp syclnn $M --batch 256
+        one acpp-inorder mnist "$k" fnn-acpp-cuda sycl-acpp syclnn $M --batch 256 --option queue=in_order
+        one acpp-tuned mnist "$k" fnn-acpp-cuda sycl-acpp syclnn $M --batch 256 --option queue=in_order $T
+        for b in 64 1024; do
+            one cuda-streams mnist-b$b "$k" fnn-cuda cuda cudann $M --batch $b
+            one cuda-inorder mnist-b$b "$k" fnn-cuda cuda cudann $M --batch $b --option queue=in_order
+            one dpcpp-default mnist-b$b "$k" fnn-sycl sycl syclnn $M --batch $b
+            one dpcpp-tuned mnist-b$b "$k" fnn-sycl sycl syclnn $M --batch $b $T
+        done
+        one cuda-streams cup "$k" fnn-cuda cuda cudann $C
+        one cuda-graph cup "$k" fnn-cuda cuda cudann $C --option queue=graph
+        one cuda-inorder cup "$k" fnn-cuda cuda cudann $C --option queue=in_order
+        one dpcpp-default cup "$k" fnn-sycl sycl syclnn $C
+        one dpcpp-tuned cup "$k" fnn-sycl sycl syclnn $C $T
+    done
+    echo 'best rows done' ;;
+explain-a)  # night: the cost of one signal; GPU traces with the suggested options; AdaptiveCpp and tuned DPC++ stacks
+    extra_dir explain; O=$B/$RES; extra_policy || exit 1
+    run fnn-cuda "gcc -O2 -shared -fPIC scripts/wallprof/wallprof.c -o $RES/wallprof.so && gcc -O2 scripts/wallprof/sigcost.c $RES/wallprof.so -Wl,-rpath,$B/$RES -o $RES/sigcost" || exit 1
+    [ -s "$O/sigcost.csv" ] || run fnn-cuda "$RES/sigcost" > "$O/sigcost.csv" 2> "$O/sigcost.err"
+    NSYS=$(find /opt/nvidia -type f -name nsys -executable -path '*nsight-systems*x64*' 2>/dev/null | sort -V | tail -1)
+    run fnn-cuda "g++-13 -O2 -shared -fPIC -I/usr/local/cuda-12.9/include scripts/nvtx-range.cpp -ldl -o $RES/nvtx-range.so" || exit 1
+    T="--option loss_reduction=False --option bias_gemv=False"
+    while read -r img w be tag opt; do
+        [ -s "$O/$tag-gpu_cuda_gpu_trace.csv" ] && continue
+        o=""; [ "$opt" = - ] || o=$(echo "$opt" | tr ',' ' ' | sed 's/\([^ ]*\)/--option \1/g')
+        cmd="$NSYS profile --trace=cuda,nvtx --sample=none --cpuctxsw=none --capture-range=cudaProfilerApi --capture-range-end=stop --force-overwrite true -o $RES/$tag python scripts/nsys_epoch.py --backend $be $o --samples 60000 --warm-epochs 12 --nvtx-lib $B/$RES/nvtx-range.so --out $RES/$tag.json"
+        printf '%s\n' "$cmd" >> "$O/commands.txt"
+        run "$img" "$(wheel "$w"); $cmd" > "$O/$tag.log" 2>&1 || continue
+        run "$img" "$NSYS stats --report cuda_gpu_trace --format csv -o $RES/$tag-gpu $RES/$tag.nsys-rep
+            $NSYS stats --report cuda_api_sum --format csv -o $RES/$tag-api $RES/$tag.nsys-rep
+            $NSYS export --type sqlite --force-overwrite true -o $RES/$tag.sqlite $RES/$tag.nsys-rep" >> "$O/$tag.log" 2>&1
+    done <<'CAPTURES'
+fnn-cuda cuda cudann cuda-inorder queue=in_order
+fnn-cuda cuda cudann cuda-tuned queue=in_order,loss_reduction=False,bias_gemv=False
+fnn-sycl sycl syclnn dpcpp-default -
+fnn-sycl sycl syclnn dpcpp-tuned loss_reduction=False,bias_gemv=False,workgroup_size=256
+CAPTURES
+    one() { # one <image> <wheel> <tag> <round> [option...]
+        local img=$1 w=$2 tag=$3 k=$4 opts=""; shift 4
+        for x in "$@"; do opts="$opts --option $x"; done
+        [ -s "$O/$tag-r$k.stacks.json" ] && return 0
+        run "$img" "$(wheel "$w"); python scripts/wallprof/wallprof_run.py --backend $([ "$w" = cuda ] && echo cudann || echo syclnn) --epochs 60 --lib $RES/wallprof.so --out $RES/$tag-r$k.dump $opts && python scripts/wallprof/wallprof_report.py $RES/$tag-r$k.dump"
+    }
+    for k in 1 2; do
+        one fnn-cuda cuda cuda-inorder "$k" queue=in_order
+        one fnn-sycl sycl dpcpp-tuned "$k" loss_reduction=false bias_gemv=false workgroup_size=256
+        one fnn-acpp-cuda sycl-acpp acpp-inorder "$k" queue=in_order
+        one fnn-acpp-cuda sycl-acpp acpp-tuned "$k" queue=in_order loss_reduction=false bias_gemv=false workgroup_size=256
+    done
+    echo 'explain-a done' ;;
+explain-b)  # night: where the CPU time of all threads goes, DPC++ against gcc with oneMKL, 32 cores and 64 hardware threads
+    extra_dir explain-cpu; O=$B/$RES
+    NUMA="numactl --interleave=all"
+    run fnn-cuda "gcc -O2 -shared -fPIC scripts/wallprof/wallprof.c -o $RES/wallprof.so" || exit 1
+    one() { # one <tag> <threads> <round>
+        local tag=$1 t=$2 k=$3 out=$RES/$1-t$2-r$3
+        [ -s "$B/$out.stacks.json" ] && return 0
+        local env="export WALLPROF_PROCESS=1 OMP_PROC_BIND=close OMP_PLACES=cores OMP_NUM_THREADS=$t MKL_NUM_THREADS=$t DPCPP_CPU_NUM_CUS=$t"
+        local args="--device cpu --warm 1 --epochs 2 --delay-ms 500 --period-us 2000 --max-samples 400000 --lib $RES/wallprof.so --out $out.dump"
+        case $tag in
+        dpcpp) run fnn-sycl "$(wheel sycl); $env; python scripts/wallprof/wallprof_run.py --backend syclnn $args && python scripts/wallprof/wallprof_report.py $out.dump" ;;
+        gcc) run fnn-cuda "$(wheel omp-gcc14mkl); $env MKL_THREADING_LAYER=GNU; python scripts/wallprof/wallprof_run.py --backend ompnn $args && python scripts/wallprof/wallprof_report.py $out.dump" ;;
+        esac
+    }
+    for k in 1 2; do
+        for t in 32 64; do
+            one dpcpp "$t" "$k"
+            one gcc "$t" "$k"
+        done
+    done
+    echo 'explain-b done' ;;
+explain-c)  # night: main-thread wall stacks of the CPU paths at several worker counts; oneMKL scaling of one batch's GEMMs
+    extra_dir explain-cpu2; O=$B/$RES
+    NUMA="numactl --interleave=all"
+    run fnn-sycl "gcc -O2 -shared -fPIC scripts/wallprof/wallprof.c -o $RES/wallprof.so && gcc -O2 scripts/wallprof/gemm_scaling.c -I/opt/venv/include -L/opt/venv/lib -l:libmkl_rt.so.3 -Wl,-rpath,/opt/venv/lib -o $RES/gemm_scaling" || exit 1
+    [ -s "$O/gemm-scaling.csv" ] || run fnn-sycl "$RES/gemm_scaling" > "$O/gemm-scaling.csv" 2> "$O/gemm-scaling.err"
+    one() { # one <tag> <threads> <round>
+        local tag=$1 t=$2 k=$3 out=$RES/$1-t$2-r$3
+        [ -s "$B/$out.stacks.json" ] && return 0
+        local env="export OMP_PROC_BIND=close OMP_PLACES=cores OMP_NUM_THREADS=$t MKL_NUM_THREADS=$t DPCPP_CPU_NUM_CUS=$t"
+        local args="--device cpu --warm 1 --epochs 2 --delay-ms 300 --period-us 2000 --lib $RES/wallprof.so --out $out.dump"
+        case $tag in
+        dpcpp) run fnn-sycl "$(wheel sycl); $env; python scripts/wallprof/wallprof_run.py --backend syclnn $args && python scripts/wallprof/wallprof_report.py $out.dump" ;;
+        gcc) run fnn-cuda "$(wheel omp-gcc14mkl); $env MKL_THREADING_LAYER=GNU; python scripts/wallprof/wallprof_run.py --backend ompnn $args && python scripts/wallprof/wallprof_report.py $out.dump" ;;
+        esac
+    }
+    for k in 1 2; do
+        for t in 32 8 64 1; do one dpcpp "$t" "$k"; done
+        one gcc 32 "$k"
+    done
+    echo 'explain-c done' ;;
+explain-d)  # night: GPU traces of the hand-written tile against cuBLAS, on CUP and at width 4096
+    extra_dir explain-tile; O=$B/$RES; extra_policy || exit 1
+    NSYS=$(find /opt/nvidia -type f -name nsys -executable -path '*nsight-systems*x64*' 2>/dev/null | sort -V | tail -1)
+    run fnn-cuda "g++-13 -O2 -shared -fPIC -I/usr/local/cuda-12.9/include scripts/nvtx-range.cpp -ldl -o $RES/nvtx-range.so" || exit 1
+    while read -r tag blas args; do
+        [ -s "$O/$tag-gpu_cuda_gpu_trace.csv" ] && continue
+        cmd="$NSYS profile --trace=cuda,nvtx --sample=none --cpuctxsw=none --capture-range=cudaProfilerApi --capture-range-end=stop --force-overwrite true -o $RES/$tag python scripts/nsys_epoch.py --backend cudann --blas $blas $args --nvtx-lib $B/$RES/nvtx-range.so --out $RES/$tag.json"
+        printf '%s\n' "$cmd" >> "$O/commands.txt"
+        run fnn-cuda "$(wheel cuda); $cmd" > "$O/$tag.log" 2>&1 || continue
+        run fnn-cuda "$NSYS stats --report cuda_gpu_trace --format csv -o $RES/$tag-gpu $RES/$tag.nsys-rep
+            $NSYS stats --report cuda_api_sum --format csv -o $RES/$tag-api $RES/$tag.nsys-rep
+            $NSYS export --type sqlite --force-overwrite true -o $RES/$tag.sqlite $RES/$tag.nsys-rep" >> "$O/$tag.log" 2>&1
+    done <<'CAPTURES'
+cup-cublas auto --workload cup --batch 40 --samples 1000 --epochs 2 --warm-epochs 20
+cup-tiled tiled --workload cup --batch 40 --samples 1000 --epochs 2 --warm-epochs 20
+w4096-cublas auto --workload sweep-w4096-d4-b256 --batch 256 --samples 65536 --epochs 1 --warm-epochs 1
+w4096-tiled tiled --workload sweep-w4096-d4-b256 --batch 256 --samples 65536 --epochs 1 --warm-epochs 1
+CAPTURES
+    echo 'explain-d done' ;;
 clang-wait)  # steady-state rows of ompnn 0.1.2 with clang: Options::wait auto against spin, fresh processes, alternated
     extra_dir clang-wait; O=$B/$RES
     one() { # one <wait> <round> <workload> <batch> <epochs> <samples>

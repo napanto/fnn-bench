@@ -13,6 +13,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--backend', choices=['cudann', 'syclnn', 'ompnn'], required=True)
     ap.add_argument('--workload', default='mnist-512-256')
+    ap.add_argument('--device', default='gpu', choices=['gpu', 'cpu'])
     ap.add_argument('--samples', type=int, default=60000)
     ap.add_argument('--batch', type=int, default=256)
     ap.add_argument('--warm', type=int, default=12, help='epochs before any timing, past the GPU clock ramp')
@@ -38,7 +39,7 @@ def main():
     def value(text):
         return {'true': True, 'false': False}.get(text, int(text) if text.isdigit() else text)
     options = {k: value(v) for k, v in (o.split('=', 1) for o in a.option)}
-    net = be.NetworkAdapter(a.backend, w.spec, dtype='float', device='gpu', seed=1, **options)
+    net = be.NetworkAdapter(a.backend, w.spec, dtype='float', device=a.device, seed=1, **options)
     net.train(x, y, a.batch, a.warm)
 
     def timed():
@@ -57,7 +58,7 @@ def main():
     n = prof.wallprof_stop(None if a.discard else str(a.out).encode())
     handler_s = prof.wallprof_handler_ns()/1e9
     after = timed()
-    summary = {'backend': a.backend, 'workload': a.workload, 'samples': a.samples, 'batch': a.batch, 'epochs': a.epochs,
+    summary = {'backend': a.backend, 'device': a.device, 'workload': a.workload, 'samples': a.samples, 'batch': a.batch, 'epochs': a.epochs,
                'options': options, 'period_us': a.period_us, 'delay_ms': a.delay_ms, 'n_samples': n, 'handler_s': handler_s,
                'before_s': before, 'sampled_s': sampled, 'after_s': after, 'sampled_thread_cpu_s': cpu}
     a.out.with_suffix('.json').write_text(json.dumps(summary) + '\n')

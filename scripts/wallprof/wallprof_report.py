@@ -63,7 +63,8 @@ def read(path):
             maps.append((int(lo, 16), int(hi, 16), int(f[3], 16), f[6].strip() if len(f) > 6 else ''))
         else:
             f = line.split()
-            samples.append((int(f[1]), int(f[2]), int(f[3]), int(f[4], 16), [int(v, 16) for v in f[5:]]))
+            tid = f.pop(5)[1:] if len(f) > 5 and f[5].startswith('t') else ''
+            samples.append((int(f[1]), int(f[2]), int(f[3]), int(f[4], 16), [int(v, 16) for v in f[5:]], tid))
     return maps, samples
 
 
@@ -75,7 +76,9 @@ def main():
         maps, samples = read(dump)
         res = Resolver(maps)
         stacks = Counter()
-        for _wall, _cpu, _handler, rip, frames in samples:
+        threads = Counter()
+        for _wall, _cpu, _handler, rip, frames, tid in samples:
+            threads[tid] += 1
             # frames: handler, signal trampoline, interrupted function (often repeated as rip), callers
             for i, pc in enumerate(frames):
                 if res(pc)[1] == '__restore_rt' or (res(pc)[0].startswith('libc') and 'restore_rt' in res(pc)[1]):
@@ -92,7 +95,7 @@ def main():
         out = {'dump': dump.name, 'n': len(samples),
                'wall_s': (walls[-1]-walls[0])/1e9 if walls else 0, 'thread_cpu_s': (cpus[-1]-cpus[0])/1e9 if cpus else 0,
                'handler_us_mean': sum(s[2] for s in samples)/max(len(samples), 1)/1e3,
-               'stacks': [[n, list(st)] for st, n in stacks.most_common()]}
+               'threads': dict(threads), 'stacks': [[n, list(st)] for st, n in stacks.most_common()]}
         dump.with_suffix('.stacks.json').write_text(json.dumps(out) + '\n')
         print(dump.name, out['n'], 'samples', f"handler {out['handler_us_mean']:.1f} us", len(stacks), 'stacks')
 
